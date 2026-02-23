@@ -64,7 +64,7 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 
 ### Para emisión desde Raspberry Pi
 - Raspberry Pi 4 (recomendado)
-- FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_todo_junto.md`)
+- FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_ffmpeg_webrtc.md`)
 - Cámara USB o módulo de cámara Pi
 
 ### Opcional
