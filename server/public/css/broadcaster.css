@@ -187,6 +187,57 @@ video {
     color: #333;
 }
 
+.active-paths {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8d7da;
+    border-radius: 8px;
+}
+
+.active-paths-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.active-paths-header label {
+    margin-bottom: 0;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    flex: 0;
+}
+
+.paths-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.paths-list .path-tag {
+    background: #721c24;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.paths-list .path-tag.available {
+    background: #155724;
+}
+
+.paths-list .loading,
+.paths-list .empty,
+.paths-list .error {
+    color: #666;
+    font-style: italic;
+    font-size: 13px;
+}
+
 .quick-endpoints {
     margin-top: 15px;
     padding: 15px;

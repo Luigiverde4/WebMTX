@@ -65,6 +65,16 @@
             <p><strong>Puerto:</strong> 8889</p>
         </div>
 
+        <div class="active-paths">
+            <div class="active-paths-header">
+                <label>🔴 Paths activos (ocupados):</label>
+                <button class="btn-small" onclick="refreshActivePaths()">🔄</button>
+            </div>
+            <div id="activePathsList" class="paths-list">
+                <span class="loading">Cargando...</span>
+            </div>
+        </div>
+
         <div class="quick-endpoints">
             <label>Endpoints rápidos:</label>
             <div class="endpoint-buttons">

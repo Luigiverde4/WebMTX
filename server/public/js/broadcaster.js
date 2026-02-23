@@ -10,11 +10,13 @@ const audioSource = document.getElementById('audioSource');
 const resolution = document.getElementById('resolution');
 const streamUrlEl = document.getElementById('streamUrl');
 const liveIndicator = document.getElementById('liveIndicator');
+const activePathsList = document.getElementById('activePathsList');
 
 // Variables globales
 let pc = null; // WebRTC PeerConnection
 let localStream = null; // Stream local de la cámara/micrófono
 let whipSession = null; // URL para DELETE al finalizar
+let activePaths = []; // Paths activos en MediaMTX
 
 // Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
@@ -25,7 +27,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedEndpoint = localStorage.getItem('broadcaster_endpoint');
     if (savedServer) serverInput.value = savedServer;
     if (savedEndpoint) endpointInput.value = savedEndpoint;
+    
+    // Cargar paths activos
+    await refreshActivePaths();
 });
+
+// Consultar API de MediaMTX para obtener paths activos (usa proxy del servidor)
+async function refreshActivePaths() {
+    activePathsList.innerHTML = '<span class="loading">Cargando...</span>';
+    
+    try {
+        // Usar el proxy del servidor Node.js para evitar CORS y auth
+        const response = await fetch('/api/mediamtx/v3/paths/list');
+        if (!response.ok) throw new Error('API no disponible');
+        
+        const data = await response.json();
+        activePaths = [];
+        
+        // Filtrar paths que tienen readers o publishers activos
+        if (data.items && data.items.length > 0) {
+            activePaths = data.items
+                .filter(path => path.ready)
+                .map(path => path.name);
+        }
+        
+        renderActivePaths();
+    } catch (error) {
+        console.error('Error consultando API MediaMTX:', error);
+        activePathsList.innerHTML = '<span class="error">No se pudo conectar a MediaMTX</span>';
+    }
+}
+
+function renderActivePaths() {
+    if (activePaths.length === 0) {
+        activePathsList.innerHTML = '<span class="empty">No hay streams activos</span>';
+        return;
+    }
+    
+    activePathsList.innerHTML = activePaths
+        .map(path => `<span class="path-tag">${path}</span>`)
+        .join('');
+}
+
+function isPathActive(endpoint) {
+    return activePaths.includes(endpoint);
+}
 
 // Obtener lista de dispositivos de audio/video
 async function initializeDevices() {
@@ -128,6 +174,13 @@ async function startBroadcast() {
         alert('Por favor, introduce la dirección del servidor');
         serverInput.focus();
         return;
+    }
+    
+    // Verificar si el path ya está en uso
+    await refreshActivePaths();
+    if (isPathActive(endpoint)) {
+        const continuar = confirm(`⚠️ El endpoint "${endpoint}" ya está en uso.\n\n¿Quieres continuar de todos modos? (Podría reemplazar el stream existente)`);
+        if (!continuar) return;
     }
     
     // Guardar configuración
