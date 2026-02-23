@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📹 WHIP Broadcaster</title>
+    <link rel="stylesheet" href="css/broadcaster.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📹 WHIP Broadcaster</h1>
+        <p class="subtitle">Convierte tu dispositivo en una cámara de streaming</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="server">Servidor MediaMTX:</label>
+                <input type="text" id="server" value="localhost" placeholder="localhost o IP">
+            </div>
+
+            <div class="control-group">
+                <label for="endpoint">Tu nombre/endpoint:</label>
+                <input type="text" id="endpoint" value="" placeholder="ej: ricardo, cam1, movil">
+            </div>
+
+            <div class="control-group">
+                <label for="status">Estado:</label>
+                <span class="status disconnected" id="status">Sin transmitir</span>
+            </div>
+        </div>
+
+        <div class="device-selection">
+            <div class="control-group">
+                <label for="videoSource">Cámara:</label>
+                <select id="videoSource"></select>
+            </div>
+            <div class="control-group">
+                <label for="audioSource">Micrófono:</label>
+                <select id="audioSource"></select>
+            </div>
+            <div class="control-group">
+                <label for="resolution">Resolución:</label>
+                <select id="resolution">
+                    <option value="1920x1080">1080p (1920x1080)</option>
+                    <option value="1280x720" selected>720p (1280x720)</option>
+                    <option value="854x480">480p (854x480)</option>
+                    <option value="640x360">360p (640x360)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-start" id="startBtn" onclick="startBroadcast()">🔴 Iniciar Transmisión</button>
+            <button class="btn-stop" id="stopBtn" onclick="stopBroadcast()" disabled>⬛ Detener</button>
+            <button class="btn-refresh" onclick="refreshDevices()">🔄 Actualizar dispositivos</button>
+        </div>
+
+        <div class="video-container">
+            <video id="preview" muted autoplay playsinline></video>
+            <div class="live-indicator" id="liveIndicator">🔴 EN VIVO</div>
+        </div>
+
+        <div class="info">
+            <p><strong>URL del stream:</strong> <span id="streamUrl">-</span></p>
+            <p><strong>Protocolo:</strong> WHIP (WebRTC-HTTP Ingestion Protocol)</p>
+            <p><strong>Puerto:</strong> 8889</p>
+        </div>
+
+        <div class="quick-endpoints">
+            <label>Endpoints rápidos:</label>
+            <div class="endpoint-buttons">
+                <button onclick="setEndpoint('cam1')">cam1</button>
+                <button onclick="setEndpoint('cam2')">cam2</button>
+                <button onclick="setEndpoint('movil')">movil</button>
+                <button onclick="setEndpoint('extra')">extra</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/broadcaster.js"></script>
+</body>
+</html>
