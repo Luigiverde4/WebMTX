@@ -7,7 +7,7 @@
 # Global settings -> General
 
 # Verbosity of the program; available values are "error", "warn", "info", "debug".
-logLevel: debug
+logLevel: info
 # Destinations of log messages; available values are "stdout", "file" and "syslog".
 logDestinations: [stdout]
 # When destination is "stdout" or "file", emit logs in structured format (JSON).
@@ -216,7 +216,7 @@ pprofAllowOrigins: ['*']
 # will be taken from the X-Forwarded-For header.
 pprofTrustedProxies: []
 
-###############################################
+################################f###############
 # Global settings -> Playback server
 
 # Enable downloading recordings from the playback server.
@@ -514,7 +514,7 @@ pathDefaults:
   # Extension is added automatically.
   # Available variables are %path (path name), %Y %m %d (year, month, day),
   # %H %M %S (hours, minutes, seconds), %f (microseconds), %z (time zone), %s (unix epoch).
-  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
   # Format of recorded segments.
   # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
   recordFormat: fmp4
@@ -772,7 +772,7 @@ paths:
   #   source: publisher
   all_others:
     record: yes
-    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
     # Format of recorded segments.
     # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
     recordFormat: fmp4

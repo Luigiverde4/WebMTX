@@ -41,7 +41,7 @@ services:
         target: /mediamtx.yml
         read_only: false
       - type: bind
-        source: ./recordings
+        source: ./mediamtx/recordings
         target: /recordings
     networks:
       - tfg-network
