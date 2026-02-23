@@ -1,3 +1,8 @@
+@echo off
+set "HOST=localhost"
+set "PORT=8554"
+set "STREAM=rtspLL"
+
 wffmpeg ^
 -v debug ^
 -report ^
@@ -21,4 +26,4 @@ wffmpeg ^
 -fps_mode cfr -r 30 ^
 -f rtsp ^
 -rtsp_transport tcp ^
-rtsp://localhost:8554/rtspLL
+rtsp://%HOST%:%PORT%/%STREAM%

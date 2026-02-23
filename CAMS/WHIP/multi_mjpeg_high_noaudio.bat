@@ -1,3 +1,8 @@
+@echo off
+set "HOST=192.168.10.134"
+set "PORT=8889"
+set "STREAM=whipLL"
+
 wffmpeg ^
 -v debug ^
 -report ^
@@ -21,4 +26,4 @@ wffmpeg ^
 -f whip ^
 -buffer_size 512M ^
 -pkt_size 1200 ^
-http://192.168.10.134:8889/whipLL/whip
+http://%HOST%:%PORT%/%STREAM%/whip

@@ -1,3 +1,10 @@
+@echo off
+set "HOST=localhost"
+set "PORT=8890"
+set "STREAM_ID=publish:srtLL"
+set "LATENCY=200"
+set "PKT_SIZE=1316"
+
 ffmpeg ^
 -v error ^
 -f gdigrab -framerate 30 -offset_x -1920 -offset_y 0 -video_size 1920x1080 -i desktop ^
@@ -8,4 +15,4 @@ ffmpeg ^
 -b:v 4000k -maxrate 4000k -bufsize 2000k ^
 -c:a libopus -b:a 96k -ac 2 ^
 -f mpegts ^
-"srt://localhost:8890?streamid=publish:srtLL&latency=200&pkt_size=1316"
+"srt://%HOST%:%PORT%?streamid=%STREAM_ID%&latency=%LATENCY%&pkt_size=%PKT_SIZE%"

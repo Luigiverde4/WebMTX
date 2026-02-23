@@ -1,3 +1,9 @@
+@echo off
+set "HOST=127.0.0.1"
+set "PORT=8890"
+set "STREAM_ID=publish:srtLL"
+set "LATENCY=20000"
+
 ffmpeg ^
 -v debug ^
 -report ^
@@ -20,4 +26,4 @@ ffmpeg ^
 -application lowdelay -frame_duration 20 -packet_loss 15 -max_delay 0 ^
 -fps_mode cfr -r 30 ^
 -f mpegts ^
-"srt://127.0.0.1:8890?streamid=publish:srtLL&latency=20000"
+"srt://%HOST%:%PORT%?streamid=%STREAM_ID%&latency=%LATENCY%"

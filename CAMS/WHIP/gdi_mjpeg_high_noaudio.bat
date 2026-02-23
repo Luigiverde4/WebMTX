@@ -1,3 +1,8 @@
+@echo off
+set "HOST=localhost"
+set "PORT=8889"
+set "STREAM=whipLL"
+
 wffmpeg ^
 -v debug ^
 -report ^
@@ -21,4 +26,4 @@ wffmpeg ^
 -application lowdelay -frame_duration 20 -packet_loss 15 -max_delay 0 ^
 -fps_mode cfr -r 30 ^
 -f whip ^
-http://localhost:8889/whipLL/whip
+http://%HOST%:%PORT%/%STREAM%/whip

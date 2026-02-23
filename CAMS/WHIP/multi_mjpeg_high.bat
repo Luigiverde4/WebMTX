@@ -1,3 +1,8 @@
+@echo off
+set "HOST=192.168.0.5"
+set "PORT=8889"
+set "STREAM=multi"
+
 wffmpeg ^
 -v debug ^
 -report ^
@@ -21,4 +26,4 @@ wffmpeg ^
 -application lowdelay -frame_duration 20 -packet_loss 15 -max_delay 0 ^
 -fps_mode cfr -r 30 ^
 -f whip ^
-http://192.168.0.5:8889/multi/whip
+http://%HOST%:%PORT%/%STREAM%/whip
