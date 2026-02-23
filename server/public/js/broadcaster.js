@@ -269,6 +269,8 @@ async function startBroadcast() {
         alert('Error al iniciar transmisión: ' + error.message);
         stopBroadcast();
     }
+    // Esperar un momento para que MediaMTX registre el cambio
+    setTimeout(refreshActivePaths, 1000);
 }
 
 // Esperar a que se recopilen los candidatos ICE
@@ -324,6 +326,8 @@ async function stopBroadcast() {
     streamUrlEl.textContent = '-';
     
     console.log('Transmisión detenida');
+    // Esperar un momento para que MediaMTX registre el cambio
+    setTimeout(refreshActivePaths, 1000);
 }
 
 // Manejar cambio de dispositivos
