@@ -37,3 +37,7 @@ bin/
 # Embedded repositories (ffmpeg forks)
 docs/ffmpeg-webrtc/
 docs/ffmpeg_JL/
+
+
+# Certificates
+*.pem

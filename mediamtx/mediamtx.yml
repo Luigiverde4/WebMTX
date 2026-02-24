@@ -7,7 +7,7 @@
 # Global settings -> General
 
 # Verbosity of the program; available values are "error", "warn", "info", "debug".
-logLevel: info
+logLevel: debug
 # Destinations of log messages; available values are "stdout", "file" and "syslog".
 logDestinations: [stdout]
 # When destination is "stdout" or "file", emit logs in structured format (JSON).
@@ -410,7 +410,7 @@ webrtcIPsFromInterfacesList: []
 # List of additional hosts or IPs to send to clients.
 # webrtcAdditionalHosts: []
 # webrtcAdditionalHosts: ['192.168.0.5']
-webrtcAdditionalHosts: ['192.168.0.6']
+webrtcAdditionalHosts: ['192.168.1.48']
 # webrtcAdditionalHosts: ['192.168.1.48','192.168.1.120']
 # webrtcAdditionalHosts: ['192.168.1.120']
 # webrtcAdditionalHosts: ['192.168.1.48']
