@@ -17,6 +17,11 @@ app.use(express.json());
 // Servir archivos estáticos desde la carpeta public
 app.use(express.static("public"));
 
+// Index home
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+});
+
 // Proxy para API de MediaMTX (evita problemas de CORS y autenticación)
 // Soporta GET, POST, PATCH
 app.all("/api/mediamtx/*", (req, res) => {
