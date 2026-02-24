@@ -24,28 +24,29 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 ## Arquitectura
 
 ```
-┌─────────────────┐                    ┌─────────────────────────────────────┐                    ┌─────────────────┐
-│     FUENTES     │                    │              SERVIDOR               │                    │    CLIENTES     │
-├─────────────────┤                    ├─────────────────────────────────────┤                    ├─────────────────┤
-│                 │       WHIP         │                                     │      WebRTC        │                 │
-│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
-│                 │                    │  │             │    │           │   │                    │   (player.html) │
-│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │                 │
-│                 │                    │  │  (8889)     │    │  Server   │   │                    │                 │
-│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │      OBS        │
-│                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
-│  Broadcaster    │ ─────────────────► │  │             │    │ mediamtx  │   │                    │                 │
-│  (Browser WHIP) │                    │  └─────────────┘    └───────────┘   │                    │                 │
-└─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
+┌───────────────┐    ┌─────────────────┐                    ┌─────────────────────────────────────┐                    ┌─────────────────┐
+│    FUENTES    │    │    EMISORES     │                    │              SERVIDOR               │                    │    CLIENTES     │
+├───────────────┤    ├─────────────────┤                    ├─────────────────────────────────────┤                    ├─────────────────┤
+│               │    │                 │       WHIP         │                                     │      WebRTC        │                 │
+│               │───►│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
+│  Cámaras      │    │                 │                    │  │             │    │           │   │                    │                 │
+│               │───►│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │      OBS        │
+│  Micros       │    │                 │                    │  │  (8889)     │    │  Server   │   │                    │                 │
+│               │───►│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │  Player.html    │
+│  Pantalla     │    │                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
+│               │───►│  Broadcaster    │ ─────────────────► │  │             │    │ mediamtx  │   │                    │      VLC        │
+│     ...       │    │  (Browser WHIP) │                    │  └─────────────┘    └───────────┘   │                    │                 │
+└───────────────┘    └─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
 ```
 
 > **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS.
 
 ### Flujo de datos
 
-1. **Emisión (WHIP)**: FFmpeg, scripts Python o el Broadcaster web capturan y codifican el vídeo, enviándolo al servidor MediaMTX mediante protocolo WHIP
-2. **Servidor (MediaMTX)**: Recibe los streams y los redistribuye a los clientes conectados
-3. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
+1. **Captura (Fuentes)**: Cámaras, micrófonos, pantalla o capturadoras proporcionan el contenido multimedia
+2. **Emisión (WHIP)**: FFmpeg, scripts Python o el Broadcaster web codifican el vídeo y lo envían al servidor MediaMTX mediante protocolo WHIP
+3. **Servidor (MediaMTX)**: Recibe los streams y los redistribuye a los clientes conectados
+4. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
 
 ## Requisitos
 
@@ -138,7 +139,7 @@ TFG/
 │   ├── WHIP/                  # Scripts FFmpeg para WebRTC (Windows)
 │   │   ├── test.bat           # Stream de prueba (testsrc)
 │   │   ├── webcam.bat         # Stream desde webcam
-│   │   └── multi_*.bat        # Configuraciones multi-cámara
+│   │   └── multi_*.bat        # Configuraciones cámaras de Multi
 │   ├── RTSP/                  # Scripts para streaming RTSP
 │   ├── SRT/                   # Scripts para streaming SRT
 │   └── PYWHIP/                # Scripts Python para streaming
@@ -163,7 +164,7 @@ TFG/
 ├── rpi/                       # Scripts para Raspberry Pi
 │   ├── stream_mjpeg_high.sh   # MJPEG 1080p con audio
 │   ├── stream_yuv_high.sh     # YUV 1080p con audio
-│   └── multi_*.sh             # Configuraciones multi-stream
+│   └── multi_*.sh             # # Configuraciones cámaras de Multi
 ├── docs/                      # Documentación adicional
 │   ├── compilacion_ffmpeg_webrtc.md
 │   └── webRTC2webRTCLL.md
