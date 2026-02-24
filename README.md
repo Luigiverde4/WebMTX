@@ -24,29 +24,26 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 ## Arquitectura
 
 ```
-┌─────────────────┐                    ┌─────────────────┐                    ┌─────────────────┐
-│     FUENTES     │                    │    SERVIDOR     │                    │    CLIENTES     │
-├─────────────────┤                    ├─────────────────┤                    ├─────────────────┤
-│                 │       WHIP         │                 │      WebRTC       │                 │
-│  FFmpeg (Win)   │ ─────────────────► │                 │ ◄───────────────► │    Browser      │
-│                 │                    │                 │                   │   (player.html) │
-│  FFmpeg (RPi)   │ ─────────────────► │    MediaMTX     │                   │                 │
-│                 │                    │   (Puerto 8889) │                   │                 │
-│  Python/PYWHIP  │ ─────────────────► │                 │                   │                 │
-│                 │                    │                 │                   │                 │
-└─────────────────┘                    │       ▲         │                   └─────────────────┘
-                                       │       │         │                             
-                                       │       ▼         │                             
-                                       │  ┌───────────┐  │                             
-                                       │  │  Node.js  │  │◄────── http://localhost:80                       
-                                       │  │  Server   │  │                             
-                                       │  └───────────┘  │                             
-                                       └─────────────────┘                             
+┌─────────────────┐                    ┌─────────────────────────────────────┐                    ┌─────────────────┐
+│     FUENTES     │                    │              SERVIDOR               │                    │    CLIENTES     │
+├─────────────────┤                    ├─────────────────────────────────────┤                    ├─────────────────┤
+│                 │       WHIP         │                                     │      WebRTC        │                 │
+│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
+│                 │                    │  │             │    │           │   │                    │   (player.html) │
+│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │                 │
+│                 │                    │  │  (8889)     │    │  Server   │   │                    │                 │
+│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │      OBS        │
+│                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
+│  Broadcaster    │ ─────────────────► │  │             │    │ mediamtx  │   │                    │                 │
+│  (Browser WHIP) │                    │  └─────────────┘    └───────────┘   │                    │                 │
+└─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
 ```
+
+> **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS.
 
 ### Flujo de datos
 
-1. **Emisión (WHIP)**: FFmpeg captura y codifica el vídeo, enviándolo al servidor MediaMTX mediante protocolo WHIP
+1. **Emisión (WHIP)**: FFmpeg, scripts Python o el Broadcaster web capturan y codifican el vídeo, enviándolo al servidor MediaMTX mediante protocolo WHIP
 2. **Servidor (MediaMTX)**: Recibe los streams y los redistribuye a los clientes conectados
 3. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
 
@@ -127,6 +124,8 @@ Acceder a las interfaces web:
 
 | Interfaz | URL | Descripción |
 |----------|-----|-------------|
+| **Index** | http://localhost/ | Página principal con acceso a todas las herramientas |
+| **Broadcaster** | http://localhost/broadcaster.html | Emitir stream desde el navegador (cámara/micrófono) |
 | **Player** | http://localhost/player.html | Reproductor WebRTC principal |
 | **Playback** | http://localhost/playback.html | Reproductor con controles avanzados |
 | **API Control** | http://localhost/api-control.html | Panel de control de la API |
@@ -148,6 +147,8 @@ TFG/
 ├── server/                    # Servidor web Node.js
 │   ├── server.js              # Servidor Express (puerto 80)
 │   └── public/                # Archivos estáticos
+│       ├── index.html         # Página principal
+│       ├── broadcaster.html   # Emisor WHIP desde navegador
 │       ├── player.html        # Reproductor principal
 │       ├── playback.html      # Reproductor avanzado
 │       ├── api-control.html   # Control de API
@@ -196,6 +197,18 @@ chmod +x stream_mjpeg_high.sh
 ./stream_mjpeg_high.sh
 ```
 
+### Iniciar streaming desde el navegador (Broadcaster)
+
+El Broadcaster permite emitir directamente desde cualquier dispositivo con navegador (PC, móvil, tablet):
+
+1. Abrir http://localhost/broadcaster.html
+2. Seleccionar la cámara y micrófono a usar
+3. Elegir la resolución deseada 
+4. Introducir un nombre para el endpoint (ej: `cam1`, `movil`)
+5. Hacer clic en **🔴 Iniciar Transmisión**
+
+> **Nota**: El Broadcaster utiliza el protocolo WHIP nativo del navegador para enviar el stream a MediaMTX, igual que FFmpeg pero sin necesidad de instalar software adicional.
+
 ### Reproducir el stream (WHEP)
 
 El reproductor utiliza el protocolo **WHEP** (WebRTC-HTTP Egress Protocol) para recibir el stream con ultra baja latencia.
@@ -216,7 +229,7 @@ También puedes acceder directamente al stream via WHEP desde cualquier cliente 
 ```
 http://<IP_SERVIDOR>:8889/<nombre_stream>
 ```
-Ejemplo: `http://192.168.1.100:8889/whipLL/whep`
+Ejemplo: `http://192.168.1.100:8889/whipLL`
 
 ## Puertos y Protocolos
 
@@ -335,7 +348,6 @@ docker exec -it mediamtx sh
 | **[WebRTC](https://webrtc.org/)** | Comunicación en tiempo real (WHIP/WHEP) |
 | **[Node.js](https://nodejs.org/)** | Servidor web |
 | **[Express](https://expressjs.com/)** | Framework web |
-| **[Socket.IO](https://socket.io/)** | Comunicación WebSocket |
 | **[Docker](https://www.docker.com/)** | Contenedorización |
 
 ## Licencia
