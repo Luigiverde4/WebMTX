@@ -21,6 +21,23 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - **Containerizado**: Despliegue sencillo con Docker Compose
 - **API de control**: Gestión de streams mediante API HTTP
 
+## Índice
+
+- [Arquitectura](#arquitectura)
+- [Flujo de datos](#flujo-de-datos)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Uso](#uso)
+- [Puertos y Protocolos](#puertos-y-protocolos)
+- [API MediaMTX](#api-mediamtx)
+- [Configuración avanzada](#configuración-avanzada)
+- [Solución de problemas](#solución-de-problemas)
+- [Desarrollo](#desarrollo)
+- [Tecnologías](#tecnologías)
+- [Licencia](#licencia)
+- [Autor](#autor)
+
 ## Arquitectura
 
 ```
@@ -110,7 +127,7 @@ ip addr show | grep inet
 
 > **Nota**: Esta configuración es necesaria para que los navegadores de otros dispositivos en la red local puedan reproducir el stream.
 
-### 4. Configurar HTTPS con mkcert (Recomendado para acceso por IP)
+### 4. Configurar HTTPS con mkcert
 
 Para usar el **Broadcaster desde cualquier dispositivo externo** (otro PC, móvil, tablet), es necesario HTTPS. Los navegadores requieren un contexto seguro (HTTPS) para acceder a `getUserMedia()` (cámara/micrófono) cuando se accede por IP.
 
