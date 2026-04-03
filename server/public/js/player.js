@@ -14,6 +14,13 @@ let endpointButtons = document.getElementById('endpointButtons');
 // Estado global
 let pc = null; // WebRTC PeerConnection
 let activePaths = []; // Paths activos en MediaMTX
+let playerStatsTimer = null; // Intervalo para verificar recepción RTP
+let lastTotalBytesReceived = 0; // Total de bytes recibidos en el sondeo anterior
+let stalledBytesReceivedSamples = 0; // Sondeos consecutivos sin crecimiento
+let isStoppingPlay = false; // Evita ejecuciones solapadas de stopPlay
+
+const PLAYER_STATS_INTERVAL_MS = 500;
+const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 2;
 
 /**
  * Actualiza el estado visual del reproductor.
@@ -45,6 +52,11 @@ async function startPlay() {
 }
 
 function stopPlay() {
+    if (isStoppingPlay) return;
+    isStoppingPlay = true;
+
+    stopInboundStatsPolling();
+
     // Cerrar la conexión WebRTC si existe.
     if (pc) {
         pc.close();
@@ -58,6 +70,71 @@ function stopPlay() {
     
     updateStatus('disconnected', 'Desconectado');
     stopBtn.disabled = true;
+    isStoppingPlay = false;
+}
+
+/**
+ * Lee estadísticas inbound-rtp y detecta si el stream se ha quedado sin recibir tráfico.
+ */
+async function actualizarInboundStats() {
+    if (!pc) return;
+
+    try {
+        let stats = await pc.getStats();
+        let totalBytesReceived = 0;
+        let inboundRows = 0;
+
+        stats.forEach(report => {
+            if (report.type !== 'inbound-rtp' || report.isRemote) return;
+            if (report.kind !== 'audio' && report.kind !== 'video') return;
+
+            inboundRows += 1;
+            totalBytesReceived += typeof report.bytesReceived === 'number' ? report.bytesReceived : 0;
+        });
+
+        // Si hay tráfico inbound monitorizable, exigimos crecimiento de bytes.
+        if (inboundRows > 0) {
+            if (totalBytesReceived > lastTotalBytesReceived) {
+                stalledBytesReceivedSamples = 0;
+            } else {
+                stalledBytesReceivedSamples += 1;
+
+                if (stalledBytesReceivedSamples >= STALLED_BYTES_RECEIVED_MAX_SAMPLES) {
+                    console.warn('bytesReceived estancado, deteniendo reproducción');
+                    stopPlay();
+                    return;
+                }
+            }
+        }
+
+        lastTotalBytesReceived = totalBytesReceived;
+    } catch (error) {
+        console.warn('No se pudieron leer estadísticas inbound WebRTC:', error);
+    }
+}
+
+/**
+ * Inicia la vigilancia de bytesReceived para detectar cortes silenciosos.
+ */
+function startInboundStatsPolling() {
+    stopInboundStatsPolling();
+    lastTotalBytesReceived = 0;
+    stalledBytesReceivedSamples = 0;
+    actualizarInboundStats();
+    playerStatsTimer = setInterval(actualizarInboundStats, PLAYER_STATS_INTERVAL_MS);
+}
+
+/**
+ * Detiene la vigilancia de bytesReceived.
+ */
+function stopInboundStatsPolling() {
+    if (playerStatsTimer) {
+        clearInterval(playerStatsTimer);
+        playerStatsTimer = null;
+    }
+
+    lastTotalBytesReceived = 0;
+    stalledBytesReceivedSamples = 0;
 }
 
 
@@ -130,6 +207,8 @@ async function playWebRTC(server, streamName) {
             type: 'answer',
             sdp: answerSDP
         }));
+
+        startInboundStatsPolling();
 
         console.log('WebRTC iniciado correctamente');
         

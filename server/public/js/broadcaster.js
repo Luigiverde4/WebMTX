@@ -35,6 +35,14 @@ let localStream = null; // Stream local de la cámara/micrófono
 let whipSession = null; // URL para DELETE al finalizar
 let activePaths = []; // Paths activos en MediaMTX
 let codecStatsTimer = null; // Intervalo para refrescar estadísticas WebRTC
+let lastTotalBytesSent = 0; // Total de bytes enviados en el último sondeo
+let stalledBytesSentSamples = 0; // Número de sondeos seguidos sin crecimiento
+let isStoppingBroadcast = false; // Evita ejecutar stopBroadcast en paralelo
+let watchdogAlertShown = false; // Evita mostrar múltiples alerts por el mismo corte
+
+
+const CODEC_STATS_INTERVAL_MS = 500;
+const STALLED_BYTES_SENT_MAX_SAMPLES = 2;
 
 
 /**
@@ -119,6 +127,7 @@ async function actualizarCodecStats() {
     try {
         let stats = await pc.getStats();
         let rows = [];
+        let totalBytesSent = 0;
 
         stats.forEach(report => {
             if (report.type !== 'outbound-rtp' || report.isRemote) return;
@@ -135,10 +144,36 @@ async function actualizarCodecStats() {
                 bytesSent: typeof report.bytesSent === 'number' ? report.bytesSent : 0,
                 bytesReceived: typeof report.bytesReceived === 'number' ? report.bytesReceived : 0
             });
+
+            totalBytesSent += typeof report.bytesSent === 'number' ? report.bytesSent : 0;
         });
 
         rows.sort((a, b) => a.kind.localeCompare(b.kind));
         renderCodecStats(rows);
+
+        // Watchdog: si bytesSent no crece durante varios ciclos, asumimos corte real.
+        if (rows.length > 0) {
+            if (totalBytesSent > lastTotalBytesSent) {
+                stalledBytesSentSamples = 0;
+            } else {
+                stalledBytesSentSamples += 1;
+
+                if (stalledBytesSentSamples >= STALLED_BYTES_SENT_MAX_SAMPLES) {
+                    console.warn('bytesSent estancado, deteniendo transmisión');
+                    if (codecStatsEl) {
+                        codecStatsEl.innerHTML = '<span class="error">Sin envío RTP (bytesSent estancado)</span>';
+                    }
+                    if (!watchdogAlertShown) {
+                        watchdogAlertShown = true;
+                        alert('Transmisión detenida automáticamente: no se detecta envío de datos (bytesSent estancado).');
+                    }
+                    stopBroadcast();
+                    return;
+                }
+            }
+        }
+
+        lastTotalBytesSent = totalBytesSent;
     } catch (error) {
         console.warn('No se pudieron leer estadísticas WebRTC:', error);
         if (codecStatsEl) {
@@ -152,8 +187,11 @@ async function actualizarCodecStats() {
  */
 function startCodecStatsPolling() {
     stopCodecStatsPolling();
+    lastTotalBytesSent = 0;
+    stalledBytesSentSamples = 0;
+    watchdogAlertShown = false;
     actualizarCodecStats();
-    codecStatsTimer = setInterval(actualizarCodecStats, 2000);
+    codecStatsTimer = setInterval(actualizarCodecStats, CODEC_STATS_INTERVAL_MS);
 }
 
 /**
@@ -164,6 +202,10 @@ function stopCodecStatsPolling() {
         clearInterval(codecStatsTimer);
         codecStatsTimer = null;
     }
+
+    lastTotalBytesSent = 0;
+    stalledBytesSentSamples = 0;
+    watchdogAlertShown = false;
 }
 
 
@@ -517,6 +559,9 @@ async function startBroadcast() {
  * Detiene la transmisión y libera recursos locales.
  */
 async function stopBroadcast() {
+    if (isStoppingBroadcast) return;
+    isStoppingBroadcast = true;
+
     stopCodecStatsPolling();
 
     // Intentar cerrar la sesión WHIP en el servidor.
@@ -553,6 +598,7 @@ async function stopBroadcast() {
     console.log('Transmisión detenida');
     // Dar margen para que MediaMTX actualice el estado de paths.
     setTimeout(actualizarPathsActivos, 1000);
+    isStoppingBroadcast = false;
 }
 
 /**
