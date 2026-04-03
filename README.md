@@ -40,71 +40,20 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 
 ## Arquitectura
 
-```mermaid
-flowchart LR
-  subgraph F[Fuentes]
-    cams[Cámaras]
-    mics[Micrófonos]
-    screen[Pantalla]
-    more[...]
-  end
-
-  subgraph E[Emisores]
-    ffwin[FFmpeg (Windows)]
-    ffrpi[FFmpeg (Raspberry Pi)]
-    pywhip[Python / PYWHIP]
-    browserWhip[Broadcaster web\n(WHIP desde el navegador)]
-  end
-
-  subgraph S[Servidor]
-    mediamtx[MediaMTX\n8889 WebRTC\n9997 API REST]
-    node[Node.js / Express\n80 HTTP\n443 HTTPS]
-    apiProxy[/api/mediamtx/*\nProxy a la API REST/]
-    playbackProxy[/api/playback/*\nProxy a grabaciones y reproducción/]
-  end
-
-  subgraph C[Clientes]
-    browser[Browser]
-    player[Player web]
-    playback[Playback web]
-    obs[OBS / VLC]
-  end
-
-  cams --> ffwin
-  cams --> ffrpi
-  cams --> pywhip
-  cams --> browserWhip
-  mics --> ffwin
-  mics --> ffrpi
-  mics --> pywhip
-  mics --> browserWhip
-  screen --> ffwin
-  screen --> pywhip
-  screen --> browserWhip
-  more --> ffwin
-  more --> pywhip
-
-  ffwin -->|WHIP| mediamtx
-  ffrpi -->|WHIP| mediamtx
-  pywhip -->|WHIP| mediamtx
-  browserWhip -->|WHIP| mediamtx
-
-  browser <-->|WebRTC / WHEP| mediamtx
-  player <-->|WebRTC / WHEP| mediamtx
-  obs <-->|RTSP / HLS / WebRTC| mediamtx
-
-  browser --> node
-  player --> node
-  playback --> node
-
-  node --> apiProxy
-  node --> playbackProxy
-  apiProxy --> mediamtx
-  playbackProxy --> mediamtx
-
-  node -. HTTP .-> browser
-  node -. HTTPS .-> player
-  node -. HTTPS .-> playback
+```
+┌───────────────┐    ┌─────────────────┐                    ┌─────────────────────────────────────┐                    ┌─────────────────┐
+│    FUENTES    │    │    EMISORES     │                    │              SERVIDOR               │                    │    CLIENTES     │
+├───────────────┤    ├─────────────────┤                    ├─────────────────────────────────────┤                    ├─────────────────┤
+│               │    │                 │       WHIP         │                                     │      WebRTC        │                 │
+│               │───►│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
+│  Cámaras      │    │                 │                    │  │             │    │           │   │                    │                 │
+│               │───►│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │      OBS        │
+│  Micros       │    │                 │                    │  │  (8889)     │    │  Server   │   │◄── https://:443    │                 │
+│               │───►│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │     .html       │
+│  Pantalla     │    │                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
+│               │───►│  Broadcaster    │ ─────────────────► │  │     :9996   │    │ mediamtx  │   │                    │                 │
+│     ...       │    │  (Browser WHIP) │                    │  └─────────────┘    └───────────┘   │                    │      VLC        │
+└───────────────┘    └─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
 ```
 
 > **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS.
