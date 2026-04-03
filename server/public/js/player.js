@@ -64,12 +64,15 @@ async function playWebRTC(server, streamName) {
     updateStatus('connecting', 'Conectando WebRTC...');
     
     try {
-        pc = new RTCPeerConnection({
-            iceServers: [{
-                urls: 'stun:stun.l.google.com:19302'
-            }]
-        });
-
+        // pc = new RTCPeerConnection({
+        //     iceServers: [{
+        //         urls: 'stun:stun.l.google.com:19302'
+        //     }]
+        // });
+        
+        pc = new RTCPeerConnection();
+        
+        
         // Renderizar el stream cuando lleguen pistas remotas.
         pc.ontrack = (event) => {
             console.log('Track recibido:', event.track.kind);

@@ -298,9 +298,11 @@ async function startBroadcast() {
         preview.srcObject = localStream;
         
         // Crear la conexión WebRTC.
-        pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-        });
+        // pc = new RTCPeerConnection({
+        //     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        // });
+        
+        pc = new RTCPeerConnection();
         
         // Añadir las pistas locales al peer connection.
         localStream.getTracks().forEach(track => {
