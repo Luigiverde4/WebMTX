@@ -1,37 +1,45 @@
-// Elementos DOM
+/**
+ * EMISOR WHIP - MEDIA MTX
+ * Gestiona la publicación de cámara y micrófono hacia el servidor.
+ */
 
-// Info pantalla
-const statusEl = document.getElementById('status');
-const streamUrlEl = document.getElementById('streamUrl');
-const activePathsList = document.getElementById('activePathsList');
+/**
+ * Elementos DOM
+ */
+// Información de pantalla
+let statusEl = document.getElementById('status');
+let streamUrlEl = document.getElementById('streamUrl');
+let activePathsList = document.getElementById('activePathsList');
 
-// Inputs usuario
-const serverInput = document.getElementById('server');
-const endpointInput = document.getElementById('endpoint');
+// Entradas de usuario
+let serverInput = document.getElementById('server');
+let endpointInput = document.getElementById('endpoint');
 
-// Media
-const videoSource = document.getElementById('videoSource');
-const audioSource = document.getElementById('audioSource');
-const resolution = document.getElementById('resolution');
+// Fuentes multimedia
+let videoSource = document.getElementById('videoSource');
+let audioSource = document.getElementById('audioSource');
+let resolution = document.getElementById('resolution');
 
-// Botones
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
+// Botones de control
+let startBtn = document.getElementById('startBtn');
+let stopBtn = document.getElementById('stopBtn');
 
 // Player
-const preview = document.getElementById('preview');
-const liveIndicator = document.getElementById('liveIndicator');
+let preview = document.getElementById('preview');
+let liveIndicator = document.getElementById('liveIndicator');
 
-// Variables globales
+// Estado global
 let pc = null; // WebRTC PeerConnection
 let localStream = null; // Stream local de la cámara/micrófono
 let whipSession = null; // URL para DELETE al finalizar
 let activePaths = []; // Paths activos en MediaMTX
 
 
-// PATHS
+// Paths
+/**
+ * Renderiza los paths activos en la UI.
+ */
 function ponerPathsActivos() {
-    // Mostrar paths activos
     if (activePaths.length === 0) {
         activePathsList.innerHTML = '<span class="empty">No hay streams activos</span>';
         return;
@@ -42,18 +50,33 @@ function ponerPathsActivos() {
         .join('');
 }
 
+/**
+ * Muestra un error al usuario, actualiza la cabecera y deja detalle técnico en consola.
+ * @param {string} userMessage - Mensaje breve para alert y cabecera.
+ * @param {Error|string} error - Detalle técnico del fallo.
+ */
+function mostrarError(userMessage, error) {
+    let detail = error && error.message ? error.message : String(error || 'Error desconocido');
+    console.error(userMessage, error);
+    updateStatus('disconnected', 'Error: ' + userMessage);
+    alert(userMessage + '\n\nDetalle: ' + detail);
+}
+
+/**
+ * Consulta MediaMTX y actualiza la lista de paths activos.
+ */
 async function actualizarPathsActivos() {
     activePathsList.innerHTML = '<span class="loading">Cargando...</span>';
     
     try {
         // Usar el proxy del servidor Node.js para evitar CORS y auth
-        const response = await fetch('/api/mediamtx/v3/paths/list');
+        let response = await fetch('/api/mediamtx/v3/paths/list');
         if (!response.ok) throw new Error('API no disponible');
         
-        const data = await response.json();
+        let data = await response.json();
         activePaths = [];
         
-        // Filtrar paths que tienen readers o publishers activos
+        // Filtrar únicamente los paths preparados.
         if (data.items && data.items.length > 0) {
             activePaths = data.items
                 .filter(path => path.ready)
@@ -62,109 +85,94 @@ async function actualizarPathsActivos() {
         
         ponerPathsActivos();
     } catch (error) {
-        console.error('Error consultando API MediaMTX:', error);
+        mostrarError('No se pudo conectar a MediaMTX', error);
         activePathsList.innerHTML = '<span class="error">No se pudo conectar a MediaMTX</span>';
     }
 }
 
+/**
+ * Comprueba si un endpoint ya está en uso.
+ * @param {string} endpoint - Nombre del endpoint a verificar.
+ */
 function esPathActivo(endpoint) {
     // Comprueba si el endpoint deseado ya esta usandose
     return activePaths.includes(endpoint);
 }
 
+/**
+ * Asigna un endpoint desde los accesos rápidos.
+ * @param {string} name - Nombre del endpoint.
+ */
 function ponerEndpoint(name) {
-    // Establecer endpoint desde botones rápidos
     endpointInput.value = name;
     endpointInput.focus();
 }
 
-// API MEDIAMTX  
-async function actualizarPathsActivos() {
-    // Consultar API de MediaMTX para obtener paths activos (usa proxy del servidor)
-    activePathsList.innerHTML = '<span class="loading">Cargando...</span>';
-    
-    try {
-        // Usar el proxy del servidor Node.js para evitar CORS y auth
-        const response = await fetch('/api/mediamtx/v3/paths/list');
-        if (!response.ok) throw new Error('API no disponible');
-        
-        const data = await response.json();
-        activePaths = [];
-        
-        // Filtrar paths que tienen readers o publishers activos
-        if (data.items && data.items.length > 0) {
-            activePaths = data.items
-                .filter(path => path.ready)
-                .map(path => path.name);
-        }
-        
-        ponerPathsActivos();
-    } catch (error) {
-        console.error('Error consultando API MediaMTX:', error);
-        activePathsList.innerHTML = '<span class="error">No se pudo conectar a MediaMTX</span>';
-    }
-}
-
-// DISPOSITIVOS AUDIO / VIDEO
+// Dispositivos de audio / vídeo
+/**
+ * Solicita permisos y carga la lista real de dispositivos.
+ */
 async function iniciarDispositivos() {
     try {
-        // Solicitar permisos primero (necesario para obtener labels)
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Solicitar permisos primero para obtener etiquetas legibles.
+        let tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         tempStream.getTracks().forEach(track => track.stop());
         
         await actualizarDispositivos();
     } catch (error) {
-        console.error('Error al inicializar dispositivos:', error);
-        updateStatus('disconnected', 'Error: ' + error.message);
+        mostrarError('No se pudieron inicializar los dispositivos', error);
     }
 }
 
+/**
+ * Rellena los selectores con las cámaras y micrófonos disponibles.
+ */
 async function actualizarDispositivos() {
     try {
-        // Coger lista de dispositivos
-        const devices = await navigator.mediaDevices.enumerateDevices();
+        // Obtener la lista de dispositivos.
+        let devices = await navigator.mediaDevices.enumerateDevices();
         
-        // Limpiar selects
+        // Limpiar selectores.
         videoSource.innerHTML = '';
         audioSource.innerHTML = '';
         
-        // Filtrar y añadir dispositivos
+        // Añadir cada dispositivo al selector correspondiente.
         devices.forEach(device => {
-            const option = document.createElement('option');
+            let option = document.createElement('option');
             option.value = device.deviceId;
             option.text = device.label || `${device.kind} (${device.deviceId.slice(0, 8)}...)`;
             
-            // VIDEO
+            // Vídeo.
             if (device.kind === 'videoinput') {
                 videoSource.appendChild(option);
             
-            // AUDIO
+            // Audio.
             } else if (device.kind === 'audioinput') {
                 audioSource.appendChild(option);
             }
         });
         
-        // Añadir opción para sin audio
-        const noAudioOption = document.createElement('option');
+        // Añadir opción para sin audio.
+        let noAudioOption = document.createElement('option');
         noAudioOption.value = 'none';
         noAudioOption.text = '🔇 Sin micrófono';
         audioSource.appendChild(noAudioOption);
         
         console.log('Dispositivos actualizados');
     } catch (error) {
-        console.error('Error al enumerar dispositivos:', error);
+        mostrarError('No se pudieron enumerar los dispositivos', error);
     }
 }
 
+/**
+ * Obtiene un stream local según la configuración elegida por el usuario.
+ */
 async function cogerStreamVideoAudioLocal() {
-    // Obtener stream local de la cámara/micrófono
-    // Coger resolucion
-    const [width, height] = resolution.value.split('x').map(Number);
+    // Obtener la resolución seleccionada.
+    let [width, height] = resolution.value.split('x').map(Number);
     
-    // Configurar constraints según selección del usuario
-    
-    // VIDEO
-    const constraints = {
+    // Configurar restricciones de vídeo.
+    let letraints = {
         video: {
             deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
             width: { ideal: width },
@@ -173,59 +181,72 @@ async function cogerStreamVideoAudioLocal() {
         }
     };
     
-    // AUDIO
-    // Añadir audio solo si no está desactivado
+    // Añadir audio solo si no está desactivado.
     if (audioSource.value !== 'none') {
-        constraints.audio = {
+        letraints.audio = {
             deviceId: audioSource.value ? { exact: audioSource.value } : undefined,
             echoCancellation: true,
             noiseSuppression: true
         };
     } else {
-        constraints.audio = false;
+        letraints.audio = false;
     }
     
-    return await navigator.mediaDevices.getUserMedia(constraints);
+    return await navigator.mediaDevices.getUserMedia(letraints);
 }
 
+/**
+ * Cambia el dispositivo local si todavía no hay transmisión activa.
+ */
 async function cambioDispositivo() {
-    // Comprobar que no estamos transmitiendo (no queremos interrumpir el stream activo)
+    // Evitar interrumpir un stream ya publicado.
     if (localStream && !pc) {
         try {
-            // Cogemos nuevo stream con el dispositivo seleccionado
-            const newStream = await cogerStreamVideoAudioLocal();
-            // Cambiazo
+            // Sustituir el stream por el nuevo dispositivo seleccionado.
+            let newStream = await cogerStreamVideoAudioLocal();
             localStream.getTracks().forEach(track => track.stop());
             localStream = newStream;
             preview.srcObject = localStream;
         } catch (e) {
-            console.error('Error cambiando cámara:', e);
+            mostrarError('No se pudo cambiar la cámara', e);
         }
     }
 }
 
+/**
+ * Muestra la previsualización local cuando aún no existe stream activo.
+ */
 async function visualizarPreview() {
-        if (!localStream && !pc) {
+    if (!localStream && !pc) {
         try {
             localStream = await cogerStreamVideoAudioLocal();
             preview.srcObject = localStream;
         } catch (e) {
-            console.error('Error iniciando preview:', e);
+            mostrarError('No se pudo iniciar la previsualización', e);
         }
     }
 }
-// VISUALES UI
+
+// Interfaz
+/**
+ * Actualiza el estado visual del emisor.
+ * @param {string} status - Clase visual a aplicar.
+ * @param {string} text - Texto a mostrar.
+ */
 function updateStatus(status, text) {
     statusEl.className = `status ${status}`;
     statusEl.textContent = text;
 }
 
 
-// BROADCASTING
+// Publicación
+/**
+ * Inicia la publicación WHIP del stream local.
+ */
 async function startBroadcast() {
-    // Iniciar transmisión
-    const endpoint = endpointInput.value.trim();
-    const server = serverInput.value.trim();
+    // Leer la configuración actual.
+    let endpoint = endpointInput.value.trim();
+    let server = serverInput.value.trim();
     
     if (!endpoint) {
         alert('Por favor, introduce un nombre para tu endpoint (ej: ricardo, cam1)');
@@ -239,14 +260,14 @@ async function startBroadcast() {
         return;
     }
     
-    // Verificar si el path ya está en uso
+    // Verificar si el endpoint ya está ocupado.
     await actualizarPathsActivos();
     if (esPathActivo(endpoint)) {
-        const continuar = confirm(`⚠️ El endpoint "${endpoint}" ya está en uso.\n\n¿Quieres continuar de todos modos? (Podría reemplazar el stream existente)`);
+        let continuar = confirm(`⚠️ El endpoint "${endpoint}" ya está en uso.\n\n¿Quieres continuar de todos modos? (Podría reemplazar el stream existente)`);
         if (!continuar) return;
     }
     
-    // Guardar configuración
+    // Persistir configuración de usuario.
     localStorage.setItem('broadcaster_server', server);
     localStorage.setItem('broadcaster_endpoint', endpoint);
     
@@ -254,29 +275,29 @@ async function startBroadcast() {
     startBtn.disabled = true;
     
     try {
-        // Obtener stream local
+        // Obtener stream local.
         localStream = await cogerStreamVideoAudioLocal();
         preview.srcObject = localStream;
         
-        // Crear PeerConnection
+        // Crear la conexión WebRTC.
         pc = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         });
         
-        // Añadir tracks al peer connection
+        // Añadir las pistas locales al peer connection.
         localStream.getTracks().forEach(track => {
             console.log('Añadiendo track:', track.kind);
             pc.addTrack(track, localStream);
         });
         
-        // Manejar candidatos ICE
+        // Registrar candidatos ICE a modo de depuración.
         pc.onicecandidate = (event) => {
             if (event.candidate) {
                 console.log('ICE candidate:', event.candidate.candidate);
             }
         };
         
-        // Manejar cambios de estado
+        // Vigilar el estado de la conexión.
         pc.oniceconnectionstatechange = () => {
             console.log('ICE state:', pc.iceConnectionState);
             if (pc.iceConnectionState === 'connected') {
@@ -289,19 +310,19 @@ async function startBroadcast() {
             }
         };
         
-        // Crear offer
-        const offer = await pc.createOffer();
+        // Crear la oferta SDP.
+        let offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         
-        // Esperar a que se recopilen todos los candidatos ICE
+        // Esperar a que termine la recopilación ICE.
         await waitForIceGathering(pc);
         
-        // Enviar al servidor WHIP
-        const whipUrl = `http://${server}:8889/${endpoint}/whip`;
+        // Publicar la oferta en el endpoint WHIP.
+        let whipUrl = `http://${server}:8889/${endpoint}/whip`;
         console.log('WHIP URL:', whipUrl);
         streamUrlEl.textContent = whipUrl;
         
-        const response = await fetch(whipUrl, {
+        let response = await fetch(whipUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/sdp'
@@ -313,11 +334,11 @@ async function startBroadcast() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        // Guardar URL de sesión para poder cerrarla después
+        // Guardar la URL de sesión para cerrarla después.
         whipSession = response.headers.get('Location');
         console.log('WHIP Session:', whipSession);
         
-        const answerSDP = await response.text();
+        let answerSDP = await response.text();
         await pc.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
             sdp: answerSDP
@@ -327,40 +348,40 @@ async function startBroadcast() {
         console.log('Transmisión WHIP iniciada correctamente');
         
     } catch (error) {
-        console.error('Error al iniciar transmisión:', error);
-        updateStatus('disconnected', 'Error: ' + error.message);
-        alert('Error al iniciar transmisión: ' + error.message);
+        mostrarError('Error al iniciar transmisión', error);
         stopBroadcast();
     }
-    // Esperar un momento para que MediaMTX registre el cambio
+    // Dar margen para que MediaMTX actualice el estado de paths.
     setTimeout(actualizarPathsActivos, 1000);
 }
 
+/**
+ * Detiene la transmisión y libera recursos locales.
+ */
 async function stopBroadcast() {
-    // Detener transmisión
-    // Intentar cerrar sesión WHIP en el servidor
+    // Intentar cerrar la sesión WHIP en el servidor.
     if (whipSession) {
         try {
             await fetch(whipSession, { method: 'DELETE' });
         } catch (e) {
-            console.log('Error cerrando sesión WHIP:', e);
+            mostrarError('No se pudo cerrar la sesión WHIP', e);
         }
         whipSession = null;
     }
     
-    // Cerrar PeerConnection
+    // Cerrar la conexión WebRTC.
     if (pc) {
         pc.close();
         pc = null;
     }
     
-    // Detener stream local
+    // Detener el stream local.
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
     }
     
-    // Actualizar UI
+    // Actualizar la interfaz.
     preview.srcObject = null;
     liveIndicator.style.display = 'none';
     updateStatus('disconnected', 'Sin transmitir');
@@ -369,17 +390,20 @@ async function stopBroadcast() {
     streamUrlEl.textContent = '-';
     
     console.log('Transmisión detenida');
-    // Esperar un momento para que MediaMTX registre el cambio
+    // Dar margen para que MediaMTX actualice el estado de paths.
     setTimeout(actualizarPathsActivos, 1000);
 }
 
-// Recopilar ICE candidates para SDP
+/**
+ * Espera hasta que termine la recopilación de ICE candidates.
+ * @param {RTCPeerConnection} pc - Conexión en negociación.
+ */
 function waitForIceGathering(pc) {
     return new Promise((resolve) => {
         if (pc.iceGatheringState === 'complete') {
             resolve();
         } else {
-            const checkState = () => {
+            let checkState = () => {
                 if (pc.iceGatheringState === 'complete') {
                     pc.removeEventListener('icegatheringstatechange', checkState);
                     resolve();
@@ -394,26 +418,26 @@ function waitForIceGathering(pc) {
 }
 
 
-// EVENTOS
-// Inicializar al cargar la página
+// Eventos
+// Inicializar al cargar la página.
 document.addEventListener('DOMContentLoaded', async () => {
     await iniciarDispositivos();
     
-    // Intentar cargar configuración guardada
-    const savedServer = localStorage.getItem('broadcaster_server');
-    const savedEndpoint = localStorage.getItem('broadcaster_endpoint');
+    // Restaurar la configuración guardada.
+    let savedServer = localStorage.getItem('broadcaster_server');
+    let savedEndpoint = localStorage.getItem('broadcaster_endpoint');
     if (savedServer) serverInput.value = savedServer;
     if (savedEndpoint) endpointInput.value = savedEndpoint;
     
-    // Cargar paths activos
+    // Cargar paths activos.
     await actualizarPathsActivos();
 });
 
-// Manejar cambio de dispositivos
+// Manejar cambios de dispositivos.
 videoSource.addEventListener('change', cambioDispositivo);
 
-// Detectar cuando se conectan/desconectan dispositivos
+// Detectar conexiones o desconexiones de dispositivos.
 navigator.mediaDevices.addEventListener('devicechange', actualizarDispositivos);
 
-// Previsualizar al hacer clic en el video
+// Iniciar la previsualización al hacer clic en el vídeo.
 preview.addEventListener('click', visualizarPreview);

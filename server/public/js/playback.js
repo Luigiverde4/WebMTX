@@ -1,39 +1,46 @@
-// ELEMENTOS DOM
-const video = document.getElementById('video');
+/**
+ * REPRODUCTOR DE GRABACIONES - MEDIA MTX
+ * Gestiona la consulta y reproducción de segmentos grabados.
+ */
+
+// Elementos DOM
+let video = document.getElementById('video');
 
 
-// Info de la repeticion
-const speedDisplay = document.getElementById('speedDisplay');
-const timeDisplay = document.getElementById('timeDisplay');
+// Información de reproducción
+let speedDisplay = document.getElementById('speedDisplay');
+let timeDisplay = document.getElementById('timeDisplay');
  
-// Info de los recordings dispoibles y seleccioneados
-const currentRecordingEl = document.getElementById('currentRecording');
-const recordingCountEl = document.getElementById('recordingCount');
-const recordingsListEl = document.getElementById('recordingsList');
+// Información de las grabaciones disponibles y seleccionadas
+let currentRecordingEl = document.getElementById('currentRecording');
+let recordingCountEl = document.getElementById('recordingCount');
+let recordingsListEl = document.getElementById('recordingsList');
 
-//  Sector grabaciones disponibles
-const streamFilterEl = document.getElementById('streamFilter');
-const startOffsetInput = document.getElementById('startOffset');
+// Filtros y parámetros de reproducción
+let streamFilterEl = document.getElementById('streamFilter');
+let startOffsetInput = document.getElementById('startOffset');
 
-// Visualizar deste T - SEGUNDOS
-const lookbackTimeInput = document.getElementById('lookbackTime');
+// Reproducción en modo lookback
+let lookbackTimeInput = document.getElementById('lookbackTime');
 
 // Controles de timeline
-const timelineSlider = document.getElementById('timelineSlider');
-const timelineStart = document.getElementById('timelineStart');
-const timelineEnd = document.getElementById('timelineEnd');
+let timelineSlider = document.getElementById('timelineSlider');
+let timelineStart = document.getElementById('timelineStart');
+let timelineEnd = document.getElementById('timelineEnd');
 
 
-// Variables globales
+// Estado global
 let allRecordings = [];
 let selectedRecording = null;
 
-// VISUALES
-// Cambiar entre modos de reproducción
+// Interfaz
+/**
+ * Alterna entre el modo de reproducción por offset y el modo lookback.
+ */
 function updatePlaybackMode() {
-    const mode = document.querySelector('input[name="playbackMode"]:checked').value;
-    const offsetControls = document.getElementById('offsetControls');
-    const lookbackControls = document.getElementById('lookbackControls');
+    let mode = document.querySelector('input[name="playbackMode"]:checked').value;
+    let offsetControls = document.getElementById('offsetControls');
+    let lookbackControls = document.getElementById('lookbackControls');
     
     if (mode === 'offset') {
         offsetControls.style.display = 'flex';
@@ -44,15 +51,17 @@ function updatePlaybackMode() {
     }
 }
 
-// Actualizar la grabación seleccionada visualmente
+/**
+ * Resalta en la lista la grabación actualmente seleccionada.
+ */
 function updateSelectedRecording() {
     document.querySelectorAll('.recording-item').forEach(item => {
         item.classList.remove('selected');
     });
     
     if (selectedRecording) {
-        const items = document.querySelectorAll('.recording-item');
-        const selectedDate = formatDate(selectedRecording.start);
+        let items = document.querySelectorAll('.recording-item');
+        let selectedDate = formatDate(selectedRecording.start);
         items.forEach(item => {
             if (item.textContent.includes(selectedRecording.stream) && 
                 item.textContent.includes(selectedDate)) {
@@ -63,33 +72,40 @@ function updateSelectedRecording() {
     }
 }
 
-// FILTRO STREAMS
-// Actualizar el filtro de streams
+// Filtro de streams
+/**
+ * Rellena el selector con los streams presentes en las grabaciones.
+ */
 function updateStreamFilter() {
-    const streams = [...new Set(allRecordings.map(r => r.stream))].sort();
+    let streams = [...new Set(allRecordings.map(r => r.stream))].sort();
     
     streamFilterEl.innerHTML = '<option value="all">Todos los streams</option>';
     streams.forEach(stream => {
-        const option = document.createElement('option');
+        let option = document.createElement('option');
         option.value = stream;
         option.textContent = stream;
         streamFilterEl.appendChild(option);
     });
 }
 
-// Filtrar grabaciones por stream
+/**
+ * Filtra las grabaciones según el stream seleccionado.
+ */
 function filterRecordings() {
-    const selectedStream = streamFilterEl.value;
+    let selectedStream = streamFilterEl.value;
     
     if (selectedStream === 'all') {
         displayRecordings(allRecordings);
     } else {
-        const filtered = allRecordings.filter(r => r.stream === selectedStream);
+        let filtered = allRecordings.filter(r => r.stream === selectedStream);
         displayRecordings(filtered);
     }
 }
 
-// Mostrar lista de grabaciones
+/**
+ * Renderiza la lista de grabaciones en pantalla.
+ * @param {Array<Object>} recordings - Lista de segmentos a mostrar.
+ */
 function displayRecordings(recordings) {
     if (recordings.length === 0) {
         recordingsListEl.innerHTML = '<div class="empty-state"><p>🎬 No hay grabaciones para este filtro</p></div>';
@@ -99,13 +115,13 @@ function displayRecordings(recordings) {
     recordingsListEl.innerHTML = '';
     
     recordings.forEach((recording, index) => {
-        const item = document.createElement('div');
+        let item = document.createElement('div');
         item.className = 'recording-item';
         item.onclick = () => playRecording(recording);
         
-        const formattedDate = formatDate(recording.start);
-        const formattedDuration = formatDuration(recording.duration);
-        const formattedTime = formatTime(recording.duration);
+        let formattedDate = formatDate(recording.start);
+        let formattedDuration = formatDuration(recording.duration);
+        let formattedTime = formatTime(recording.duration);
         
         item.innerHTML = `
             <div class="recording-header">
@@ -121,21 +137,23 @@ function displayRecordings(recordings) {
     });
 }
 
-// Cargar grabaciones del servidor
+/**
+ * Carga las grabaciones disponibles desde los endpoints de grabación.
+ */
 async function loadRecordings() {
-    const server = document.getElementById('server').value;
+    let server = document.getElementById('server').value;
     
     try {
         recordingsListEl.innerHTML = '<div class="empty-state"><p>⏳ Cargando grabaciones...</p></div>';
         
-        // Primero obtener la lista de paths con grabaciones
-        const pathsURL = `http://${server}:9997/v3/recordings/list`;
-        const pathsResponse = await fetch(pathsURL);
+        // Obtener la lista de paths con grabaciones.
+        let pathsURL = `http://${server}:9997/v3/recordings/list`;
+        let pathsResponse = await fetch(pathsURL);
         if (!pathsResponse.ok) {
             throw new Error(`HTTP ${pathsResponse.status}: ${pathsResponse.statusText}`);
         }
         
-        const pathsData = await pathsResponse.json();
+        let pathsData = await pathsResponse.json();
         
         if (!pathsData.items || pathsData.items.length === 0) {
             recordingsListEl.innerHTML = '<div class="empty-state"><p>🎬 No hay grabaciones disponibles</p></div>';
@@ -143,14 +161,14 @@ async function loadRecordings() {
             return;
         }
         
-        // Obtener detalles de cada path
+        // Obtener los segmentos de cada path.
         allRecordings = [];
-        for (const item of pathsData.items) {
-            const listURL = `http://${server}:9996/list?path=${encodeURIComponent(item.name)}`;
-            const response = await fetch(listURL);
+        for (let item of pathsData.items) {
+            let listURL = `http://${server}:9996/list?path=${encodeURIComponent(item.name)}`;
+            let response = await fetch(listURL);
             if (!response.ok) continue;
             
-            const segments = await response.json();
+            let segments = await response.json();
             segments.forEach(segment => {
                 allRecordings.push({
                     stream: item.name,
@@ -168,13 +186,13 @@ async function loadRecordings() {
             return;
         }
 
-        // Ordenar por fecha (más recientes primero)
+        // Ordenar por fecha, primero las más recientes.
         allRecordings.sort((a, b) => b.start - a.start);
         
-        // Actualizar filtro de streams
+        // Actualizar el selector de streams.
         updateStreamFilter();
         
-        // Mostrar grabaciones
+        // Pintar la lista final.
         displayRecordings(allRecordings);
         
         recordingCountEl.textContent = `${allRecordings.length} grabación${allRecordings.length !== 1 ? 'es' : ''}`;
@@ -194,45 +212,50 @@ async function loadRecordings() {
 
 
 
-// REPRODUCIR
-// Reproducir una grabación
+// Reproducción
+/**
+ * Reproduce una grabación concreta y sincroniza la UI con su duración.
+ * @param {Object} recording - Segmento de grabación seleccionado.
+ */
 function playRecording(recording) {
-    // Actualizar la interfaz
+    // Actualizar la interfaz con la selección actual.
     selectedRecording = recording;
     updateSelectedRecording();
     
-    // Configurar controles de tiempo
+    // Configurar los controles de tiempo.
     startOffsetInput.max = Math.floor(recording.duration);
     startOffsetInput.value = 0;
     timelineSlider.max = Math.floor(recording.duration);
     timelineSlider.value = 0;
     timelineSlider.disabled = false;
     
-    // Actualizar timeline
-    const startDate = new Date(recording.start);
-    const endDate = new Date(startDate.getTime() + recording.duration * 1000);
+    // Actualizar el timeline visible.
+    let startDate = new Date(recording.start);
+    let endDate = new Date(startDate.getTime() + recording.duration * 1000);
     timelineStart.textContent = formatTimeOnly(startDate);
     timelineEnd.textContent = formatTimeOnly(endDate);
     
-    // Reproducir desde el inicio
+    // Iniciar la reproducción desde el origen seleccionado.
     playFromOffset();
 }
 
-// Reproducir desde un offset específico
+/**
+ * Calcula la ventana temporal a reproducir y lanza el vídeo.
+ */
 function playFromOffset() {
     if (!selectedRecording) {
         alert('Por favor, selecciona una grabación primero');
         return;
     }
     
-    const server = document.getElementById('server').value;
-    const mode = document.querySelector('input[name="playbackMode"]:checked').value;
+    let server = document.getElementById('server').value;
+    let mode = document.querySelector('input[name="playbackMode"]:checked').value;
     
     let offset = 0;
     let newDuration = selectedRecording.duration;
     
     if (mode === 'offset') {
-        // Modo: desde el inicio de la grabación
+        // Modo offset: avanzar desde el inicio del segmento.
         offset = parseFloat(startOffsetInput.value) || 0;
         newDuration = selectedRecording.duration - offset;
         
@@ -241,26 +264,26 @@ function playFromOffset() {
             return;
         }
     } else {
-        // Modo: hacia atrás desde ahora
-        const lookbackSeconds = parseFloat(lookbackTimeInput.value) || 60;
-        const now = new Date();
-        const recordingStart = new Date(selectedRecording.start);
-        const recordingEnd = new Date(recordingStart.getTime() + selectedRecording.duration * 1000);
+        // Modo lookback: retroceder desde el instante actual.
+        let lookbackSeconds = parseFloat(lookbackTimeInput.value) || 60;
+        let now = new Date();
+        let recordingStart = new Date(selectedRecording.start);
+        let recordingEnd = new Date(recordingStart.getTime() + selectedRecording.duration * 1000);
         
-        // Verificar que "ahora" esté dentro del rango de la grabación
+        // Verificar que la grabación ya haya comenzado.
         if (now < recordingStart) {
             alert('La grabación aún no ha comenzado');
             return;
         }
         
-        // Calcular el punto de inicio (ahora - lookback)
-        const startPoint = new Date(now.getTime() - lookbackSeconds * 1000);
+        // Calcular el punto de inicio según la ventana lookback.
+        let startPoint = new Date(now.getTime() - lookbackSeconds * 1000);
         
-        // Si el punto de inicio es anterior al inicio de la grabación, usar el inicio de la grabación
+        // Si la ventana empieza antes de la grabación, recortar al inicio.
         if (startPoint < recordingStart) {
             offset = 0;
-            // Calcular duración desde el inicio hasta ahora (o hasta el fin si la grabación ya terminó)
-            const endPoint = now < recordingEnd ? now : recordingEnd;
+            // Reproducir desde el inicio hasta ahora, o hasta el final si ya terminó.
+            let endPoint = now < recordingEnd ? now : recordingEnd;
             newDuration = (endPoint.getTime() - recordingStart.getTime()) / 1000;
             
             if (newDuration <= 0) {
@@ -271,10 +294,10 @@ function playFromOffset() {
             alert('El tiempo solicitado está más allá del final de la grabación');
             return;
         } else {
-            // El punto de inicio está dentro de la grabación
+            // La ventana solicitada cae dentro del segmento.
             offset = (startPoint.getTime() - recordingStart.getTime()) / 1000;
-            // Duración desde el punto de inicio hasta ahora (o hasta el fin)
-            const endPoint = now < recordingEnd ? now : recordingEnd;
+            // Duración desde el inicio calculado hasta el instante actual.
+            let endPoint = now < recordingEnd ? now : recordingEnd;
             newDuration = (endPoint.getTime() - startPoint.getTime()) / 1000;
             
             if (newDuration <= 0) {
@@ -289,29 +312,29 @@ function playFromOffset() {
         return;
     }
     
-    // Calcular el nuevo tiempo de inicio
-    const originalStart = new Date(selectedRecording.start);
-    const newStart = new Date(originalStart.getTime() + offset * 1000);
+    // Calcular la nueva marca de inicio absoluta.
+    let originalStart = new Date(selectedRecording.start);
+    let newStart = new Date(originalStart.getTime() + offset * 1000);
     
-    // Construir la URL con el nuevo inicio
-    const startISO = newStart.toISOString();
-    const playURL = `http://${server}:9996/get?duration=${newDuration}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(startISO)}`;
+    // letruir la URL de reproducción.
+    let startISO = newStart.toISOString();
+    let playURL = `http://${server}:9996/get?duration=${newDuration}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(startISO)}`;
     
     console.log('Modo:', mode);
     console.log('Offset:', offset.toFixed(2), 's');
     console.log('Duración:', newDuration.toFixed(2), 's');
     console.log('URL:', playURL);
     
-    // Advertir si la grabación es muy reciente (menos de 10 segundos de antigüedad)
-    const now = new Date();
-    const recordingEnd = new Date(originalStart.getTime() + selectedRecording.duration * 1000);
-    const secondsSinceEnd = (now - recordingEnd) / 1000;
+    // Avisar si el segmento aún puede no estar completamente disponible.
+    let now = new Date();
+    let recordingEnd = new Date(originalStart.getTime() + selectedRecording.duration * 1000);
+    let secondsSinceEnd = (now - recordingEnd) / 1000;
     
     if (secondsSinceEnd < 10 && secondsSinceEnd > 0) {
         console.warn('Advertencia: Grabación muy reciente, puede no estar completamente disponible');
     }
     
-    // Reproducir el video
+    // Reproducir el vídeo.
     video.src = playURL;
     video.load();
     video.play().catch(err => {
@@ -323,40 +346,49 @@ function playFromOffset() {
     if (mode === 'offset' && offset > 0) {
         offsetText = ` (desde +${offset.toFixed(0)}s)`;
     } else if (mode === 'lookback') {
-        const lookback = parseFloat(lookbackTimeInput.value) || 60;
+        let lookback = parseFloat(lookbackTimeInput.value) || 60;
         offsetText = ` (últimos ${lookback}s)`;
     }
     currentRecordingEl.textContent = `${selectedRecording.stream} - ${formatDate(originalStart)}${offsetText}`;
 }
 
 
-// FORMATEO FECHAS 
-// Formatear fecha
+// Formateo de fechas
+/**
+ * Formatea una fecha completa en formato local.
+ * @param {Date} date - Fecha a formatear.
+ */
 function formatDate(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    let day = String(date.getDate()).padStart(2, '0');
+    let month = String(date.getMonth() + 1).padStart(2, '0');
+    let year = date.getFullYear();
+    let hours = String(date.getHours()).padStart(2, '0');
+    let minutes = String(date.getMinutes()).padStart(2, '0');
+    let seconds = String(date.getSeconds()).padStart(2, '0');
     
     return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
-// Formatear solo la hora
+/**
+ * Formatea únicamente la hora de una fecha.
+ * @param {Date} date - Fecha a formatear.
+ */
 function formatTimeOnly(date) {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    let hours = String(date.getHours()).padStart(2, '0');
+    let minutes = String(date.getMinutes()).padStart(2, '0');
+    let seconds = String(date.getSeconds()).padStart(2, '0');
     
     return `${hours}:${minutes}:${seconds}`;
 }
 
-// Formatear duración
+/**
+ * Convierte una duración en segundos a una etiqueta legible.
+ * @param {number} seconds - Duración en segundos.
+ */
 function formatDuration(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+    let hours = Math.floor(seconds / 3600);
+    let minutes = Math.floor((seconds % 3600) / 60);
+    let secs = Math.floor(seconds % 60);
     
     if (hours > 0) {
         return `${hours}h ${minutes}m ${secs}s`;
@@ -367,12 +399,16 @@ function formatDuration(seconds) {
     }
 }
 
+/**
+ * Formatea un tiempo en mm:ss o hh:mm:ss.
+ * @param {number} seconds - Tiempo en segundos.
+ */
 function formatTime(seconds) {
     if (isNaN(seconds) || seconds === Infinity) return '00:00';
     
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+    let hours = Math.floor(seconds / 3600);
+    let minutes = Math.floor((seconds % 3600) / 60);
+    let secs = Math.floor(seconds % 60);
     
     if (hours > 0) {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -380,37 +416,46 @@ function formatTime(seconds) {
     return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// CONTROL DE VELOCIDAD
-// Control de velocidad de reproducción
+// Control de velocidad
+/**
+ * Ajusta la velocidad de reproducción del vídeo.
+ * @param {number} speed - Velocidad deseada.
+ */
 function setSpeed(speed) {
     video.playbackRate = speed;
     speedDisplay.textContent = speed.toFixed(2) + 'x';
 }
 
+/**
+ * Incrementa o reduce la velocidad actual manteniéndola dentro de rango.
+ * @param {number} delta - Variación de velocidad.
+ */
 function changeSpeed(delta) {
-    const newSpeed = Math.max(0.25, Math.min(4, video.playbackRate + delta));
+    let newSpeed = Math.max(0.25, Math.min(4, video.playbackRate + delta));
     setSpeed(newSpeed);
 }
 
-// Actualizar información del tiempo
+/**
+ * Actualiza la etiqueta con el tiempo transcurrido y total.
+ */
 function updateTimeDisplay() {
-    const current = formatTime(video.currentTime);
-    const total = formatTime(video.duration);
+    let current = formatTime(video.currentTime);
+    let total = formatTime(video.duration);
     timeDisplay.textContent = `${current} / ${total}`;
 }
 
 
-// Event listeners para el video
+// Eventos del vídeo
 video.addEventListener('timeupdate', updateTimeDisplay);
 video.addEventListener('loadedmetadata', updateTimeDisplay);
 video.addEventListener('ratechange', () => {
     speedDisplay.textContent = video.playbackRate.toFixed(2) + 'x';
 });
 
-// Manejar errores de carga del video
+// Gestión de errores de carga.
 video.addEventListener('error', (e) => {
     console.error('Error al cargar el video:', e);
-    const error = video.error;
+    let error = video.error;
     let errorMessage = 'Error desconocido al cargar el video';
     
     if (error) {
@@ -434,17 +479,18 @@ video.addEventListener('error', (e) => {
     currentRecordingEl.textContent = 'Error al reproducir';
 });
 
-// Sincronizar slider con input numérico
+// Sincronizar el slider con el campo numérico.
 timelineSlider.addEventListener('input', () => {
     startOffsetInput.value = timelineSlider.value;
 });
 
+// Mantener ambos controles alineados.
 startOffsetInput.addEventListener('input', () => {
-    const value = parseFloat(startOffsetInput.value) || 0;
+    let value = parseFloat(startOffsetInput.value) || 0;
     timelineSlider.value = value;
 });
 
-// Cargar grabaciones al inicio
+// Arranque inicial.
 window.addEventListener('load', () => {
     console.log('MediaMTX Playback Player cargado');
     updateTimeDisplay();

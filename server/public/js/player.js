@@ -1,21 +1,33 @@
-// Elementos DOM
-const statusEl = document.getElementById('status')
-const stopBtn = document.getElementById('stopBtn')
-const server = document.getElementById('server')
-const streamName = document.getElementById('streamName')
-const video = document.getElementById('video');
+/**
+ * REPRODUCTOR WHEP - MEDIA MTX
+ * Gestiona la reproducción WebRTC de un stream publicado por el servidor.
+ */
 
-// Variables globales
+// Elementos DOM
+let statusEl = document.getElementById('status')
+let stopBtn = document.getElementById('stopBtn')
+let server = document.getElementById('server')
+let streamName = document.getElementById('streamName')
+let video = document.getElementById('video');
+
+// Estado global
 let pc = null; // WebRTC PeerConnection
 
-// Modificar DOM
+/**
+ * Actualiza el estado visual del reproductor.
+ * @param {string} status - Clase visual a aplicar.
+ * @param {string} text - Texto descriptivo del estado.
+ */
 function updateStatus(status, text) {
     statusEl.className = `status ${status}`;
     statusEl.textContent = text;
 }
 
 
-// Control del player
+// Control de reproducción
+/**
+ * Inicia la reproducción del stream indicado por el usuario.
+ */
 async function startPlay() {
     if (!streamName) {
         alert('Por favor, introduce el nombre del stream');
@@ -27,13 +39,13 @@ async function startPlay() {
 }
 
 function stopPlay() {
-    // Detener WebRTC
+    // Cerrar la conexión WebRTC si existe.
     if (pc) {
         pc.close();
         pc = null;
     }
     
-    // Detener el video
+    // Limpiar el elemento de vídeo.
     video.pause();
     video.srcObject = null;
     video.src = '';
@@ -43,7 +55,11 @@ function stopPlay() {
 }
 
 
-// Comexion al server con WHEP
+/**
+ * Conecta con el servidor mediante WHEP y empieza a recibir el stream.
+ * @param {string} server - Host o IP del servidor MediaMTX.
+ * @param {string} streamName - Nombre del stream a reproducir.
+ */
 async function playWebRTC(server, streamName) {
     updateStatus('connecting', 'Conectando WebRTC...');
     
@@ -54,7 +70,7 @@ async function playWebRTC(server, streamName) {
             }]
         });
 
-        // Manejar los tracks entrantes
+        // Renderizar el stream cuando lleguen pistas remotas.
         pc.ontrack = (event) => {
             console.log('Track recibido:', event.track.kind);
             video.srcObject = event.streams[0];
@@ -62,7 +78,7 @@ async function playWebRTC(server, streamName) {
             stopBtn.disabled = false;
         };
         
-        // Estados fallidos de ICE
+        // Vigilar cambios de estado de ICE.
         pc.oniceconnectionstatechange = () => {
             console.log('ICE state:', pc.iceConnectionState);
             if (pc.iceConnectionState === 'disconnected' || 
@@ -73,21 +89,21 @@ async function playWebRTC(server, streamName) {
             }
         };
 
-        // Añadir transceivers para recibir audio y video
+        // Solicitar recepción de audio y vídeo.
         pc.addTransceiver('video', { direction: 'recvonly' });
         pc.addTransceiver('audio', { direction: 'recvonly' });
 
-        // Crear offer
-        const offer = await pc.createOffer();
+        // Crear la oferta SDP local.
+        let offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        // Enviar offer al servidor MediaMTX
-        const url = `http://${server}:8889/${streamName}/whep`;
+        // Enviar la oferta al endpoint WHEP.
+        let url = `http://${server}:8889/${streamName}/whep`;
         console.log('WHEP URL:', url);
         
 
-        // Enviar el SDP al servidor
-        const response = await fetch(url, {
+        // Intercambiar SDP con el servidor.
+        let response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/sdp'
@@ -95,12 +111,12 @@ async function playWebRTC(server, streamName) {
             body: offer.sdp
         });
 
-        // RECIBIR RESPUESTA DEL SERVIDOR
+        // Validar la respuesta del servidor.
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const answerSDP = await response.text();
+        let answerSDP = await response.text();
         await pc.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
             sdp: answerSDP
@@ -115,7 +131,8 @@ async function playWebRTC(server, streamName) {
         stopPlay();
     }
 }
-// Auto-play muted para evitar restricciones del navegador
+
+// Registrar actividad básica del vídeo.
 video.addEventListener('play', () => {
     console.log('Video iniciado');
 });
