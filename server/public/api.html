@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaMTX API V2</title>
+    <link rel="stylesheet" href="../css/api.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>MediaMTX API V2</h1>
+            <div class="server-config">
+                <span class="server-status">🟢 API via proxy</span>
+                <button class="btn-refresh" onclick="refreshAll()">🔄 Actualizar Todo</button>
+            </div>
+        </header>
+
+        <div class="accordion">
+            <details class="accordion-item" id="quickAccordion" open>
+                <summary class="accordion-summary">⚡ Quick actions</summary>
+                <div class="accordion-panel">
+                    <div class="actions-grid">
+                        <div class="action-card">
+                            <h3>🔄 Reload config</h3>
+                            <p>Reload the YAML config without restarting</p>
+                            <button class="btn-action" onclick="reloadConfig()">Run</button>
+                        </div>
+
+                        <div class="action-card">
+                            <h3>🗑️ Close path</h3>
+                            <input type="text" id="closePathName" placeholder="Path name">
+                            <button class="btn-action btn-danger" onclick="closePath()">Close</button>
+                        </div>
+
+                        <div class="action-card">
+                            <h3>❌ Kick RTSP session</h3>
+                            <input type="text" id="closeRtspId" placeholder="Session ID">
+                            <button class="btn-action btn-danger" onclick="kickRtspSession()">Close</button>
+                        </div>
+
+                        <div class="action-card">
+                            <h3>❌ Kick WebRTC session</h3>
+                            <input type="text" id="closeWebrtcId" placeholder="Session ID">
+                            <button class="btn-action btn-danger" onclick="kickWebrtcSession()">Close</button>
+                        </div>
+
+                        <div class="action-card">
+                            <h3>🗑️ Delete recording segment</h3>
+                            <input type="text" id="deleteRecPath" placeholder="Path">
+                            <input type="text" id="deleteRecStart" placeholder="Start (ISO)">
+                            <button class="btn-action btn-danger" onclick="deleteRecordingSegment()">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="accordion-item" id="pathsAccordion" data-load="loadPaths" open>
+                <summary class="accordion-summary">📹 Paths</summary>
+                <div class="accordion-panel">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Active streams</h2>
+                            <div class="section-actions">
+                                <span class="badge" id="pathsCount">0 paths</span>
+                                <button class="btn-secondary" onclick="loadPaths()">🔄 Refresh</button>
+                            </div>
+                        </div>
+                        <div class="paths-grid" id="pathsGrid">
+                            <div class="empty-state">Loading paths...</div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Add / configure path</h2>
+                        </div>
+                        <div class="form-group">
+                            <label for="pathName">Path name:</label>
+                            <input type="text" id="pathName" placeholder="e.g. mystream">
+                        </div>
+                        <div class="form-group">
+                            <label for="pathSource">Source:</label>
+                            <select id="pathSource">
+                                <option value="publisher">Publisher</option>
+                                <option value="rtsp">RTSP (pull)</option>
+                                <option value="rtmp">RTMP (pull)</option>
+                                <option value="http">HLS (pull)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="sourceUrlGroup" style="display: none;">
+                            <label for="pathSourceUrl">Source URL:</label>
+                            <input type="text" id="pathSourceUrl" placeholder="rtsp://camera-ip:554/stream">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="pathRecord"> Record this path
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-primary" onclick="addOrUpdatePath()">💾 Save Path</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="accordion-item" id="configAccordion" data-load="loadConfig">
+                <summary class="accordion-summary">⚙️ Global config</summary>
+                <div class="accordion-panel">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Global configuration</h2>
+                            <button class="btn-secondary" onclick="loadConfig()">🔄 Refresh</button>
+                        </div>
+                        <div class="config-display" id="configDisplay">
+                            <div class="empty-state">Loading configuration...</div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Modify configuration (PATCH)</h2>
+                        </div>
+                        <div class="form-group">
+                            <label for="configKey">Config key:</label>
+                            <input type="text" id="configKey" placeholder="e.g. logLevel">
+                        </div>
+                        <div class="form-group">
+                            <label for="configValue">Value:</label>
+                            <input type="text" id="configValue" placeholder="e.g. debug">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-primary" onclick="updateConfig()">💾 Update config</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="accordion-item" id="sessionsAccordion" data-load="loadSessions">
+                <summary class="accordion-summary">🔌 Session manager</summary>
+                <div class="accordion-panel">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Active sessions</h2>
+                            <div class="section-actions">
+                                <span class="badge" id="sessionsCount">0 sessions</span>
+                                <button class="btn-secondary" onclick="loadSessions()">🔄 Refresh</button>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>🔴 RTSP sessions</h3>
+                            <div class="sessions-list" id="rtspSessions">
+                                <div class="empty-state">No RTSP sessions</div>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>🌐 WebRTC sessions</h3>
+                            <div class="sessions-list" id="webrtcSessions">
+                                <div class="empty-state">No WebRTC sessions</div>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>📡 HLS muxers</h3>
+                            <div class="sessions-list" id="hlsMuxers">
+                                <div class="empty-state">No HLS muxers</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="accordion-item" id="recordingsAccordion" data-load="loadRecordings">
+                <summary class="accordion-summary">💾 Recording manager</summary>
+                <div class="accordion-panel">
+                    <div class="section">
+                        <div class="section-header">
+                            <h2>Recording management</h2>
+                            <button class="btn-secondary" onclick="loadRecordings()">🔄 Refresh</button>
+                        </div>
+                        <div class="recordings-management" id="recordingsManagement">
+                            <div class="empty-state">Loading recordings...</div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <footer class="footer">
+            <p>MediaMTX API V2 | <a href="https://mediamtx.org/docs/references/control-api" target="_blank" rel="noreferrer">Documentation</a></p>
+        </footer>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/api-ui.js"></script>
+    <script src="../js/api-paths.js"></script>
+    <script src="../js/api-config.js"></script>
+    <script src="../js/api-sessions.js"></script>
+    <script src="../js/api-recordings.js"></script>
+</body>
+</html>

@@ -9,7 +9,9 @@
 # Verbosity of the program; available values are "error", "warn", "info", "debug".
 logLevel: debug
 # Destinations of log messages; available values are "stdout", "file" and "syslog".
+# logDestinations: [syslog]
 logDestinations: [stdout]
+# logDestinations: [stdout, file]
 # When destination is "stdout" or "file", emit logs in structured format (JSON).
 logStructured: no
 # When "file" is in logDestinations, this is the file which will receive logs.
@@ -400,7 +402,7 @@ webrtcLocalTCPAddress: ''
 # WebRTC clients need to know the IP of the server.
 # Gather IPs from interfaces and send them to clients.
 # webrtcIPsFromInterfaces: yes
-webrtcIPsFromInterfaces: yes
+webrtcIPsFromInterfaces: no
 # List of interfaces whose IPs will be sent to clients.
 # An empty value means to use all available interfaces.
 webrtcIPsFromInterfacesList: []
@@ -409,8 +411,8 @@ webrtcIPsFromInterfacesList: []
 # webrtcIPsFromInterfacesList: ['192.168.1.48']
 # List of additional hosts or IPs to send to clients.
 # webrtcAdditionalHosts: []
-# webrtcAdditionalHosts: ['192.168.0.5']
-webrtcAdditionalHosts: ['192.168.1.48']
+webrtcAdditionalHosts: ['192.168.0.5']
+# webrtcAdditionalHosts: ['192.168.1.48']
 # webrtcAdditionalHosts: ['192.168.1.48','192.168.1.120']
 # webrtcAdditionalHosts: ['192.168.1.120']
 # webrtcAdditionalHosts: ['192.168.1.48']
