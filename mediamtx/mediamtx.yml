@@ -411,11 +411,11 @@ webrtcIPsFromInterfacesList: []
 # webrtcIPsFromInterfacesList: ['192.168.1.48']
 # List of additional hosts or IPs to send to clients.
 # webrtcAdditionalHosts: []
-webrtcAdditionalHosts: ['192.168.0.5']
+# webrtcAdditionalHosts: ['192.168.0.5']
 # webrtcAdditionalHosts: ['192.168.1.48']
 # webrtcAdditionalHosts: ['192.168.1.48','192.168.1.120']
 # webrtcAdditionalHosts: ['192.168.1.120']
-# webrtcAdditionalHosts: ['192.168.1.48']
+webrtcAdditionalHosts: ['192.168.1.48']
 # webrtcAdditionalHosts: ['10.151.165.147']
 
 # ICE servers. Needed only when local listeners can't be reached by clients.

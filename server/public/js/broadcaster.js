@@ -35,7 +35,9 @@ let whipSession = null; // URL para DELETE al finalizar
 let activePaths = []; // Paths activos en MediaMTX
 
 
-// Paths
+
+
+// PATHS
 /**
  * Renderiza los paths activos en la UI.
  */
@@ -48,18 +50,6 @@ function ponerPathsActivos() {
     activePathsList.innerHTML = activePaths
         .map(path => `<span class="path-tag">${path}</span>`)
         .join('');
-}
-
-/**
- * Muestra un error al usuario, actualiza la cabecera y deja detalle técnico en consola.
- * @param {string} userMessage - Mensaje breve para alert y cabecera.
- * @param {Error|string} error - Detalle técnico del fallo.
- */
-function mostrarError(userMessage, error) {
-    let detail = error && error.message ? error.message : String(error || 'Error desconocido');
-    console.error(userMessage, error);
-    updateStatus('disconnected', 'Error: ' + userMessage);
-    alert(userMessage + '\n\nDetalle: ' + detail);
 }
 
 /**
@@ -108,7 +98,10 @@ function ponerEndpoint(name) {
     endpointInput.focus();
 }
 
-// Dispositivos de audio / vídeo
+
+
+
+// DISPOSITIVOS AUDIOVISUALES
 /**
  * Solicita permisos y carga la lista real de dispositivos.
  */
@@ -213,6 +206,28 @@ async function cambioDispositivo() {
     }
 }
 
+
+
+// INTERFAZ
+/**
+ * Actualiza el estado visual del emisor.
+ * @param {string} status - Clase visual a aplicar.
+ * @param {string} text - Texto a mostrar.
+ */
+
+
+/**
+ * Actualiza el estado visual del emisor.
+ * @param {string} status 
+ * @param {string} text 
+ */
+function updateStatus(status, text) {
+    statusEl.className = `status ${status}`;
+    statusEl.textContent = text;
+}
+
+
+
 /**
  * Muestra la previsualización local cuando aún no existe stream activo.
  */
@@ -227,23 +242,25 @@ async function visualizarPreview() {
     }
 }
 
-// Interfaz
 /**
- * Actualiza el estado visual del emisor.
- * @param {string} status - Clase visual a aplicar.
- * @param {string} text - Texto a mostrar.
+ * Muestra un error al usuario, actualiza la cabecera y deja detalle técnico en consola.
+ * @param {string} userMessage - Mensaje breve para alert y cabecera.
+ * @param {Error|string} error - Detalle técnico del fallo.
  */
-function updateStatus(status, text) {
-    statusEl.className = `status ${status}`;
-    statusEl.textContent = text;
+function mostrarError(userMessage, error) {
+    let detail = error && error.message ? error.message : String(error || 'Error desconocido');
+    console.error(userMessage, error);
+    updateStatus('disconnected', 'Error: ' + userMessage);
+    alert(userMessage + '\n\nDetalle: ' + detail);
 }
 
 
-// Publicación
+
+
+// PUBLICACIÓN 
 /**
  * Inicia la publicación WHIP del stream local.
  */
-
 async function startBroadcast() {
     // Leer la configuración actual.
     let endpoint = endpointInput.value.trim();
@@ -485,7 +502,9 @@ function waitForOutgoingStream(pc) {
 }
 
 
-// Eventos
+
+
+// EVENTOS
 // Inicializar al cargar la página.
 document.addEventListener('DOMContentLoaded', async () => {
     await iniciarDispositivos();
