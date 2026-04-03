@@ -27,6 +27,13 @@
             </div>
         </div>
 
+        <div class="quick-endpoints">
+            <div class="quick-endpoints-header">
+                <label>Endpoints rápidos (activos):</label>
+                <button class="btn-small" onclick="actualizarPathsActivosPlayer()">Actualizar</button>
+            </div>
+            <div id="endpointButtons" class="endpoint-buttons"></div>
+        </div>
         <div class="buttons">
             <button class="btn-play" onclick="startPlay()">▶ Reproducir</button>
             <button class="btn-stop" id="stopBtn" onclick="stopPlay()" disabled>⬛ Detener</button>
@@ -40,6 +47,7 @@
             <p><strong>WebRTC (WHEP):</strong> Puerto 8889 - Ultra baja latencia (~100-300ms)</p>
         </div>
     </div>
+    <script src="../js/api.js"></script>
     <script src="../js/player.js"></script>
 </body>
 </html>

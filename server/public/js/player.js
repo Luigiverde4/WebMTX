@@ -9,9 +9,11 @@ let stopBtn = document.getElementById('stopBtn')
 let server = document.getElementById('server')
 let streamName = document.getElementById('streamName')
 let video = document.getElementById('video');
+let endpointButtons = document.getElementById('endpointButtons');
 
 // Estado global
 let pc = null; // WebRTC PeerConnection
+let activePaths = []; // Paths activos en MediaMTX
 
 /**
  * Actualiza el estado visual del reproductor.
@@ -29,13 +31,17 @@ function updateStatus(status, text) {
  * Inicia la reproducción del stream indicado por el usuario.
  */
 async function startPlay() {
-    if (!streamName) {
+    if (!streamName.value.trim()) {
         alert('Por favor, introduce el nombre del stream');
+        streamName.focus();
         return;
     }
 
+    localStorage.setItem('player_server', server.value.trim());
+    localStorage.setItem('player_streamName', streamName.value.trim());
+
     stopPlay(); // Detener cualquier reproducción anterior
-    await playWebRTC(server.value, streamName.value);
+    await playWebRTC(server.value.trim(), streamName.value.trim());
 }
 
 function stopPlay() {
@@ -134,6 +140,68 @@ async function playWebRTC(server, streamName) {
         stopPlay();
     }
 }
+
+/**
+ * Renderiza botones rápidos para seleccionar un endpoint activo.
+ */
+function ponerBotonesEndpoint() {
+    if (!endpointButtons) return;
+
+    if (activePaths.length === 0) {
+        endpointButtons.innerHTML = '<span class="empty">Sin endpoints disponibles</span>';
+        return;
+    }
+
+    endpointButtons.innerHTML = activePaths
+        .map(path => `<button type="button" onclick='reproducirEndpointRapido(${JSON.stringify(path)})'>${escapeHtml(path)}</button>`)
+        .join('');
+}
+
+/**
+ * Rellena el input y lanza la reproducción al pulsar un endpoint rápido.
+ * @param {string} endpoint - Endpoint seleccionado.
+ */
+async function reproducirEndpointRapido(endpoint) {
+    streamName.value = endpoint;
+    streamName.focus();
+    await startPlay();
+}
+
+/**
+ * Carga paths activos usando la API de MediaMTX.
+ */
+async function actualizarPathsActivosPlayer() {
+    if (!endpointButtons) return;
+
+    endpointButtons.innerHTML = '<span class="loading">Cargando...</span>';
+
+    try {
+        let data = await GET('/paths/list');
+        activePaths = [];
+
+        if (data.items && data.items.length > 0) {
+            activePaths = data.items
+                .filter(path => path.ready)
+                .map(path => path.name);
+        }
+
+        ponerBotonesEndpoint();
+    } catch (error) {
+        console.error('Error al cargar paths activos:', error);
+        endpointButtons.innerHTML = '<span class="error">No se pudo cargar la lista</span>';
+    }
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', async () => {
+    let savedServer = localStorage.getItem('player_server');
+    let savedStream = localStorage.getItem('player_streamName');
+
+    if (savedServer) server.value = savedServer;
+    if (savedStream) streamName.value = savedStream;
+
+    await actualizarPathsActivosPlayer();
+});
 
 // Registrar actividad básica del vídeo.
 video.addEventListener('play', () => {

@@ -136,6 +136,71 @@
             color: #333;
         }
 
+        .quick-endpoints {
+            margin-top: 15px;
+            padding: 15px;
+            background: #eef2fb;
+            border-radius: 8px;
+        }
+
+        .quick-endpoints-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .quick-endpoints-header label {
+            margin-bottom: 0;
+        }
+
+        .endpoint-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .endpoint-buttons button {
+            flex: 0;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #5d79df;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .endpoint-buttons button:hover {
+            background: #4f69c8;
+            transform: translateY(-1px);
+        }
+
+        .endpoint-buttons .empty,
+        .endpoint-buttons .error {
+            color: #666;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            background: #5d79df;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            flex: 0;
+        }
+
+        .btn-small:hover {
+            background: #4f69c8;
+        }
+
         .status {
             display: inline-block;
             padding: 3px 8px;
@@ -162,5 +227,9 @@
         @media (max-width: 768px) {
             .controls {
                 grid-template-columns: 1fr;
+            }
+
+            .endpoint-buttons {
+                justify-content: center;
             }
         }
