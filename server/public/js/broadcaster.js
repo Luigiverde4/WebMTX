@@ -10,6 +10,7 @@
 let statusEl = document.getElementById('status');
 let streamUrlEl = document.getElementById('streamUrl');
 let activePathsList = document.getElementById('activePathsList');
+let codecStatsEl = document.getElementById('codecStats');
 
 // Entradas de usuario
 let serverInput = document.getElementById('server');
@@ -33,6 +34,137 @@ let pc = null; // WebRTC PeerConnection
 let localStream = null; // Stream local de la cámara/micrófono
 let whipSession = null; // URL para DELETE al finalizar
 let activePaths = []; // Paths activos en MediaMTX
+let codecStatsTimer = null; // Intervalo para refrescar estadísticas WebRTC
+
+
+/**
+ * Convierte bytes a texto legible.
+ * @param {number} bytes - Cantidad de bytes.
+ */
+function formatBytes(bytes) {
+    if (!bytes || bytes < 0) return '0 B';
+
+    let units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+    }
+
+    let rounded = value >= 10 ? value.toFixed(1) : value.toFixed(2);
+    return `${rounded} ${units[unitIndex]}`;
+}
+
+/**
+ * Muestra un estado por defecto en el panel de códecs.
+ * @param {string} message - Mensaje a mostrar.
+ */
+function setCodecStatsMessage(message) {
+    if (!codecStatsEl) return;
+    codecStatsEl.innerHTML = `<span class="empty">${message}</span>`;
+}
+
+/**
+ * Renderiza una tabla con los códecs/bytes en uso para audio y vídeo.
+ * @param {Array<object>} rows - Filas de estadísticas.
+ */
+function renderCodecStats(rows) {
+    if (!codecStatsEl) return;
+
+    if (!rows || rows.length === 0) {
+        setCodecStatsMessage('Sin tráfico RTP todavía...');
+        return;
+    }
+
+    let body = rows
+        .map(row => `
+            <tr>
+                <td>${row.kind}</td>
+                <td>${row.mimeType}</td>
+                <td>${row.payloadType}</td>
+                <td>${row.clockRate}</td>
+                <td>${row.channels}</td>
+                <td>${formatBytes(row.bytesSent)}</td>
+                <td>${formatBytes(row.bytesReceived)}</td>
+            </tr>
+        `)
+        .join('');
+
+    codecStatsEl.innerHTML = `
+        <table class="codec-table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Códec</th>
+                    <th>PT</th>
+                    <th>Clock</th>
+                    <th>Canales</th>
+                    <th>Bytes enviados</th>
+                    <th>Bytes recibidos</th>
+                </tr>
+            </thead>
+            <tbody>${body}</tbody>
+        </table>
+    `;
+}
+
+/**
+ * Extrae las estadísticas outbound-rtp (audio/video) del PeerConnection.
+ */
+async function actualizarCodecStats() {
+    if (!pc || !codecStatsEl) return;
+
+    try {
+        let stats = await pc.getStats();
+        let rows = [];
+
+        stats.forEach(report => {
+            if (report.type !== 'outbound-rtp' || report.isRemote) return;
+            if (report.kind !== 'audio' && report.kind !== 'video') return;
+
+            let codec = report.codecId ? stats.get(report.codecId) : null;
+
+            rows.push({
+                kind: report.kind,
+                mimeType: codec && codec.mimeType ? codec.mimeType : 'desconocido',
+                payloadType: codec && codec.payloadType !== undefined ? codec.payloadType : 'n/a',
+                clockRate: codec && codec.clockRate !== undefined ? codec.clockRate : 'n/a',
+                channels: codec && codec.channels !== undefined ? codec.channels : 'n/a',
+                bytesSent: typeof report.bytesSent === 'number' ? report.bytesSent : 0,
+                bytesReceived: typeof report.bytesReceived === 'number' ? report.bytesReceived : 0
+            });
+        });
+
+        rows.sort((a, b) => a.kind.localeCompare(b.kind));
+        renderCodecStats(rows);
+    } catch (error) {
+        console.warn('No se pudieron leer estadísticas WebRTC:', error);
+        if (codecStatsEl) {
+            codecStatsEl.innerHTML = '<span class="error">Error leyendo estadísticas WebRTC</span>';
+        }
+    }
+}
+
+/**
+ * Inicia el refresco periódico de estadísticas WebRTC.
+ */
+function startCodecStatsPolling() {
+    stopCodecStatsPolling();
+    actualizarCodecStats();
+    codecStatsTimer = setInterval(actualizarCodecStats, 2000);
+}
+
+/**
+ * Detiene el refresco periódico de estadísticas WebRTC.
+ */
+function stopCodecStatsPolling() {
+    if (codecStatsTimer) {
+        clearInterval(codecStatsTimer);
+        codecStatsTimer = null;
+    }
+}
 
 
 
@@ -368,6 +500,7 @@ async function startBroadcast() {
 
         updateStatus('live', '🔴 EN VIVO');
         liveIndicator.style.display = 'block';
+        startCodecStatsPolling();
         
         stopBtn.disabled = false;
         console.log('Transmisión WHIP iniciada correctamente');
@@ -384,6 +517,8 @@ async function startBroadcast() {
  * Detiene la transmisión y libera recursos locales.
  */
 async function stopBroadcast() {
+    stopCodecStatsPolling();
+
     // Intentar cerrar la sesión WHIP en el servidor.
     if (whipSession) {
         try {
@@ -413,6 +548,7 @@ async function stopBroadcast() {
     startBtn.disabled = false;
     stopBtn.disabled = true;
     streamUrlEl.textContent = '-';
+    setCodecStatsMessage('Sin datos (inicia transmisión)');
     
     console.log('Transmisión detenida');
     // Dar margen para que MediaMTX actualice el estado de paths.
@@ -519,6 +655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Cargar paths activos.
     await actualizarPathsActivos();
+    setCodecStatsMessage('Sin datos (inicia transmisión)');
 });
 
 // Manejar cambios de dispositivos.
