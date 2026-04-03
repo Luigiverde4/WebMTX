@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaMTX Statistics Dashboard</title>
+    <link rel="stylesheet" href="../css/stats.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>MediaMTX Statistics Dashboard</h1>
+            <p class="subtitle">Visualiza estadisticas en tiempo real del servidor y las transmisiones</p>
+        </header>
+
+        <section class="toolbar">
+            <div class="left-tools">
+                <button id="refreshBtn" class="btn btn-primary">Actualizar ahora</button>
+                <label class="auto-refresh">
+                    <input type="checkbox" id="autoRefresh" checked>
+                    Auto refresh (1.5s)
+                </label>
+            </div>
+            <div class="right-tools">
+                <span id="lastUpdate" class="last-update">Sin actualizar</span>
+            </div>
+        </section>
+
+        <section class="summary-grid">
+            <article class="summary-card">
+                <h3>Paths totales</h3>
+                <p id="totalPaths">0</p>
+            </article>
+            <article class="summary-card">
+                <h3>Paths listos</h3>
+                <p id="readyPaths">0</p>
+            </article>
+            <article class="summary-card">
+                <h3>Paths online</h3>
+                <p id="onlinePaths">0</p>
+            </article>
+            <article class="summary-card">
+                <h3>Readers activos</h3>
+                <p id="totalReaders">0</p>
+            </article>
+            <article class="summary-card">
+                <h3>Bytes recibidos</h3>
+                <p id="totalBytesReceived">0 B</p>
+            </article>
+            <article class="summary-card">
+                <h3>Bytes enviados</h3>
+                <p id="totalBytesSent">0 B</p>
+            </article>
+        </section>
+
+        <section class="charts-section">
+            <article class="chart-card">
+                <h3>Throughput total (Mbps)</h3>
+                <canvas id="totalThroughputChart"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Throughput por stream (Mbps)</h3>
+                <canvas id="streamThroughputChart"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Readers por path</h3>
+                <canvas id="readersByPathChart"></canvas>
+            </article>
+        </section>
+
+        <div class="paths-header stream-sections-header">
+            <h2>Streams (una seccion por stream)</h2>
+            <span id="pathsCount" class="paths-count">0 streams</span>
+        </div>
+
+        <div id="streamSectionsContainer" class="stream-sections-stack">
+            <div class="empty-state">Cargando estadisticas...</div>
+        </div>
+
+        <footer class="footer">
+            <a href="index.html">Volver al inicio</a>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/stats-charts.js"></script>
+    <script src="../js/stats-ui.js"></script>
+    <script src="../js/stats.js"></script>
+</body>
+</html>
