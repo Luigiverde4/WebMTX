@@ -40,23 +40,76 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 
 ## Arquitectura
 
-```
-┌───────────────┐    ┌─────────────────┐                    ┌─────────────────────────────────────┐                    ┌─────────────────┐
-│    FUENTES    │    │    EMISORES     │                    │              SERVIDOR               │                    │    CLIENTES     │
-├───────────────┤    ├─────────────────┤                    ├─────────────────────────────────────┤                    ├─────────────────┤
-│               │    │                 │       WHIP         │                                     │      WebRTC        │                 │
-│               │───►│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
-│  Cámaras      │    │                 │                    │  │             │    │           │   │                    │                 │
-│               │───►│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │      OBS        │
-│  Micros       │    │                 │                    │  │  (8889)     │    │  Server   │   │◄── https://:443    │                 │
-│               │───►│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │  Player.html    │
-│  Pantalla     │    │                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
-│               │───►│  Broadcaster    │ ─────────────────► │  │             │    │ mediamtx  │   │                    │      VLC        │
-│     ...       │    │  (Browser WHIP) │                    │  └─────────────┘    └───────────┘   │                    │                 │
-└───────────────┘    └─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
+```mermaid
+flowchart LR
+  subgraph F[Fuentes]
+    cams[Cámaras]
+    mics[Micrófonos]
+    screen[Pantalla]
+    more[...]
+  end
+
+  subgraph E[Emisores]
+    ffwin[FFmpeg (Windows)]
+    ffrpi[FFmpeg (Raspberry Pi)]
+    pywhip[Python / PYWHIP]
+    browserWhip[Broadcaster web\n(WHIP desde el navegador)]
+  end
+
+  subgraph S[Servidor]
+    mediamtx[MediaMTX\n8889 WebRTC\n9997 API REST]
+    node[Node.js / Express\n80 HTTP\n443 HTTPS]
+    apiProxy[/api/mediamtx/*\nProxy a la API REST/]
+    playbackProxy[/api/playback/*\nProxy a grabaciones y reproducción/]
+  end
+
+  subgraph C[Clientes]
+    browser[Browser]
+    player[Player web]
+    playback[Playback web]
+    obs[OBS / VLC]
+  end
+
+  cams --> ffwin
+  cams --> ffrpi
+  cams --> pywhip
+  cams --> browserWhip
+  mics --> ffwin
+  mics --> ffrpi
+  mics --> pywhip
+  mics --> browserWhip
+  screen --> ffwin
+  screen --> pywhip
+  screen --> browserWhip
+  more --> ffwin
+  more --> pywhip
+
+  ffwin -->|WHIP| mediamtx
+  ffrpi -->|WHIP| mediamtx
+  pywhip -->|WHIP| mediamtx
+  browserWhip -->|WHIP| mediamtx
+
+  browser <-->|WebRTC / WHEP| mediamtx
+  player <-->|WebRTC / WHEP| mediamtx
+  obs <-->|RTSP / HLS / WebRTC| mediamtx
+
+  browser --> node
+  player --> node
+  playback --> node
+
+  node --> apiProxy
+  node --> playbackProxy
+  apiProxy --> mediamtx
+  playbackProxy --> mediamtx
+
+  node -. HTTP .-> browser
+  node -. HTTPS .-> player
+  node -. HTTPS .-> playback
 ```
 
 > **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS.
+>
+> **Playback proxy**: El servidor Node.js incluye un proxy en `/api/playback/*` para reenviar peticiones al servicio de grabaciones/reproducción (puerto 9996) sin exponer ese backend al navegador.
 >
 > **HTTPS**: El servidor soporta HTTPS (puerto 443) con certificados mkcert, necesario para usar `getUserMedia()` desde cualquier dispositivo que acceda por IP (no localhost).
 
@@ -214,6 +267,16 @@ TFG/
 │       ├── playback.html      # Reproductor avanzado
 │       ├── api-control.html   # Control de API
 │       ├── js/                # Scripts JavaScript
+│       │   ├── herramientas.js # Utilidades compartidas (escapeHtml, formatBytes)
+│       │   ├── watchdog.js     # Watchdog compartido de tráfico
+│       │   ├── broadcaster-ui.js # UI y dispositivos del broadcaster
+│       │   ├── broadcaster.js  # Lógica de emisión WHIP/WebRTC
+│       │   ├── playback-utils.js # Formateos específicos de playback
+│       │   ├── playback-ui.js  # UI y eventos del reproductor de grabaciones
+│       │   ├── playback-core.js # Carga y reproducción de grabaciones
+│       │   ├── playback.js     # Bootstrap mínimo de playback
+│       │   ├── player.js       # Reproductor WHEP
+│       │   └── api.js          # Cliente y helpers de la API
 │       └── css/               # Estilos CSS
 ├── mediamtx/                  # Configuración de MediaMTX
 │   ├── mediamtx.yml           # Configuración del servidor
@@ -294,6 +357,23 @@ http://<IP_SERVIDOR>:8889/<nombre_stream>
 ```
 Ejemplo: `http://192.168.1.100:8889/whipLL`
 
+### Reproducir grabaciones (Playback)
+
+El reproductor de grabaciones consulta primero la API de control de MediaMTX para listar los paths grabados y después usa el servicio de playback para obtener los fragmentos fMP4.
+
+**Desde el mismo equipo:**
+1. Abrir http://localhost/playback.html
+2. Elegir un stream grabado
+3. Seleccionar el punto de inicio o el modo lookback
+4. Pulsar **▶ Reproducir desde tiempo seleccionado**
+
+**Desde otro dispositivo en la red:**
+1. Abrir `http://<IP_SERVIDOR>/playback.html`
+2. Cargar la lista de grabaciones
+3. Reproducir la grabación deseada
+
+> **Tecnología**: Playback no usa WebRTC. El navegador recibe vídeo fMP4 por HTTP y lo reproduce con el elemento `<video>`.
+
 ## Puertos y Protocolos
 
 | Puerto | Protocolo | Descripción | Latencia |
@@ -306,6 +386,7 @@ Ejemplo: `http://192.168.1.100:8889/whipLL`
 | **8889** | HTTP | WebRTC (WHIP/WHEP) | **~100-300ms** |
 | **8189** | UDP | WebRTC ICE/STUN | - |
 | **9997** | HTTP | API REST MediaMTX | - |
+| **9996** | HTTP | Playback server (fMP4) | - |
 
 ## API MediaMTX
 
@@ -321,6 +402,8 @@ curl http://localhost:9997/v3/paths/get/whipLL
 # Estadísticas del servidor
 curl http://localhost:9997/v3/hlsmuxers/list
 ```
+
+> **Nota**: En la interfaz web, estas llamadas se exponen a través del proxy `/api/mediamtx/*`. Las grabaciones y reproducción se exponen mediante `/api/playback/*`.
 
 ## Configuración avanzada
 
