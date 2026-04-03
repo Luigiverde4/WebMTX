@@ -243,6 +243,7 @@ function updateStatus(status, text) {
 /**
  * Inicia la publicación WHIP del stream local.
  */
+
 async function startBroadcast() {
     // Leer la configuración actual.
     let endpoint = endpointInput.value.trim();
@@ -301,8 +302,7 @@ async function startBroadcast() {
         pc.oniceconnectionstatechange = () => {
             console.log('ICE state:', pc.iceConnectionState);
             if (pc.iceConnectionState === 'connected') {
-                updateStatus('live', '🔴 EN VIVO');
-                liveIndicator.style.display = 'block';
+                updateStatus('connecting', 'Conectado, verificando emisión...');
             } else if (pc.iceConnectionState === 'disconnected' || 
                        pc.iceConnectionState === 'failed' ||
                        pc.iceConnectionState === 'closed') {
@@ -343,6 +343,12 @@ async function startBroadcast() {
             type: 'answer',
             sdp: answerSDP
         }));
+
+        // Esperar a confirmar tráfico real antes de marcar la emisión como activa.
+        await waitForOutgoingStream(pc);
+
+        updateStatus('live', '🔴 EN VIVO');
+        liveIndicator.style.display = 'block';
         
         stopBtn.disabled = false;
         console.log('Transmisión WHIP iniciada correctamente');
@@ -414,6 +420,67 @@ function waitForIceGathering(pc) {
             // Timeout de seguridad (5 segundos)
             setTimeout(resolve, 5000);
         }
+    });
+}
+
+/**
+ * Espera a que el peer connection empiece a enviar tráfico real.
+ * @param {RTCPeerConnection} pc - Conexión en negociación.
+ */
+function waitForOutgoingStream(pc) {
+    return new Promise((resolve, reject) => {
+        let finished = false;
+        let lastBytesSent = new Map();
+        let timeoutId = null;
+
+        let finish = (callback, value) => {
+            if (finished) return;
+            finished = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            callback(value);
+        };
+
+        let checkStats = async () => {
+            if (finished) return;
+
+            if (!pc || pc.connectionState === 'closed' || pc.iceConnectionState === 'closed') {
+                finish(reject, new Error('La conexión se cerró antes de confirmar el envío del stream'));
+                return;
+            }
+
+            try {
+                let stats = await pc.getStats();
+                let hasOutgoingTraffic = false;
+
+                stats.forEach(report => {
+                    if (report.type !== 'outbound-rtp' || report.isRemote) return;
+
+                    let bytesSent = typeof report.bytesSent === 'number' ? report.bytesSent : 0;
+                    let previousBytesSent = lastBytesSent.get(report.id) || 0;
+
+                    if (bytesSent > 0 || bytesSent > previousBytesSent) {
+                        hasOutgoingTraffic = true;
+                    }
+
+                    lastBytesSent.set(report.id, bytesSent);
+                });
+
+                if (hasOutgoingTraffic) {
+                    finish(resolve);
+                    return;
+                }
+
+                setTimeout(checkStats, 300);
+            } catch (error) {
+                finish(reject, error);
+            }
+        };
+
+        timeoutId = setTimeout(() => {
+            finish(reject, new Error('No se pudo confirmar que el stream esté enviándose'));
+        }, 10000);
+
+        checkStats();
     });
 }
 
