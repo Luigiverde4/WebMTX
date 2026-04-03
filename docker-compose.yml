@@ -27,7 +27,7 @@ services:
     
   mediamtx:
     image: bluenviron/mediamtx:latest
-    container_name: mediamtx
+    container_name: mediamtxTFG
     restart: unless-stopped
     ports:
       - "1935:1935"      # RTMP
