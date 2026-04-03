@@ -24,6 +24,9 @@ async function loadSessions() {
     markAccordionLoaded('sessionsAccordion');
 }
 
+
+
+
 /**
  * Renderiza las sesiones RTSP (Cámaras IP, VLC, OBS, etc.)
  */
@@ -108,6 +111,9 @@ function updateSessionsCount() {
 
     sessionsCountEl.textContent = `${total} sesión${total !== 1 ? 'es' : ''}`;
 }
+
+
+
 
 /**
  * ACCIONES: Expulsar (Kick) usuarios

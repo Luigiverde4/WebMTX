@@ -14,14 +14,16 @@ let endpointButtons = document.getElementById('endpointButtons');
 // Estado global
 let pc = null; // WebRTC PeerConnection
 let activePaths = []; // Paths activos en MediaMTX
-let playerStatsTimer = null; // Intervalo para verificar recepción RTP
-let lastTotalBytesReceived = 0; // Total de bytes recibidos en el sondeo anterior
-let stalledBytesReceivedSamples = 0; // Sondeos consecutivos sin crecimiento
+let inboundStatsWatchdog = null; // Watchdog compartido para recepción RTP
 let isStoppingPlay = false; // Evita ejecuciones solapadas de stopPlay
 
 const PLAYER_STATS_INTERVAL_MS = 500;
 const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 2;
 
+
+
+
+// UI
 /**
  * Actualiza el estado visual del reproductor.
  * @param {string} status - Clase visual a aplicar.
@@ -33,7 +35,9 @@ function updateStatus(status, text) {
 }
 
 
-// Control de reproducción
+
+
+// CONTROL DE REPRODUCCIÓN
 /**
  * Inicia la reproducción del stream indicado por el usuario.
  */
@@ -73,6 +77,10 @@ function stopPlay() {
     isStoppingPlay = false;
 }
 
+
+
+
+// WATCHDOG DE RECEPCIÓN RTP
 /**
  * Lee estadísticas inbound-rtp y detecta si el stream se ha quedado sin recibir tráfico.
  */
@@ -92,24 +100,13 @@ async function actualizarInboundStats() {
             totalBytesReceived += typeof report.bytesReceived === 'number' ? report.bytesReceived : 0;
         });
 
-        // Si hay tráfico inbound monitorizable, exigimos crecimiento de bytes.
-        if (inboundRows > 0) {
-            if (totalBytesReceived > lastTotalBytesReceived) {
-                stalledBytesReceivedSamples = 0;
-            } else {
-                stalledBytesReceivedSamples += 1;
-
-                if (stalledBytesReceivedSamples >= STALLED_BYTES_RECEIVED_MAX_SAMPLES) {
-                    console.warn('bytesReceived estancado, deteniendo reproducción');
-                    stopPlay();
-                    return;
-                }
-            }
-        }
-
-        lastTotalBytesReceived = totalBytesReceived;
+        return {
+            monitorable: inboundRows > 0,
+            totalBytes: totalBytesReceived
+        };
     } catch (error) {
         console.warn('No se pudieron leer estadísticas inbound WebRTC:', error);
+        return { monitorable: false, totalBytes: 0 };
     }
 }
 
@@ -118,26 +115,36 @@ async function actualizarInboundStats() {
  */
 function startInboundStatsPolling() {
     stopInboundStatsPolling();
-    lastTotalBytesReceived = 0;
-    stalledBytesReceivedSamples = 0;
-    actualizarInboundStats();
-    playerStatsTimer = setInterval(actualizarInboundStats, PLAYER_STATS_INTERVAL_MS);
+
+    inboundStatsWatchdog = createTrafficWatchdog({
+        intervalMs: PLAYER_STATS_INTERVAL_MS,
+        maxStalledSamples: STALLED_BYTES_RECEIVED_MAX_SAMPLES,
+        sample: actualizarInboundStats,
+        onStalled: () => {
+            console.warn('bytesReceived estancado, deteniendo reproducción');
+            stopPlay();
+        },
+        onError: error => {
+            console.warn('No se pudieron leer estadísticas inbound WebRTC:', error);
+        }
+    });
+
+    inboundStatsWatchdog.start();
 }
 
 /**
  * Detiene la vigilancia de bytesReceived.
  */
 function stopInboundStatsPolling() {
-    if (playerStatsTimer) {
-        clearInterval(playerStatsTimer);
-        playerStatsTimer = null;
+    if (inboundStatsWatchdog) {
+        inboundStatsWatchdog.stop();
+        inboundStatsWatchdog = null;
     }
-
-    lastTotalBytesReceived = 0;
-    stalledBytesReceivedSamples = 0;
 }
 
 
+
+// REPRODUCCIÓN WHEP
 /**
  * Conecta con el servidor mediante WHEP y empieza a recibir el stream.
  * @param {string} server - Host o IP del servidor MediaMTX.
@@ -221,6 +228,19 @@ async function playWebRTC(server, streamName) {
 }
 
 /**
+ * Rellena el input y lanza la reproducción al pulsar un endpoint rápido.
+ * @param {string} endpoint - Endpoint seleccionado.
+ */
+async function reproducirEndpointRapido(endpoint) {
+    streamName.value = endpoint;
+    streamName.focus();
+    await startPlay();
+}
+
+
+
+// ENDPOINTS MEDIAMTX
+/**
  * Renderiza botones rápidos para seleccionar un endpoint activo.
  */
 function ponerBotonesEndpoint() {
@@ -234,16 +254,6 @@ function ponerBotonesEndpoint() {
     endpointButtons.innerHTML = activePaths
         .map(path => `<button type="button" onclick='reproducirEndpointRapido(${JSON.stringify(path)})'>${escapeHtml(path)}</button>`)
         .join('');
-}
-
-/**
- * Rellena el input y lanza la reproducción al pulsar un endpoint rápido.
- * @param {string} endpoint - Endpoint seleccionado.
- */
-async function reproducirEndpointRapido(endpoint) {
-    streamName.value = endpoint;
-    streamName.focus();
-    await startPlay();
 }
 
 /**
@@ -271,7 +281,10 @@ async function actualizarPathsActivosPlayer() {
     }
 }
 
-// Inicialización
+
+
+
+// INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', async () => {
     let savedServer = localStorage.getItem('player_server');
     let savedStream = localStorage.getItem('player_streamName');

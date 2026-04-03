@@ -115,33 +115,3 @@ async function PATCH(endpoint, body, options = {}) {
     return request('PATCH', endpoint, { ...options, body });
 }
 
-/**
- * UTILIDADES DE FORMATEO
- */
-
-/**
- * Escapa caracteres especiales para evitar ataques XSS al insertar texto en el HTML.
- */
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-/**
- * Convierte un número de bytes en una cadena legible (ej: 1048576 -> "1 MB").
- */
-function formatBytes(bytes) {
-    if (bytes === 0 || !bytes) return '0 B';
-
-    let k = 1024;
-    let sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    // Calculamos el índice de la unidad usando logaritmos
-    let i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    // Devolvemos el número redondeado a 2 decimales + la unidad
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-}
