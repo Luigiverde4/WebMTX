@@ -10,6 +10,42 @@ let whipSession = null;
 let isStoppingBroadcast = false;
 
 /**
+ * Aplica la preferencia de códec de vídeo elegida en la UI si el navegador la soporta.
+ * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
+ * @param {string} preferredCodec - MIME type preferido, o "auto" para no forzar nada.
+ */
+function applyPreferredVideoCodec(pcConnection, preferredCodec) {
+    if (!pcConnection || !preferredCodec || preferredCodec === 'auto' || typeof RTCRtpSender === 'undefined' || typeof RTCRtpSender.getCapabilities !== 'function') {
+        return;
+    }
+
+    let capabilities = RTCRtpSender.getCapabilities('video');
+    if (!capabilities || !Array.isArray(capabilities.codecs)) {
+        return;
+    }
+
+    let selectedMimeType = preferredCodec.toLowerCase();
+    let selectedCodecs = capabilities.codecs.filter(codec => (codec.mimeType || '').toLowerCase() === selectedMimeType);
+
+    if (selectedCodecs.length === 0) {
+        console.warn(`El códec ${selectedMimeType} no está disponible en este navegador; se usará el códec por defecto`);
+        return;
+    }
+
+    let transceivers = typeof pcConnection.getTransceivers === 'function' ? pcConnection.getTransceivers() : [];
+    transceivers.forEach(transceiver => {
+        if (!transceiver.sender || !transceiver.sender.track || transceiver.sender.track.kind !== 'video') {
+            return;
+        }
+
+        if (typeof transceiver.setCodecPreferences === 'function') {
+            transceiver.setCodecPreferences(selectedCodecs);
+            console.log('Preferencia de códec aplicada:', selectedMimeType);
+        }
+    });
+}
+
+/**
  * Inicia la publicación WHIP del stream local.
  */
 async function startBroadcast() {
@@ -51,6 +87,8 @@ async function startBroadcast() {
             pc.addTrack(track, localStream);
         });
 
+        applyPreferredVideoCodec(pc, getVideoCodecPreference ? getVideoCodecPreference() : 'auto');
+
         pc.onicecandidate = event => {
             if (event.candidate) {
                 console.log('ICE candidate:', event.candidate.candidate);
@@ -72,7 +110,6 @@ async function startBroadcast() {
 
         let offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-
         await waitForIceGathering(pc);
 
         let whipUrl = `http://${server}:8889/${endpoint}/whip`;

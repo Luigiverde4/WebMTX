@@ -17,6 +17,7 @@ let endpointInput = document.getElementById('endpoint');
 let videoSource = document.getElementById('videoSource');
 let audioSource = document.getElementById('audioSource');
 let resolution = document.getElementById('resolution');
+let videoCodecPreference = document.getElementById('videoCodecPreference');
 
 // Botones de control
 let startBtn = document.getElementById('startBtn');
@@ -30,9 +31,90 @@ let liveIndicator = document.getElementById('liveIndicator');
 let activePaths = [];
 let codecStatsWatchdog = null;
 let watchdogAlertShown = false;
+let availableVideoCodecFamilies = [];
 
 const CODEC_STATS_INTERVAL_MS = 500;
 const STALLED_BYTES_SENT_MAX_SAMPLES = 2;
+
+const VIDEO_CODEC_EXCLUDES = new Set(['video/rtx', 'video/red', 'video/ulpfec']);
+
+// CODECS VIDEO
+/**
+ * Devuelve la etiqueta legible para un códec de vídeo dado su MIME type.
+ * @param {string} mimeType - MIME type del códec.
+ * @returns {string}
+ */
+function getVideoCodecLabel(mimeType) {
+    if (mimeType === 'video/h264') return 'H264';
+    if (mimeType === 'video/h265' || mimeType === 'video/hevc') return 'H265 / HEVC';
+    if (mimeType === 'video/vp8') return 'VP8';
+    if (mimeType === 'video/vp9') return 'VP9';
+    if (mimeType === 'video/av1') return 'AV1';
+
+    let family = mimeType.split('/')[1] || mimeType;
+    return family.toUpperCase();
+}
+
+
+/**
+ * Rellena el selector de códec con los códecs de vídeo soportados por el navegador.
+ */
+function actualizarOpcionesCodecVideo() {
+    if (!videoCodecPreference) return;
+
+    let previousValue = localStorage.getItem('broadcaster_video_codec') || 'auto';
+    let options = [{ value: 'auto', label: 'Automático' }];
+
+    availableVideoCodecFamilies = [];
+
+    if (typeof RTCRtpSender !== 'undefined' && typeof RTCRtpSender.getCapabilities === 'function') {
+        let capabilities = RTCRtpSender.getCapabilities('video');
+        if (capabilities && Array.isArray(capabilities.codecs)) {
+            let seenFamilies = new Set();
+
+            capabilities.codecs.forEach(codec => {
+                let mimeType = (codec.mimeType || '').toLowerCase();
+                if (!mimeType.startsWith('video/') || VIDEO_CODEC_EXCLUDES.has(mimeType)) return;
+
+                let family = mimeType.split('/')[1] || mimeType;
+                if (seenFamilies.has(family)) return;
+
+                seenFamilies.add(family);
+                availableVideoCodecFamilies.push(mimeType);
+
+                let label = getVideoCodecLabel(mimeType);
+
+                options.push({ value: mimeType, label });
+            });
+        }
+    }
+
+    videoCodecPreference.innerHTML = options
+        .map(option => `<option value="${option.value}">${option.label}</option>`)
+        .join('');
+
+    if (options.some(option => option.value === previousValue)) {
+        videoCodecPreference.value = previousValue;
+    } else {
+        videoCodecPreference.value = 'auto';
+    }
+}
+
+/**
+ * Devuelve el códec de vídeo seleccionado por el usuario.
+ * @returns {string}
+ */
+function getVideoCodecPreference() {
+    return videoCodecPreference ? videoCodecPreference.value : 'auto';
+}
+
+/**
+ * Guarda la preferencia de códec de vídeo.
+ */
+function guardarPreferenciaCodecVideo() {
+    if (!videoCodecPreference) return;
+    localStorage.setItem('broadcaster_video_codec', videoCodecPreference.value || 'auto');
+}
 
 
 
@@ -172,6 +254,38 @@ function startCodecStatsPolling() {
     });
 
     codecStatsWatchdog.start();
+}
+
+/**
+ * Devuelve una lista legible con las líneas relevantes del SDP de vídeo.
+ * @param {string} sdp - SDP completo.
+ * @returns {string}
+ */
+function extraerSeccionVideoSdp(sdp) {
+    if (!sdp) return '';
+
+    let lines = sdp.split(/\r?\n/);
+    let collected = [];
+    let inVideoSection = false;
+
+    lines.forEach(line => {
+        if (line.startsWith('m=video ')) {
+            inVideoSection = true;
+            collected.push(line);
+            return;
+        }
+
+        if (line.startsWith('m=') && inVideoSection) {
+            inVideoSection = false;
+            return;
+        }
+
+        if (inVideoSection && (line.startsWith('a=rtpmap:') || line.startsWith('a=fmtp:') || line.startsWith('a=rtcp-fb:') || line.startsWith('a=mid:') || line.startsWith('a=extmap:'))) {
+            collected.push(line);
+        }
+    });
+
+    return collected.join('\n');
 }
 
 /**
@@ -384,6 +498,7 @@ function mostrarError(userMessage, error) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await iniciarDispositivos();
+    actualizarOpcionesCodecVideo();
 
     let savedServer = localStorage.getItem('broadcaster_server');
     let savedEndpoint = localStorage.getItem('broadcaster_endpoint');
@@ -395,5 +510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 videoSource.addEventListener('change', cambioDispositivo);
+if (videoCodecPreference) {
+    videoCodecPreference.addEventListener('change', guardarPreferenciaCodecVideo);
+}
 navigator.mediaDevices.addEventListener('devicechange', actualizarDispositivos);
 preview.addEventListener('click', visualizarPreview);
