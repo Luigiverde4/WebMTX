@@ -4,6 +4,8 @@ const http = require("http");
 
 const MEDIAMTX_API_HOST = process.env.MEDIAMTX_HOST || "localhost";
 const MEDIAMTX_API_PORT = 9997;
+const PLAYBACK_API_HOST = process.env.PLAYBACK_HOST || MEDIAMTX_API_HOST;
+const PLAYBACK_API_PORT = Number(process.env.PLAYBACK_PORT || 9996);
 
 // Parsear JSON para peticiones POST/PATCH
 app.use(express.json());
@@ -62,6 +64,48 @@ app.all("/api/mediamtx/*", (req, res) => {
   });
   
   // Enviar el body si existe
+  if (body) proxyReq.write(body);
+  proxyReq.end();
+});
+
+// PROXY Playback API (puerto 9996)
+app.all("/api/playback/*", (req, res) => {
+  const path = req.params[0];
+  const body = req.body ? JSON.stringify(req.body) : '';
+  const queryIndex = req.originalUrl.indexOf('?');
+  const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : '';
+
+  const options = {
+    hostname: PLAYBACK_API_HOST,
+    port: PLAYBACK_API_PORT,
+    path: `/${path}${query}`,
+    method: req.method,
+    headers: {
+      'Content-Length': Buffer.byteLength(body)
+    }
+  };
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    res.status(proxyRes.statusCode || 500);
+
+    Object.entries(proxyRes.headers).forEach(([headerName, headerValue]) => {
+      if (headerValue !== undefined) {
+        res.setHeader(headerName, headerValue);
+      }
+    });
+
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (error) => {
+    console.error("Error proxy Playback:", error.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.end();
+    }
+  });
+
   if (body) proxyReq.write(body);
   proxyReq.end();
 });

@@ -7,13 +7,11 @@
  * Carga las grabaciones disponibles desde los endpoints de grabación.
  */
 async function loadRecordings() {
-    let server = document.getElementById('server').value;
-
     try {
         recordingsListEl.innerHTML = '<div class="empty-state"><p>⏳ Cargando grabaciones...</p></div>';
 
-        let pathsURL = `http://${server}:9997/v3/recordings/list`;
-        let pathsResponse = await fetch(pathsURL);
+        // Usar proxy del backend para evitar errores de red/CORS en el navegador.
+        let pathsResponse = await fetch('/api/mediamtx/v3/recordings/list');
         if (!pathsResponse.ok) {
             throw new Error(`HTTP ${pathsResponse.status}: ${pathsResponse.statusText}`);
         }
@@ -28,7 +26,7 @@ async function loadRecordings() {
 
         allRecordings = [];
         for (let item of pathsData.items) {
-            let listURL = `http://${server}:9996/list?path=${encodeURIComponent(item.name)}`;
+            let listURL = `/api/playback/list?path=${encodeURIComponent(item.name)}`;
             let response = await fetch(listURL);
             if (!response.ok) continue;
 
@@ -99,7 +97,6 @@ function playFromOffset() {
         return;
     }
 
-    let server = document.getElementById('server').value;
     let mode = document.querySelector('input[name="playbackMode"]:checked').value;
 
     let offset = 0;
@@ -158,7 +155,7 @@ function playFromOffset() {
     let originalStart = new Date(selectedRecording.start);
     let newStart = new Date(originalStart.getTime() + offset * 1000);
     let startISO = newStart.toISOString();
-    let playURL = `http://${server}:9996/get?duration=${newDuration}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(startISO)}`;
+    let playURL = `/api/playback/get?duration=${encodeURIComponent(newDuration)}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(startISO)}`;
 
     console.log('Modo:', mode);
     console.log('Offset:', offset.toFixed(2), 's');
