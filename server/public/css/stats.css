@@ -87,6 +87,30 @@ body {
     font-size: 0.95rem;
 }
 
+.refresh-interval {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.refresh-interval input {
+    width: 92px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    padding: 8px 10px;
+    font: inherit;
+}
+
+.refresh-interval input:focus {
+    outline: none;
+    border-color: rgba(96, 165, 250, 0.7);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
+}
+
 .last-update {
     color: var(--muted);
     font-size: 0.92rem;

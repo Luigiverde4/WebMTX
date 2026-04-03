@@ -18,7 +18,13 @@
                 <button id="refreshBtn" class="btn btn-primary">Actualizar ahora</button>
                 <label class="auto-refresh">
                     <input type="checkbox" id="autoRefresh" checked>
-                    Auto refresh (1.5s)
+                    <span>Auto refresh</span>
+                    <span id="refreshIntervalLabel">(1.5s)</span>
+                </label>
+                <label class="refresh-interval">
+                    <span>Intervalo</span>
+                    <input id="refreshIntervalInput" type="number" min="250" step="250" value="1500">
+                    <span>ms</span>
                 </label>
             </div>
             <div class="right-tools">
