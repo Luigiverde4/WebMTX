@@ -8,9 +8,9 @@ let API_BASE = '/api/mediamtx/v3';
 
 /**
  * Une el endpoint con la base evitando errores de barras duplicadas.
- * @example joinApiPath('/paths') => '/api/mediamtx/v3/paths'
+ * @example unirRutaApi('/paths') => '/api/mediamtx/v3/paths'
  */
-function joinApiPath(endpoint) {
+function unirRutaApi(endpoint) {
     let base = API_BASE.replace(/\/$/, ''); // Quita barra final de la base
     let path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint; // Quita barra inicial del endpoint
     return `${base}/${path}`;
@@ -20,8 +20,8 @@ function joinApiPath(endpoint) {
  * Construye una URL completa incluyendo parámetros de consulta (Query Params).
  * Limpia automáticamente valores nulos o vacíos.
  */
-function buildApiUrl(endpoint, query = {}) {
-    let url = new URL(joinApiPath(endpoint), window.location.origin);
+function construirUrlApi(endpoint, query = {}) {
+    let url = new URL(unirRutaApi(endpoint), window.location.origin);
 
     Object.entries(query).forEach(([key, value]) => {
         // Solo añadimos el parámetro si tiene un valor real
@@ -37,7 +37,7 @@ function buildApiUrl(endpoint, query = {}) {
 /**
  * Analiza la respuesta del servidor según su tipo de contenido.
  */
-async function readApiResponse(response) {
+async function leerRespuestaApi(response) {
     // 204 No Content: No hay nada que leer, devolvemos null.
     if (response.status === 204) {
         return null;
@@ -69,9 +69,9 @@ async function request(method, endpoint, options = {}) {
 
     // Configuración de la URL final
     if (query) {
-        endpoint = buildApiUrl(endpoint, query).toString();
+        endpoint = construirUrlApi(endpoint, query).toString();
     } else {
-        endpoint = new URL(joinApiPath(endpoint), window.location.origin).toString();
+        endpoint = new URL(unirRutaApi(endpoint), window.location.origin).toString();
     }
 
     // Manejo inteligente del cuerpo de la petición (Body)
@@ -91,7 +91,7 @@ async function request(method, endpoint, options = {}) {
 
     // Si la respuesta no es 2xx (éxito), lanzamos una excepción con el error del servidor
     if (!response.ok) {
-        let errorPayload = await readApiResponse(response).catch(() => null);
+        let errorPayload = await leerRespuestaApi(response).catch(() => null);
         let errorMessage = typeof errorPayload === 'string'
             ? errorPayload
             : errorPayload?.message || errorPayload?.error || null;
@@ -99,7 +99,7 @@ async function request(method, endpoint, options = {}) {
         throw new Error(errorMessage || `Error HTTP ${response.status}`);
     }
 
-    return await readApiResponse(response);
+    return await leerRespuestaApi(response);
 }
 
 // Atajos para los métodos HTTP más comunes

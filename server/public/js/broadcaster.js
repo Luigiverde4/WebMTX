@@ -14,7 +14,7 @@ let isStoppingBroadcast = false;
  * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
  * @param {string} preferredCodec - MIME type preferido, o "auto" para no forzar nada.
  */
-function applyPreferredVideoCodec(pcConnection, preferredCodec) {
+function aplicarCodecVideoPreferido(pcConnection, preferredCodec) {
     if (!pcConnection || !preferredCodec || preferredCodec === 'auto' || typeof RTCRtpSender === 'undefined' || typeof RTCRtpSender.getCapabilities !== 'function') {
         return;
     }
@@ -73,7 +73,7 @@ async function startBroadcast() {
     localStorage.setItem('broadcaster_server', server);
     localStorage.setItem('broadcaster_endpoint', endpoint);
 
-    updateStatus('connecting', 'Conectando...');
+    actualizarEstado('connecting', 'Conectando...');
     startBtn.disabled = true;
 
     try {
@@ -87,7 +87,7 @@ async function startBroadcast() {
             pc.addTrack(track, localStream);
         });
 
-        applyPreferredVideoCodec(pc, getVideoCodecPreference ? getVideoCodecPreference() : 'auto');
+        aplicarCodecVideoPreferido(pc, cogerVideoCodecPreferencia ? cogerVideoCodecPreferencia() : 'auto');
 
         pc.onicecandidate = event => {
             if (event.candidate) {
@@ -98,7 +98,7 @@ async function startBroadcast() {
         pc.oniceconnectionstatechange = () => {
             console.log('ICE state:', pc.iceConnectionState);
             if (pc.iceConnectionState === 'connected') {
-                updateStatus('connecting', 'Conectado, verificando emisión...');
+                actualizarEstado('connecting', 'Conectado, verificando emisión...');
             } else if (
                 pc.iceConnectionState === 'disconnected' ||
                 pc.iceConnectionState === 'failed' ||
@@ -110,7 +110,7 @@ async function startBroadcast() {
 
         let offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        await waitForIceGathering(pc);
+        await esperarICEcompleto(pc);
 
         let whipUrl = `http://${server}:8889/${endpoint}/whip`;
         console.log('WHIP URL:', whipUrl);
@@ -137,9 +137,9 @@ async function startBroadcast() {
             sdp: answerSDP
         }));
 
-        await waitForOutgoingStream(pc);
+        await esperarStreamSaliente(pc);
 
-        updateStatus('live', '🔴 EN VIVO');
+        actualizarEstado('live', '🔴 EN VIVO');
         liveIndicator.style.display = 'block';
         startCodecStatsPolling();
 
@@ -183,7 +183,7 @@ async function stopBroadcast() {
 
     preview.srcObject = null;
     liveIndicator.style.display = 'none';
-    updateStatus('disconnected', 'Sin transmitir');
+    actualizarEstado('disconnected', 'Sin transmitir');
     startBtn.disabled = false;
     stopBtn.disabled = true;
     streamUrlEl.textContent = '-';
@@ -197,7 +197,7 @@ async function stopBroadcast() {
  * Espera hasta que termine la recopilación de ICE candidates.
  * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
  */
-function waitForIceGathering(pcConnection) {
+function esperarICEcompleto(pcConnection) {
     return new Promise(resolve => {
         if (pcConnection.iceGatheringState === 'complete') {
             resolve();
@@ -220,7 +220,7 @@ function waitForIceGathering(pcConnection) {
  * Espera a que el peer connection empiece a enviar tráfico real.
  * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
  */
-function waitForOutgoingStream(pcConnection) {
+function esperarStreamSaliente(pcConnection) {
     return new Promise((resolve, reject) => {
         let finished = false;
         let lastBytesSent = new Map();

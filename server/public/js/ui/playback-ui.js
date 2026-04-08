@@ -32,7 +32,7 @@ let selectedRecording = null;
 /**
  * Alterna entre el modo de reproducción por offset y el modo lookback.
  */
-function updatePlaybackMode() {
+function actualizarModoPlayback() {
     let mode = document.querySelector('input[name="playbackMode"]:checked').value;
     let offsetControls = document.getElementById('offsetControls');
     let lookbackControls = document.getElementById('lookbackControls');
@@ -49,7 +49,7 @@ function updatePlaybackMode() {
 /**
  * Resalta en la lista la grabación actualmente seleccionada.
  */
-function updateSelectedRecording() {
+function actualizarGrabacionSeleccionada() {
     document.querySelectorAll('.recording-item').forEach(item => {
         item.classList.remove('selected');
     });
@@ -69,7 +69,7 @@ function updateSelectedRecording() {
 /**
  * Rellena el selector con los streams presentes en las grabaciones.
  */
-function updateStreamFilter() {
+function actualizarFiltroStream() {
     let streams = [...new Set(allRecordings.map(recording => recording.stream))].sort();
 
     streamFilterEl.innerHTML = '<option value="all">Todos los streams</option>';
@@ -84,14 +84,14 @@ function updateStreamFilter() {
 /**
  * Filtra las grabaciones según el stream seleccionado.
  */
-function filterRecordings() {
+function filtrarGrabaciones() {
     let selectedStream = streamFilterEl.value;
 
     if (selectedStream === 'all') {
-        displayRecordings(allRecordings);
+        mostrarGrabaciones(allRecordings);
     } else {
         let filtered = allRecordings.filter(recording => recording.stream === selectedStream);
-        displayRecordings(filtered);
+        mostrarGrabaciones(filtered);
     }
 }
 
@@ -99,7 +99,7 @@ function filterRecordings() {
  * Renderiza la lista de grabaciones en pantalla.
  * @param {Array<Object>} recordings - Lista de segmentos a mostrar.
  */
-function displayRecordings(recordings) {
+function mostrarGrabaciones(recordings) {
     if (recordings.length === 0) {
         recordingsListEl.innerHTML = '<div class="empty-state"><p>🎬 No hay grabaciones para este filtro</p></div>';
         return;
@@ -138,7 +138,7 @@ function displayRecordings(recordings) {
  * Ajusta la velocidad de reproducción del vídeo.
  * @param {number} speed - Velocidad deseada.
  */
-function setSpeed(speed) {
+function fijarVelocidad(speed) {
     video.playbackRate = speed;
     speedDisplay.textContent = speed.toFixed(2) + 'x';
 }
@@ -147,23 +147,23 @@ function setSpeed(speed) {
  * Incrementa o reduce la velocidad actual manteniéndola dentro de rango.
  * @param {number} delta - Variación de velocidad.
  */
-function changeSpeed(delta) {
+function cambiarVelocidad(delta) {
     let newSpeed = Math.max(0.25, Math.min(4, video.playbackRate + delta));
-    setSpeed(newSpeed);
+    fijarVelocidad(newSpeed);
 }
 
 /**
  * Actualiza la etiqueta con el tiempo transcurrido y total.
  */
-function updateTimeDisplay() {
+function actualizarTiempoMostrado() {
     let current = formatTime(video.currentTime);
     let total = formatTime(video.duration);
     timeDisplay.textContent = `${current} / ${total}`;
 }
 
 // Eventos del vídeo
-video.addEventListener('timeupdate', updateTimeDisplay);
-video.addEventListener('loadedmetadata', updateTimeDisplay);
+video.addEventListener('timeupdate', actualizarTiempoMostrado);
+video.addEventListener('loadedmetadata', actualizarTiempoMostrado);
 video.addEventListener('ratechange', () => {
     speedDisplay.textContent = video.playbackRate.toFixed(2) + 'x';
 });
@@ -205,6 +205,6 @@ startOffsetInput.addEventListener('input', () => {
 
 window.addEventListener('load', () => {
     console.log('MediaMTX Playback Player cargado');
-    updateTimeDisplay();
+    actualizarTiempoMostrado();
     loadRecordings();
 });

@@ -10,7 +10,7 @@ let accordionItems = document.querySelectorAll('details[data-load]');
  * Abre programáticamente un acordeón por su ID.
  * @param {string} id - El ID del elemento <details>
  */
-function openAccordion(id) {
+function abrirAcordeon(id) {
     let details = document.getElementById(id);
     if (details) {
         details.open = true; // Al cambiar a true, se disparará el evento 'toggle'
@@ -21,7 +21,7 @@ function openAccordion(id) {
  * Lógica principal de carga diferida.
  * @param {HTMLElement} details - El elemento <details> que se desea cargar.
  */
-async function loadAccordionSection(details) {
+async function cargarSeccionAcordeon(details) {
     // 1. Verificación de estado: Si ya se cargó o está cargando, abortamos para ahorrar recursos.
     if (details.dataset.loaded === 'true' || details.dataset.loading === 'true') {
         return;
@@ -56,18 +56,18 @@ async function loadAccordionSection(details) {
  * Inicializa los eventos de la UI.
  * Configura los escuchadores para cada acordeón detectado.
  */
-function initApiUi() {
+function iniciarUiApi() {
     accordionItems.forEach(details => {
         // Escuchamos el evento 'toggle' (se dispara al abrir o cerrar)
         details.addEventListener('toggle', () => {
             if (details.open) {
-                loadAccordionSection(details);
+                cargarSeccionAcordeon(details);
             }
         });
 
         // Si el acordeón ya viene abierto por defecto en el HTML, cargamos sus datos de inmediato.
         if (details.open) {
-            loadAccordionSection(details);
+            cargarSeccionAcordeon(details);
         }
     });
 }
@@ -75,7 +75,7 @@ function initApiUi() {
 /**
  * Marca manualmente una sección como cargada (útil para callbacks externos).
  */
-function markAccordionLoaded(id) {
+function marcarAcordeonCargado(id) {
     let details = document.getElementById(id);
     if (details) {
         details.dataset.loaded = 'true';
@@ -86,12 +86,12 @@ function markAccordionLoaded(id) {
  * Fuerza la actualización de todas las secciones principales de la API.
  * Útil para un botón de "Refrescar" global.
  */
-function refreshAll() {
+function refrescarTodo() {
     return Promise.all([
-        loadPaths(),
-        loadConfig(),
-        loadSessions(),
-        loadRecordings()
+        cargarPaths(),
+        cargarConfig(),
+        cargarSesiones(),
+        cargarGrabaciones()
     ]);
 }
 
@@ -100,5 +100,5 @@ function refreshAll() {
  */
 window.addEventListener('load', () => {
     console.log('MediaMTX API UI inicializada');
-    initApiUi();
+    iniciarUiApi();
 });

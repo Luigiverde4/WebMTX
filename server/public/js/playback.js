@@ -49,8 +49,8 @@ async function loadRecordings() {
         }
 
         allRecordings.sort((a, b) => b.start - a.start);
-        updateStreamFilter();
-        displayRecordings(allRecordings);
+        actualizarFiltroStream();
+        mostrarGrabaciones(allRecordings);
 
         recordingCountEl.textContent = `${allRecordings.length} grabación${allRecordings.length !== 1 ? 'es' : ''}`;
     } catch (error) {
@@ -72,7 +72,7 @@ async function loadRecordings() {
  */
 function playRecording(recording) {
     selectedRecording = recording;
-    updateSelectedRecording();
+    actualizarGrabacionSeleccionada();
 
     startOffsetInput.max = Math.floor(recording.duration);
     startOffsetInput.value = 0;

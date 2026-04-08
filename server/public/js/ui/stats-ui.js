@@ -46,7 +46,7 @@ let totalBytesSentEl = document.getElementById('totalBytesSent');
  * Actualiza el resumen superior del dashboard.
  * @param {Array<object>} items - Paths activos.
  */
-function renderSummary(items) {
+function renderizarResumen(items) {
     let totalPaths = items.length;
     let readyPaths = items.filter(path => path.ready).length;
     let onlinePaths = items.filter(path => path.online).length;
@@ -68,7 +68,7 @@ function renderSummary(items) {
  * Muestra un error visual en la zona de streams.
  * @param {Error} error - Error capturado durante la carga.
  */
-function renderStatsError(error) {
+function renderizarErrorStats(error) {
     if (streamSectionsContainerEl) {
         streamSectionsContainerEl.innerHTML = `<div class="error">No se pudieron cargar las estadisticas: ${escapeHtml(error.message)}</div>`;
     }
@@ -86,7 +86,7 @@ function renderStatsError(error) {
  * @param {string} streamName - Nombre del stream.
  * @returns {string}
  */
-function getStreamCanvasId(streamName) {
+function obtenerIdCanvasStream(streamName) {
     let hash = 0;
     for (let i = 0; i < streamName.length; i += 1) {
         hash = ((hash << 5) - hash) + streamName.charCodeAt(i);
@@ -102,8 +102,8 @@ function getStreamCanvasId(streamName) {
  * @param {string} streamName - Nombre del stream.
  * @returns {string}
  */
-function getStreamBlockId(streamName) {
-    return `block-${getStreamCanvasId(streamName)}`;
+function obtenerIdBloqueStream(streamName) {
+    return `block-${obtenerIdCanvasStream(streamName)}`;
 }
 
 /**
@@ -111,7 +111,7 @@ function getStreamBlockId(streamName) {
  * @param {string} id - Id del elemento.
  * @param {string} value - Texto a mostrar.
  */
-function setTextById(id, value) {
+function ponerTextoPorId(id, value) {
     let el = document.getElementById(id);
     if (el) {
         el.textContent = value;

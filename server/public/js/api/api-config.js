@@ -11,7 +11,7 @@ let configValueEl = document.getElementById('configValue');
 /**
  * Solicita la configuración actual al servidor y activa la renderización.
  */
-async function loadConfig() {
+async function cargarConfig() {
     let display = configDisplayEl;
 
     try {
@@ -22,10 +22,10 @@ async function loadConfig() {
 
         display.innerHTML = '';
         // Llamada a la función recursiva para dibujar el objeto JSON
-        displayConfigObject(config, display);
+        mostrarObjetoConfig(config, display);
         
         // Marcamos el acordeón como cargado (función definida en el primer script)
-        markAccordionLoaded('configAccordion');
+        marcarAcordeonCargado('configAccordion');
     } catch (error) {
         console.error('Error al cargar config:', error);
         display.innerHTML = `<div class="empty-state">❌ Error: ${escapeHtml(error.message)}</div>`;
@@ -37,7 +37,7 @@ async function loadConfig() {
  * @param {Object} obj - El fragmento de configuración a mostrar.
  * @param {HTMLElement} container - Dónde insertar los elementos.
  */
-function displayConfigObject(obj, container) {
+function mostrarObjetoConfig(obj, container) {
     for (const [key, value] of Object.entries(obj)) {
         // Si el valor es un objeto (y no un array o nulo), creamos una subsección
         if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
@@ -54,7 +54,7 @@ function displayConfigObject(obj, container) {
             container.appendChild(section);
             
             // RECURSIÓN: La función se llama a sí misma para procesar el sub-objeto
-            displayConfigObject(value, section);
+            mostrarObjetoConfig(value, section);
         } else {
             // Si es un valor simple (string, number, boolean), lo dibujamos directamente
             let item = document.createElement('div');
@@ -71,7 +71,7 @@ function displayConfigObject(obj, container) {
 /**
  * Envía una actualización de un parámetro específico al servidor.
  */
-async function updateConfig() {
+async function actualizarConfig() {
     let key = configKeyEl.value.trim();
     let value = configValueEl.value.trim();
 
@@ -97,7 +97,7 @@ async function updateConfig() {
         await PATCH('/config/global/patch', config);
 
         alert(`Configuración actualizada: ${key} = ${value}`);
-        await loadConfig(); // Refrescamos la vista para confirmar el cambio
+        await cargarConfig(); // Refrescamos la vista para confirmar el cambio
 
         // Limpiamos los campos de entrada
         configKeyEl.value = '';
@@ -111,7 +111,7 @@ async function updateConfig() {
 /**
  * Solicita al servidor que recargue su configuración desde el archivo físico (mediamtx.yml).
  */
-async function reloadConfig() {
+async function recargarConfig() {
     if (!confirm('¿Recargar configuración desde el archivo?')) return;
 
     try {
@@ -119,7 +119,7 @@ async function reloadConfig() {
         await PATCH('/config/global/patch', {});
 
         alert('Configuración recargada con éxito');
-        await loadConfig();
+        await cargarConfig();
     } catch (error) {
         console.error('Error al recargar:', error);
         alert('Error al recargar: ' + error.message);

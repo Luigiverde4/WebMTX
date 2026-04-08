@@ -29,7 +29,7 @@ const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 2;
  * @param {string} status - Clase visual a aplicar.
  * @param {string} text - Texto descriptivo del estado.
  */
-function updateStatus(status, text) {
+function actualizarEstado(status, text) {
     statusEl.className = `status ${status}`;
     statusEl.textContent = text;
 }
@@ -59,7 +59,7 @@ function stopPlay() {
     if (isStoppingPlay) return;
     isStoppingPlay = true;
 
-    stopInboundStatsPolling();
+    pararPollingStatsEntrantes();
 
     // Cerrar la conexión WebRTC si existe.
     if (pc) {
@@ -72,7 +72,7 @@ function stopPlay() {
     video.srcObject = null;
     video.src = '';
     
-    updateStatus('disconnected', 'Desconectado');
+    actualizarEstado('disconnected', 'Desconectado');
     stopBtn.disabled = true;
     isStoppingPlay = false;
 }
@@ -113,8 +113,8 @@ async function actualizarInboundStats() {
 /**
  * Inicia la vigilancia de bytesReceived para detectar cortes silenciosos.
  */
-function startInboundStatsPolling() {
-    stopInboundStatsPolling();
+function empezarPollingStatsEntrantes() {
+    pararPollingStatsEntrantes();
 
     inboundStatsWatchdog = createTrafficWatchdog({
         intervalMs: PLAYER_STATS_INTERVAL_MS,
@@ -135,7 +135,7 @@ function startInboundStatsPolling() {
 /**
  * Detiene la vigilancia de bytesReceived.
  */
-function stopInboundStatsPolling() {
+function pararPollingStatsEntrantes() {
     if (inboundStatsWatchdog) {
         inboundStatsWatchdog.stop();
         inboundStatsWatchdog = null;
@@ -151,7 +151,7 @@ function stopInboundStatsPolling() {
  * @param {string} streamName - Nombre del stream a reproducir.
  */
 async function playWebRTC(server, streamName) {
-    updateStatus('connecting', 'Conectando WebRTC...');
+    actualizarEstado('connecting', 'Conectando WebRTC...');
     
     try {
         // pc = new RTCPeerConnection({
@@ -167,7 +167,7 @@ async function playWebRTC(server, streamName) {
         pc.ontrack = (event) => {
             console.log('Track recibido:', event.track.kind);
             video.srcObject = event.streams[0];
-            updateStatus('connected', 'Conectado (WebRTC)');
+            actualizarEstado('connected', 'Conectado (WebRTC)');
             stopBtn.disabled = false;
         };
         
@@ -177,7 +177,7 @@ async function playWebRTC(server, streamName) {
             if (pc.iceConnectionState === 'disconnected' || 
                 pc.iceConnectionState === 'failed' ||
                 pc.iceConnectionState === 'closed') {
-                updateStatus('disconnected', 'Desconectado');
+                actualizarEstado('disconnected', 'Desconectado');
                 stopBtn.disabled = true;
             }
         };
@@ -215,13 +215,13 @@ async function playWebRTC(server, streamName) {
             sdp: answerSDP
         }));
 
-        startInboundStatsPolling();
+        empezarPollingStatsEntrantes();
 
         console.log('WebRTC iniciado correctamente');
         
     } catch (error) {
         console.error('Error en WebRTC:', error);
-        updateStatus('disconnected', 'Error al conectar');
+        actualizarEstado('disconnected', 'Error al conectar');
         alert('Error al iniciar WebRTC: ' + error.message);
         stopPlay();
     }

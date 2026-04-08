@@ -13,7 +13,7 @@
             <h1>MediaMTX API V2</h1>
             <div class="server-config">
                 <span class="server-status">🟢 API via proxy</span>
-                <button class="btn-refresh" onclick="refreshAll()">🔄 Actualizar Todo</button>
+                <button class="btn-refresh" onclick="refrescarTodo()">🔄 Actualizar Todo</button>
             </div>
         </header>
 
@@ -25,38 +25,38 @@
                         <div class="action-card">
                             <h3>🔄 Reload config</h3>
                             <p>Reload the YAML config without restarting</p>
-                            <button class="btn-action" onclick="reloadConfig()">Run</button>
+                            <button class="btn-action" onclick="recargarConfig()">Run</button>
                         </div>
 
                         <div class="action-card">
                             <h3>🗑️ Close path</h3>
                             <input type="text" id="closePathName" placeholder="Path name">
-                            <button class="btn-action btn-danger" onclick="closePath()">Close</button>
+                            <button class="btn-action btn-danger" onclick="cerrarPath()">Close</button>
                         </div>
 
                         <div class="action-card">
                             <h3>❌ Kick RTSP session</h3>
                             <input type="text" id="closeRtspId" placeholder="Session ID">
-                            <button class="btn-action btn-danger" onclick="kickRtspSession()">Close</button>
+                            <button class="btn-action btn-danger" onclick="expulsarSesionRtsp()">Close</button>
                         </div>
 
                         <div class="action-card">
                             <h3>❌ Kick WebRTC session</h3>
                             <input type="text" id="closeWebrtcId" placeholder="Session ID">
-                            <button class="btn-action btn-danger" onclick="kickWebrtcSession()">Close</button>
+                            <button class="btn-action btn-danger" onclick="expulsarSesionWebrtc()">Close</button>
                         </div>
 
                         <div class="action-card">
                             <h3>🗑️ Delete recording segment</h3>
                             <input type="text" id="deleteRecPath" placeholder="Path">
                             <input type="text" id="deleteRecStart" placeholder="Start (ISO)">
-                            <button class="btn-action btn-danger" onclick="deleteRecordingSegment()">Delete</button>
+                            <button class="btn-action btn-danger" onclick="borrarSegmentoGrabacion()">Delete</button>
                         </div>
                     </div>
                 </div>
             </details>
 
-            <details class="accordion-item" id="pathsAccordion" data-load="loadPaths" open>
+            <details class="accordion-item" id="pathsAccordion" data-load="cargarPaths" open>
                 <summary class="accordion-summary">📹 Paths</summary>
                 <div class="accordion-panel">
                     <div class="section">
@@ -64,7 +64,7 @@
                             <h2>Active streams</h2>
                             <div class="section-actions">
                                 <span class="badge" id="pathsCount">0 paths</span>
-                                <button class="btn-secondary" onclick="loadPaths()">🔄 Refresh</button>
+                                <button class="btn-secondary" onclick="cargarPaths()">🔄 Refresh</button>
                             </div>
                         </div>
                         <div class="paths-grid" id="pathsGrid">
@@ -99,19 +99,19 @@
                             </label>
                         </div>
                         <div class="form-actions">
-                            <button class="btn-primary" onclick="addOrUpdatePath()">💾 Save Path</button>
+                            <button class="btn-primary" onclick="agregarOActualizarPath()">💾 Save Path</button>
                         </div>
                     </div>
                 </div>
             </details>
 
-            <details class="accordion-item" id="configAccordion" data-load="loadConfig">
+            <details class="accordion-item" id="configAccordion" data-load="cargarConfig">
                 <summary class="accordion-summary">⚙️ Global config</summary>
                 <div class="accordion-panel">
                     <div class="section">
                         <div class="section-header">
                             <h2>Global configuration</h2>
-                            <button class="btn-secondary" onclick="loadConfig()">🔄 Refresh</button>
+                            <button class="btn-secondary" onclick="cargarConfig()">🔄 Refresh</button>
                         </div>
                         <div class="config-display" id="configDisplay">
                             <div class="empty-state">Loading configuration...</div>
@@ -131,13 +131,13 @@
                             <input type="text" id="configValue" placeholder="e.g. debug">
                         </div>
                         <div class="form-actions">
-                            <button class="btn-primary" onclick="updateConfig()">💾 Update config</button>
+                            <button class="btn-primary" onclick="actualizarConfig()">💾 Update config</button>
                         </div>
                     </div>
                 </div>
             </details>
 
-            <details class="accordion-item" id="sessionsAccordion" data-load="loadSessions">
+            <details class="accordion-item" id="sessionsAccordion" data-load="cargarSesiones">
                 <summary class="accordion-summary">🔌 Session manager</summary>
                 <div class="accordion-panel">
                     <div class="section">
@@ -145,7 +145,7 @@
                             <h2>Active sessions</h2>
                             <div class="section-actions">
                                 <span class="badge" id="sessionsCount">0 sessions</span>
-                                <button class="btn-secondary" onclick="loadSessions()">🔄 Refresh</button>
+                                <button class="btn-secondary" onclick="cargarSesiones()">🔄 Refresh</button>
                             </div>
                         </div>
 
@@ -173,13 +173,13 @@
                 </div>
             </details>
 
-            <details class="accordion-item" id="recordingsAccordion" data-load="loadRecordings">
+            <details class="accordion-item" id="recordingsAccordion" data-load="cargarGrabaciones">
                 <summary class="accordion-summary">💾 Recording manager</summary>
                 <div class="accordion-panel">
                     <div class="section">
                         <div class="section-header">
                             <h2>Recording management</h2>
-                            <button class="btn-secondary" onclick="loadRecordings()">🔄 Refresh</button>
+                            <button class="btn-secondary" onclick="cargarGrabaciones()">🔄 Refresh</button>
                         </div>
                         <div class="recordings-management" id="recordingsManagement">
                             <div class="empty-state">Loading recordings...</div>

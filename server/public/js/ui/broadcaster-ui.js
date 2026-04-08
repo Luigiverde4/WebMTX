@@ -44,7 +44,7 @@ const VIDEO_CODEC_EXCLUDES = new Set(['video/rtx', 'video/red', 'video/ulpfec'])
  * @param {string} mimeType - MIME type del códec.
  * @returns {string}
  */
-function getVideoCodecLabel(mimeType) {
+function cogerVideoCodecLabel(mimeType) {
     if (mimeType === 'video/h264') return 'H264';
     if (mimeType === 'video/h265' || mimeType === 'video/hevc') return 'H265 / HEVC';
     if (mimeType === 'video/vp8') return 'VP8';
@@ -81,7 +81,7 @@ function actualizarOpcionesCodecVideo() {
                 seenFamilies.add(family);
                 availableVideoCodecFamilies.push(mimeType);
 
-                let label = getVideoCodecLabel(mimeType);
+                let label = cogerVideoCodecLabel(mimeType);
 
                 options.push({ value: mimeType, label });
             });
@@ -103,7 +103,7 @@ function actualizarOpcionesCodecVideo() {
  * Devuelve el códec de vídeo seleccionado por el usuario.
  * @returns {string}
  */
-function getVideoCodecPreference() {
+function cogerVideoCodecPreferencia() {
     return videoCodecPreference ? videoCodecPreference.value : 'auto';
 }
 
@@ -123,7 +123,7 @@ function guardarPreferenciaCodecVideo() {
  * Muestra un estado por defecto en el panel de códecs.
  * @param {string} message - Mensaje a mostrar.
  */
-function setCodecStatsMessage(message) {
+function ponerMensajeStatsCodec(message) {
     if (!codecStatsEl) return;
     codecStatsEl.innerHTML = `<span class="empty">${message}</span>`;
 }
@@ -132,11 +132,11 @@ function setCodecStatsMessage(message) {
  * Renderiza una tabla con los códecs/bytes en uso para audio y vídeo.
  * @param {Array<object>} rows - Filas de estadísticas.
  */
-function renderCodecStats(rows) {
+function renderizarStatsCodec(rows) {
     if (!codecStatsEl) return;
 
     if (!rows || rows.length === 0) {
-        setCodecStatsMessage('Sin tráfico RTP todavía...');
+        ponerMensajeStatsCodec('Sin tráfico RTP todavía...');
         return;
     }
 
@@ -206,7 +206,7 @@ async function actualizarCodecStats() {
         });
 
         rows.sort((a, b) => a.kind.localeCompare(b.kind));
-        renderCodecStats(rows);
+        renderizarStatsCodec(rows);
 
         return {
             monitorable: rows.length > 0,
@@ -296,7 +296,7 @@ function stopCodecStatsPolling() {
         codecStatsWatchdog = null;
     }
 
-    setCodecStatsMessage('Sin datos (inicia transmisión)');
+    ponerMensajeStatsCodec('Sin datos (inicia transmisión)');
 }
 
 
@@ -464,7 +464,7 @@ async function cambioDispositivo() {
  * @param {string} status - Clase visual a aplicar.
  * @param {string} text - Texto a mostrar.
  */
-function updateStatus(status, text) {
+function actualizarEstado(status, text) {
     statusEl.className = `status ${status}`;
     statusEl.textContent = text;
 }
@@ -491,7 +491,7 @@ async function visualizarPreview() {
 function mostrarError(userMessage, error) {
     let detail = error && error.message ? error.message : String(error || 'Error desconocido');
     console.error(userMessage, error);
-    updateStatus('disconnected', 'Error: ' + userMessage);
+    actualizarEstado('disconnected', 'Error: ' + userMessage);
     alert(userMessage + '\n\nDetalle: ' + detail);
 }
 
@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedEndpoint) endpointInput.value = savedEndpoint;
 
     await actualizarPathsActivos();
-    setCodecStatsMessage('Sin datos (inicia transmisión)');
+    ponerMensajeStatsCodec('Sin datos (inicia transmisión)');
 });
 
 videoSource.addEventListener('change', cambioDispositivo);

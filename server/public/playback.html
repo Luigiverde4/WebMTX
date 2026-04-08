@@ -31,7 +31,7 @@
 
             <div class="stream-filter">
                 <label for="streamFilter">Filtrar por stream:</label>
-                <select id="streamFilter" onchange="filterRecordings()">
+                <select id="streamFilter" onchange="filtrarGrabaciones()">
                     <option value="all">Todos los streams</option>
                 </select>
             </div>
@@ -56,11 +56,11 @@
                         <label>Modo de inicio:</label>
                         <div class="radio-group">
                             <label class="radio-label">
-                                <input type="radio" name="playbackMode" value="offset" checked onchange="updatePlaybackMode()">
+                                <input type="radio" name="playbackMode" value="offset" checked onchange="actualizarModoPlayback()">
                                 Desde el inicio de la grabación
                             </label>
                             <label class="radio-label">
-                                <input type="radio" name="playbackMode" value="lookback" onchange="updatePlaybackMode()">
+                                <input type="radio" name="playbackMode" value="lookback" onchange="actualizarModoPlayback()">
                                 Hacia atrás desde ahora
                             </label>
                         </div>
@@ -94,12 +94,12 @@
             </div>
 
             <div class="playback-controls">
-                <button class="btn-control" onclick="changeSpeed(-0.25)">-0.25x</button>
-                <button class="btn-control" onclick="setSpeed(0.5)">0.5x</button>
-                <button class="btn-control" onclick="setSpeed(1)" id="normalSpeed">1x</button>
-                <button class="btn-control" onclick="setSpeed(1.5)">1.5x</button>
-                <button class="btn-control" onclick="setSpeed(2)">2x</button>
-                <button class="btn-control" onclick="changeSpeed(0.25)">+0.25x</button>
+                <button class="btn-control" onclick="cambiarVelocidad(-0.25)">-0.25x</button>
+                <button class="btn-control" onclick="fijarVelocidad(0.5)">0.5x</button>
+                <button class="btn-control" onclick="fijarVelocidad(1)" id="normalSpeed">1x</button>
+                <button class="btn-control" onclick="fijarVelocidad(1.5)">1.5x</button>
+                <button class="btn-control" onclick="fijarVelocidad(2)">2x</button>
+                <button class="btn-control" onclick="cambiarVelocidad(0.25)">+0.25x</button>
             </div>
 
             <div class="video-info" id="videoInfo">

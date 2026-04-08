@@ -8,15 +8,15 @@
 /**
  * Inicia el refresco periodico automatico.
  */
-function startAutoRefresh() {
-    stopAutoRefresh();
+function empezarAutoRefresh() {
+    pararAutoRefresh();
     refreshTimer = setInterval(loadStats, REFRESH_INTERVAL_MS);
 }
 
 /**
  * Detiene el refresco periodico automatico.
  */
-function stopAutoRefresh() {
+function pararAutoRefresh() {
     if (refreshTimer) {
         clearInterval(refreshTimer);
         refreshTimer = null;
@@ -27,7 +27,7 @@ function stopAutoRefresh() {
  * Normaliza y guarda el intervalo de refresco en milisegundos.
  * @param {number} value - Intervalo solicitado por el usuario.
  */
-function setRefreshInterval(value) {
+function ponerIntervaloRefresco(value) {
     let nextValue = Number(value);
 
     if (!Number.isFinite(nextValue)) {
@@ -47,7 +47,7 @@ function setRefreshInterval(value) {
     }
 
     if (autoRefreshEl.checked) {
-        startAutoRefresh();
+        empezarAutoRefresh();
     }
 }
 
@@ -66,12 +66,12 @@ async function loadStats() {
         let data = await response.json();
         let items = Array.isArray(data.items) ? data.items : [];
 
-        renderSummary(items);
+        renderizarResumen(items);
         updateCharts(items);
         lastUpdateEl.textContent = `Ultima actualizacion: ${new Date().toLocaleTimeString()}`;
     } catch (error) {
         console.error('Error cargando estadisticas:', error);
-        renderStatsError(error);
+        renderizarErrorStats(error);
     }
 }
 
@@ -80,18 +80,18 @@ async function loadStats() {
 refreshBtn.addEventListener('click', loadStats);
 autoRefreshEl.addEventListener('change', () => {
     if (autoRefreshEl.checked) {
-        startAutoRefresh();
+        empezarAutoRefresh();
     } else {
-        stopAutoRefresh();
+        pararAutoRefresh();
     }
 });
 
 refreshIntervalInputEl.addEventListener('change', () => {
-    setRefreshInterval(refreshIntervalInputEl.value);
+    ponerIntervaloRefresco(refreshIntervalInputEl.value);
 });
 
 refreshIntervalInputEl.addEventListener('blur', () => {
-    setRefreshInterval(refreshIntervalInputEl.value);
+    ponerIntervaloRefresco(refreshIntervalInputEl.value);
 });
 
 // CICLO DE VIDA
@@ -103,6 +103,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initCharts();
     await loadStats();
     if (autoRefreshEl.checked) {
-        startAutoRefresh();
+        empezarAutoRefresh();
     }
 });

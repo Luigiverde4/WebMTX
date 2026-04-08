@@ -18,7 +18,7 @@ let sourceUrlGroupEl = document.getElementById('sourceUrlGroup');
 /**
  * Solicita al servidor el listado de paths activos y actualiza la vista.
  */
-async function loadPaths() {
+async function cargarPaths() {
     let grid = pathsGridEl;
     let count = pathsCountEl;
 
@@ -31,7 +31,7 @@ async function loadPaths() {
         if (!data.items || data.items.length === 0) {
             grid.innerHTML = '<div class="empty-state">No hay paths activos</div>';
             count.textContent = '0 paths';
-            markAccordionLoaded('pathsAccordion');
+            marcarAcordeonCargado('pathsAccordion');
             return;
         }
 
@@ -41,10 +41,10 @@ async function loadPaths() {
 
         grid.innerHTML = '';
         data.items.forEach(path => {
-            grid.appendChild(createPathCard(path));
+            grid.appendChild(crearTarjetaPath(path));
         });
 
-        markAccordionLoaded('pathsAccordion');
+        marcarAcordeonCargado('pathsAccordion');
     } catch (error) {
         console.error('Error al cargar paths:', error);
         grid.innerHTML = `<div class="empty-state">❌ Error: ${escapeHtml(error.message)}</div>`;
@@ -55,7 +55,7 @@ async function loadPaths() {
  * Renderiza un card HTML para un path concreto con su estado y métricas.
  * @param {Object} path - Path devuelto por la API.
  */
-function createPathCard(path) {
+function crearTarjetaPath(path) {
     // Crear el elemento de la card
     let card = document.createElement('div');
     card.className = 'path-card';
@@ -85,8 +85,8 @@ function createPathCard(path) {
         <div class="path-info"><strong>↑ Sent:</strong> ${escapeHtml(bytesSent)}</div>
         ${path.readers && path.readers.length > 0 ? `<div class="path-info"><strong>👁️ Readers:</strong> ${path.readers.length}</div>` : ''}
         <div class="path-actions">
-            <button class="btn-secondary btn-small" onclick='editPath(${JSON.stringify(path.name)})'>✏️ Edit</button>
-            <button class="btn-danger btn-small" onclick='closePathConfirm(${JSON.stringify(path.name)})'>🗑️ Close</button>
+            <button class="btn-secondary btn-small" onclick='editarPath(${JSON.stringify(path.name)})'>✏️ Edit</button>
+            <button class="btn-danger btn-small" onclick='confirmarCierrePath(${JSON.stringify(path.name)})'>🗑️ Close</button>
         </div>
     `;
 
@@ -97,16 +97,16 @@ function createPathCard(path) {
  * Rellena el formulario con el nombre de un path existente para editarlo.
  * @param {string} pathName - Nombre del path a editar.
  */
-function editPath(pathName) {
+function editarPath(pathName) {
     pathNameEl.value = pathName;
-    openAccordion('pathsAccordion');
+    abrirAcordeon('pathsAccordion');
     pathNameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 /**
  * Crea o actualiza un path con la fuente y opciones indicadas en el formulario.
  */
-async function addOrUpdatePath() {
+async function agregarOActualizarPath() {
     let name = pathNameEl.value.trim();
     let source = pathSourceEl.value;
     let sourceUrl = pathSourceUrlEl.value.trim();
@@ -126,7 +126,7 @@ async function addOrUpdatePath() {
         await POST(`/config/paths/add/${encodeURIComponent(name)}`, config);
 
         alert(`Path "${name}" configurado con éxito`);
-        await loadPaths();
+        await cargarPaths();
 
         pathNameEl.value = '';
         pathSourceEl.value = 'publisher';
@@ -142,14 +142,14 @@ async function addOrUpdatePath() {
  * Cierra un path concreto pidiendo confirmación al usuario.
  * @param {string} pathName - Nombre del path a cerrar.
  */
-async function closePathConfirm(pathName) {
+async function confirmarCierrePath(pathName) {
     if (!confirm(`¿Cerrar el path "${pathName}"?`)) return;
 
     try {
         await POST(`/config/paths/remove/${encodeURIComponent(pathName)}`);
 
         alert(`Path "${pathName}" cerrado`);
-        await loadPaths();
+        await cargarPaths();
     } catch (error) {
         console.error('Error al cerrar path:', error);
         alert('Error al cerrar path: ' + error.message);
@@ -159,14 +159,14 @@ async function closePathConfirm(pathName) {
 /**
  * Lee el nombre de un path desde el formulario rápido y llama al cierre.
  */
-async function closePath() {
+async function cerrarPath() {
     let name = closePathNameEl.value.trim();
     if (!name) {
         alert('Por favor, introduce un nombre para el path');
         return;
     }
 
-    await closePathConfirm(name);
+    await confirmarCierrePath(name);
     closePathNameEl.value = '';
 }
 

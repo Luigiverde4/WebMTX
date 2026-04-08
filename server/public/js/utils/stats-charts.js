@@ -201,8 +201,8 @@ function updateStreamBlocks(items, labels) {
 
     let itemsByName = new Map(items.map(path => [path.name || 'sin nombre', path]));
     let streamNames = [...itemsByName.keys()];
-    let wantedIds = new Set(streamNames.map(getStreamCanvasId));
-    let wantedBlockIds = new Set(streamNames.map(getStreamBlockId));
+    let wantedIds = new Set(streamNames.map(obtenerIdCanvasStream));
+    let wantedBlockIds = new Set(streamNames.map(obtenerIdBloqueStream));
 
     perStreamChartInstances.forEach((chart, canvasId) => {
         if (!wantedIds.has(canvasId)) {
@@ -224,8 +224,8 @@ function updateStreamBlocks(items, labels) {
         let sourceId = path.source && path.source.id ? path.source.id : '-';
         let tracks = Array.isArray(path.tracks) ? path.tracks : [];
 
-        let canvasId = getStreamCanvasId(streamName);
-        let blockId = getStreamBlockId(streamName);
+        let canvasId = obtenerIdCanvasStream(streamName);
+        let blockId = obtenerIdBloqueStream(streamName);
         let cardEl = document.getElementById(blockId);
 
         if (!cardEl) {
@@ -294,11 +294,11 @@ function updateStreamBlocks(items, labels) {
             statusEl.className = `status-pill ${path.ready ? 'status-ready' : 'status-off'}`;
         }
 
-        setTextById(`online-${canvasId}`, path.online ? 'Si' : 'No');
-        setTextById(`readers-${canvasId}`, String(readersCount));
-        setTextById(`rx-${canvasId}`, formatBytes(path.bytesReceived || 0));
-        setTextById(`tx-${canvasId}`, formatBytes(path.bytesSent || 0));
-        setTextById(`source-${canvasId}`, `${sourceType} (${sourceId})`);
+        ponerTextoPorId(`online-${canvasId}`, path.online ? 'Si' : 'No');
+        ponerTextoPorId(`readers-${canvasId}`, String(readersCount));
+        ponerTextoPorId(`rx-${canvasId}`, formatBytes(path.bytesReceived || 0));
+        ponerTextoPorId(`tx-${canvasId}`, formatBytes(path.bytesSent || 0));
+        ponerTextoPorId(`source-${canvasId}`, `${sourceType} (${sourceId})`);
 
         let tracksEl = document.getElementById(`tracks-${canvasId}`);
         if (tracksEl) {
@@ -311,9 +311,9 @@ function updateStreamBlocks(items, labels) {
         let inputSeries = allStreamInputSeries.get(streamName) || [];
         let outputSeries = allStreamOutputSeries.get(streamName) || [];
         let stats = computeSeriesMetrics(totalSeries);
-        setTextById(`min-${canvasId}`, `${stats.min.toFixed(3)} Mbps`);
-        setTextById(`avg-${canvasId}`, `${stats.avg.toFixed(3)} Mbps`);
-        setTextById(`max-${canvasId}`, `${stats.max.toFixed(3)} Mbps`);
+        ponerTextoPorId(`min-${canvasId}`, `${stats.min.toFixed(3)} Mbps`);
+        ponerTextoPorId(`avg-${canvasId}`, `${stats.avg.toFixed(3)} Mbps`);
+        ponerTextoPorId(`max-${canvasId}`, `${stats.max.toFixed(3)} Mbps`);
 
         let chart = perStreamChartInstances.get(canvasId);
         if (!chart) {

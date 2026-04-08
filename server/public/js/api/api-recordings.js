@@ -11,7 +11,7 @@ let deleteRecStartEl = document.getElementById('deleteRecStart');
 /**
  * Carga el listado de grabaciones y pinta sus segmentos en pantalla.
  */
-async function loadRecordings() {
+async function cargarGrabaciones() {
     let container = recordingsManagementEl;
 
     try {
@@ -22,7 +22,7 @@ async function loadRecordings() {
         // No hay grabaciones
         if (!data.items || data.items.length === 0) {
             container.innerHTML = '<div class="empty-state">No recordings</div>';
-            markAccordionLoaded('recordingsAccordion');
+            marcarAcordeonCargado('recordingsAccordion');
             return;
         }
 
@@ -42,7 +42,7 @@ async function loadRecordings() {
                             <div class="segment-info">
                                 <strong>${escapeHtml(startDate.toLocaleDateString())}</strong> ${escapeHtml(startDate.toLocaleTimeString())}
                             </div>
-                            <button class="btn-danger btn-small" onclick='deleteRecordingSegmentConfirm(${JSON.stringify(recording.name)}, ${JSON.stringify(segment.start)})'>🗑️</button>
+                            <button class="btn-danger btn-small" onclick='confirmarBorradoSegmentoGrabacion(${JSON.stringify(recording.name)}, ${JSON.stringify(segment.start)})'>🗑️</button>
                         </div>
                     `;
                 });
@@ -58,7 +58,7 @@ async function loadRecordings() {
             container.appendChild(pathDiv);
         });
 
-        markAccordionLoaded('recordingsAccordion');
+        marcarAcordeonCargado('recordingsAccordion');
     } catch (error) {
         console.error('Error loading recordings:', error);
         container.innerHTML = `<div class="empty-state">❌ Error: ${escapeHtml(error.message)}</div>`;
@@ -68,7 +68,7 @@ async function loadRecordings() {
 /**
  * Lee el formulario rápido y delega en la función de borrado confirmada.
  */
-async function deleteRecordingSegment() {
+async function borrarSegmentoGrabacion() {
     let path = deleteRecPathEl.value.trim();
     let start = deleteRecStartEl.value.trim();
 
@@ -77,7 +77,7 @@ async function deleteRecordingSegment() {
         return;
     }
 
-    await deleteRecordingSegmentConfirm(path, start);
+    await confirmarBorradoSegmentoGrabacion(path, start);
 }
 
 /**
@@ -85,14 +85,14 @@ async function deleteRecordingSegment() {
  * @param {string} path - Ruta de la grabación.
  * @param {string} start - Marca de inicio del segmento.
  */
-async function deleteRecordingSegmentConfirm(path, start) {
+async function confirmarBorradoSegmentoGrabacion(path, start) {
     if (!confirm(`Delete recording segment?\nPath: ${path}\nStart: ${start}`)) return;
 
     try {
         await POST('/recordings/deletesegment', { path, start });
 
         alert('Segment deleted');
-        await loadRecordings();
+        await cargarGrabaciones();
 
         deleteRecPathEl.value = '';
         deleteRecStartEl.value = '';
