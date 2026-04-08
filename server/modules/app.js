@@ -1,6 +1,7 @@
+const path = require("path");
+const http = require("http");
 const express = require("express")
 const app = express();
-const http = require("http");
 
 const MEDIAMTX_API_HOST = process.env.MEDIAMTX_HOST || "localhost";
 const MEDIAMTX_API_PORT = 9997;
@@ -12,6 +13,8 @@ app.use(express.json());
 
 // Servir archivos estáticos desde la carpeta public
 app.use(express.static("public"));
+// Exponer librerías cliente instaladas por npm 
+app.use("/vendor", express.static(path.join(__dirname, "..", "node_modules")));
 
 // Index home
 app.get("/", (req, res) => {
