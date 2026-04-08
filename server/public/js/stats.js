@@ -1,49 +1,7 @@
 /**
- * DASHBOARD STATS - BOOTSTRAP Y REFERENCIAS DOM
- * Orquesta la inicializacion y el ciclo de refresco automatico.
+ * DASHBOARD STATS
+ * Inicio y polling de datos
  */
-
-/**
- * Datos iniciales para gráficos y refresco.
- */
-let REFRESH_INTERVAL_MS = Number(localStorage.getItem('stats_refresh_interval_ms')) || 1500;
-let refreshTimer = null;
-let throughputChart = null;
-let streamThroughputChart = null;
-let readersChart = null;
-let perStreamChartInstances = new Map();
-
-let previousPathSample = new Map();
-let throughputHistory = [];
-let allStreamThroughputSeries = new Map();
-let allStreamInputSeries = new Map();
-let allStreamOutputSeries = new Map();
-const MAX_HISTORY_POINTS = 120;
-const MAX_STREAM_DATASETS = 8;
-const STREAM_COLORS = [
-    '#60a5fa', '#4ade80', '#fbbf24', '#f472b6',
-    '#22d3ee', '#c084fc', '#fb7185', '#a3e635'
-];
-
-/**
- * ELEMENTOS DOM
- */
-
-let streamSectionsContainerEl = document.getElementById('streamSectionsContainer');
-let pathsCountEl = document.getElementById('pathsCount');
-let lastUpdateEl = document.getElementById('lastUpdate');
-let refreshBtn = document.getElementById('refreshBtn');
-let autoRefreshEl = document.getElementById('autoRefresh');
-let refreshIntervalInputEl = document.getElementById('refreshIntervalInput');
-let refreshIntervalLabelEl = document.getElementById('refreshIntervalLabel');
-
-let totalPathsEl = document.getElementById('totalPaths');
-let readyPathsEl = document.getElementById('readyPaths');
-let onlinePathsEl = document.getElementById('onlinePaths');
-let totalReadersEl = document.getElementById('totalReaders');
-let totalBytesReceivedEl = document.getElementById('totalBytesReceived');
-let totalBytesSentEl = document.getElementById('totalBytesSent');
-
 
 
 // REFRESCO AUTOMATICO
@@ -94,11 +52,7 @@ function setRefreshInterval(value) {
 }
 
 
-/**
- * DASHBOARD STATS - CARGA DE DATOS
- * Peticiones al backend para obtener las estadisticas.
- */
-
+// CARGA DE DATOS
 /**
  * Solicita estadisticas al backend y refresca toda la UI.
  */

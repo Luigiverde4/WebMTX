@@ -55,7 +55,6 @@ function getVideoCodecLabel(mimeType) {
     return family.toUpperCase();
 }
 
-
 /**
  * Rellena el selector de códec con los códecs de vídeo soportados por el navegador.
  */
