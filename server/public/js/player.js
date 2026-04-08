@@ -286,9 +286,9 @@ async function actualizarPathsActivosPlayer() {
 
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', async () => {
-    let savedServer = localStorage.getItem('player_server');
+    let savedServer = window.location.origin.replace(/^https?:\/\//, '');
     let savedStream = localStorage.getItem('player_streamName');
-
+    
     if (savedServer) server.value = savedServer;
     if (savedStream) streamName.value = savedStream;
 

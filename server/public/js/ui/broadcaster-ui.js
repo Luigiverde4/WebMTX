@@ -499,7 +499,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await iniciarDispositivos();
     actualizarOpcionesCodecVideo();
 
-    let savedServer = localStorage.getItem('broadcaster_server');
+    // let savedServer = localStorage.getItem('broadcaster_server');
+    // Coger servidor como URL base actual y quitar el http://
+    let savedServer = window.location.origin.replace(/^https?:\/\//, '');
     let savedEndpoint = localStorage.getItem('broadcaster_endpoint');
     if (savedServer) serverInput.value = savedServer;
     if (savedEndpoint) endpointInput.value = savedEndpoint;
