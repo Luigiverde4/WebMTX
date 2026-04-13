@@ -4,6 +4,20 @@
  */
 
 /**
+ * Convierte la URL absoluta que entrega MediaMTX en una URL del proxy local.
+ * @param {string} segmentUrl - URL del segmento devuelta por /api/playback/list.
+ * @returns {string|null}
+ */
+function construirUrlProxyPlayback(segmentUrl) {
+    try {
+        let parsed = new URL(segmentUrl);
+        return `/api/playback${parsed.pathname}${parsed.search}`;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Carga las grabaciones disponibles desde los endpoints de grabación.
  */
 async function loadRecordings() {
@@ -152,16 +166,30 @@ function playFromOffset() {
         return;
     }
 
-    let originalStart = new Date(selectedRecording.start);
-    let newStart = new Date(originalStart.getTime() + offset * 1000);
-    let startISO = newStart.toISOString();
-    let playURL = `/api/playback/get?duration=${encodeURIComponent(newDuration)}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(startISO)}`;
+    let playURL = construirUrlProxyPlayback(selectedRecording.url);
+    if (!playURL) {
+        playURL = `/api/playback/get?duration=${encodeURIComponent(selectedRecording.duration)}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(selectedRecording.startISO)}`;
+    }
 
     console.log('Modo:', mode);
     console.log('Offset:', offset.toFixed(2), 's');
     console.log('Duración:', newDuration.toFixed(2), 's');
     console.log('URL:', playURL);
 
+    const seekOffset = Math.max(0, Math.min(offset, selectedRecording.duration));
+    const onLoadedMetadata = () => {
+        if (seekOffset > 0) {
+            try {
+                video.currentTime = seekOffset;
+            } catch (error) {
+                console.warn('No se pudo aplicar seek inicial:', error);
+            }
+        }
+        video.removeEventListener('loadedmetadata', onLoadedMetadata);
+    };
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+
+    let originalStart = new Date(selectedRecording.start);
     let now = new Date();
     let recordingEnd = new Date(originalStart.getTime() + selectedRecording.duration * 1000);
     let secondsSinceEnd = (now - recordingEnd) / 1000;
@@ -170,9 +198,17 @@ function playFromOffset() {
         console.warn('Advertencia: Grabación muy reciente, puede no estar completamente disponible');
     }
 
+    // Limpiar reproducción previa para evitar AbortError al cambiar rápidamente de segmento.
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+
     video.src = playURL;
     video.load();
     video.play().catch(err => {
+        if (err && err.name === 'AbortError') {
+            return;
+        }
         console.error('Error al reproducir:', err);
         alert('⚠️ No se pudo iniciar la reproducción. El segmento puede no estar disponible aún.');
     });

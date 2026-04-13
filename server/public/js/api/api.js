@@ -115,3 +115,7 @@ async function PATCH(endpoint, body, options = {}) {
     return request('PATCH', endpoint, { ...options, body });
 }
 
+async function DELETE(endpoint, options = {}) {
+    return request('DELETE', endpoint, options);
+}
+

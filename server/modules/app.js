@@ -28,12 +28,14 @@ app.all("/api/mediamtx/*", (req, res) => {
   // Soporta GET, POST, PATCH, DELETE, etc. Captura todo después de /api/mediamtx/
   const path = req.params[0]; // Captura todo después de /api/mediamtx/
   const body = req.body ? JSON.stringify(req.body) : '';
+  const queryIndex = req.originalUrl.indexOf('?');
+  const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : '';
   
   // Preparar el payload
   const options = {
     hostname: MEDIAMTX_API_HOST,
     port: MEDIAMTX_API_PORT,
-    path: `/${path}`,
+    path: `/${path}${query}`,
     method: req.method,
     headers: { 
       'Accept': 'application/json',

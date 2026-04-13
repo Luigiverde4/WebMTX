@@ -185,12 +185,12 @@ video.addEventListener('error', e => {
                 errorMessage = 'Error de decodificación del video';
                 break;
             case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                errorMessage = 'Segmento de grabación no disponible. Puede que la grabación aún se esté procesando o el segmento no exista.';
+                errorMessage = 'El navegador no puede reproducir este segmento (códec/contenedor no compatible) o el segmento no está disponible.';
                 break;
         }
     }
 
-    alert(`⚠️ ${errorMessage}\n\nSi la grabación es muy reciente, espera unos segundos e intenta de nuevo.`);
+    alert(`⚠️ ${errorMessage}\n\nSi la grabación es muy reciente, espera unos segundos e intenta de nuevo. Si persiste, prueba a emitir en H264 para mejorar compatibilidad de playback.`);
     currentRecordingEl.textContent = 'Error al reproducir';
 });
 

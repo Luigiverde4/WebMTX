@@ -61,7 +61,7 @@ function cogerVideoCodecLabel(mimeType) {
 function actualizarOpcionesCodecVideo() {
     if (!videoCodecPreference) return;
 
-    let previousValue = localStorage.getItem('broadcaster_video_codec') || 'auto';
+    let previousValue = localStorage.getItem('broadcaster_video_codec') || '';
     let options = [{ value: 'auto', label: 'Automático' }];
 
     availableVideoCodecFamilies = [];
@@ -82,7 +82,6 @@ function actualizarOpcionesCodecVideo() {
                 availableVideoCodecFamilies.push(mimeType);
 
                 let label = cogerVideoCodecLabel(mimeType);
-
                 options.push({ value: mimeType, label });
             });
         }
@@ -92,11 +91,19 @@ function actualizarOpcionesCodecVideo() {
         .map(option => `<option value="${option.value}">${option.label}</option>`)
         .join('');
 
+    // Valor recomendado por defecto priorizando H265/HEVC.
+    let defaultValue = options.some(option => option.value === 'video/h265' || option.value === 'video/hevc')
+        ? (options.some(option => option.value === 'video/h265') ? 'video/h265' : 'video/hevc')
+        : (options.some(option => option.value === 'video/h264')
+            ? 'video/h264'
+            : (options.find(option => option.value !== 'auto') || { value: 'auto' }).value);
     if (options.some(option => option.value === previousValue)) {
         videoCodecPreference.value = previousValue;
     } else {
-        videoCodecPreference.value = 'auto';
+        videoCodecPreference.value = defaultValue;
     }
+
+    guardarPreferenciaCodecVideo();
 }
 
 /**

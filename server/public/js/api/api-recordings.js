@@ -89,7 +89,9 @@ async function confirmarBorradoSegmentoGrabacion(path, start) {
     if (!confirm(`Delete recording segment?\nPath: ${path}\nStart: ${start}`)) return;
 
     try {
-        await POST('/recordings/deletesegment', { path, start });
+        await DELETE('/recordings/deletesegment', {
+            query: { path, start }
+        });
 
         alert('Segment deleted');
         await cargarGrabaciones();
