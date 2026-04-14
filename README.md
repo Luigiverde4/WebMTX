@@ -53,7 +53,7 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 │               │    │                 │       WHIP         │                                     │      WebRTC        │                 │
 │               │───►│  FFmpeg (Win)   │ ─────────────────► │  ┌─────────────┐    ┌───────────┐   │ ◄───────────────►  │    Browser      │
 │  Cámaras      │    │                 │                    │  │             │    │           │   │                    │                 │
-│               │───►│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── http://:80      │      OBS        │
+│               │───►│  FFmpeg (RPi)   │ ─────────────────► │  │  MediaMTX   │◄───│  Node.js  │   │◄── HTTP redirect   │      OBS        │
 │  Micros       │    │                 │                    │  │  (8889)     │    │  Server   │   │◄── https://:443    │                 │
 │               │───►│  Python/PYWHIP  │ ─────────────────► │  │             │    │           │   │                    │     .html       │
 │  Pantalla     │    │                 │                    │  │  API:9997 ◄─┼────│ /api/     │   │                    │                 │
@@ -62,9 +62,9 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 └───────────────┘    └─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
 ```
 
-> **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS.
+> **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS y exponiéndola por HTTPS.
 >
-> **Playback proxy**: El servidor Node.js incluye un proxy en `/api/playback/*` para reenviar peticiones al servicio de grabaciones/reproducción (puerto 9996) sin exponer ese backend al navegador.
+> **Playback proxy**: El servidor Node.js incluye un proxy en `/api/playback/*` para reenviar peticiones al servicio de grabaciones/reproducción (puerto 9996) sin exponer ese backend al navegador, también por HTTPS.
 >
 > **HTTPS**: El servidor soporta HTTPS (puerto 443) con certificados mkcert, necesario para usar `getUserMedia()` desde cualquier dispositivo que acceda por IP (no localhost).
 
@@ -193,12 +193,12 @@ Acceder a las interfaces web:
 
 | Interfaz | URL | Descripción |
 |----------|-----|-------------|
-| **Index** | http://localhost/ | Página principal con acceso a todas las herramientas |
+| **Index** | https://localhost/ | Página principal con acceso a todas las herramientas |
 | **Broadcaster** | https://localhost/broadcaster.html | Emitir stream desde el navegador (cámara/micrófono) |
-| **Player** | http://localhost/player.html | Reproductor WebRTC principal con WHEP |
-| **Playback** | http://localhost/playback.html | Reproductor de grabaciones con controles avanzados (fMP4) |
-| **Statistics** | http://localhost/stats.html | Dashboard en tiempo real de estadísticas y métricas del servidor |
-| **API Control** | http://localhost/api.html | Panel avanzado para explorar y controlar la API REST v2 |
+| **Player** | https://localhost/player.html | Reproductor WebRTC principal con WHEP |
+| **Playback** | https://localhost/playback.html | Reproductor de grabaciones con controles avanzados (fMP4) |
+| **Statistics** | https://localhost/stats.html | Dashboard en tiempo real de estadísticas y métricas del servidor |
+| **API Control** | https://localhost/api.html | Panel avanzado para explorar y controlar la API REST v2 |
 
 > **Acceso por IP**: Para usar el Broadcaster desde otros dispositivos, usar `https://<IP_SERVIDOR>/broadcaster.html`. HTTPS es obligatorio para acceder a la cámara cuando no es localhost.
 
@@ -285,7 +285,7 @@ El **Broadcaster** es la forma más sencilla de emitir streams sin instalar soft
 #### Cómo usar
 
 **Desde el mismo equipo:**
-1. Abrir http://localhost/broadcaster.html
+1. Abrir https://localhost/broadcaster.html
 2. Seleccionar cámara y micrófono a usar
 3. Elegir resolución deseada (480p, 720p, 1080p)
 4. Introducir nombre del endpoint (ej: `cam1`, `movil`, `pantalla`)
@@ -298,7 +298,7 @@ El **Broadcaster** es la forma más sencilla de emitir streams sin instalar soft
 3. El stream es accesible por todos los dispositivos de la red
 
 **Acceso seguro:**
-- **localhost**: Funciona sin HTTPS (http://localhost/broadcaster.html)
+- **localhost**: Funciona con HTTPS (https://localhost/broadcaster.html)
 - **Por IP**: Requiere HTTPS obligatoriamente para acceder a cámara. Usa certificados mkcert:
   ```bash
   cd server
@@ -348,26 +348,26 @@ chmod +x stream_mjpeg_high.sh
 El reproductor utiliza el protocolo **WHEP** (WebRTC-HTTP Egress Protocol) para recibir el stream con ultra baja latencia.
 
 **Desde el mismo equipo:**
-1. Abrir http://localhost/player.html
+1. Abrir https://localhost/player.html
 2. Configurar el nombre del stream (por defecto: `whipLL`)
 3. Hacer clic en **▶ Reproducir**
 
 **Desde otro dispositivo en la red:**
-1. Abrir `http://<IP_SERVIDOR>/player.html` (ej: http://192.168.1.100/player.html)
+1. Abrir `https://<IP_SERVIDOR>/player.html` (ej: https://192.168.1.100/player.html)
 2. Configurar el servidor con la IP del equipo que ejecuta MediaMTX
 3. Hacer clic en **▶ Reproducir**
 
 **Acceso directo via WHEP (sin interfaz web):**
 ```
-http://<IP_SERVIDOR>:8889/<nombre_stream>
+https://<IP_SERVIDOR>:8889/<nombre_stream>
 ```
-Ejemplo: `http://192.168.1.100:8889/whipLL`
+Ejemplo: `https://192.168.1.100:8889/whipLL`
 
 #### Playback - Reproductor de grabaciones
 
 El reproductor de grabaciones permite visualizar vídeos grabados bajo demanda:
 
-1. Abrir http://localhost/playback.html
+1. Abrir https://localhost/playback.html
 2. Seleccionar un stream grabado de la lista
 3. Elegir el punto de inicio o usar modo lookback
 4. Pulsar **▶ Reproducir desde tiempo seleccionado**
@@ -376,10 +376,10 @@ El reproductor de grabaciones permite visualizar vídeos grabados bajo demanda:
 - Búsqueda por fecha/hora
 - Timeline interactivo
 - Controles de reproducción (play/pausa/velocidad)
-- Múltiples formatos (fMP4 via HTTP)
+- Múltiples formatos (fMP4 via HTTPS)
 - Acceso desde cualquier dispositivo en la red
 
-> **Nota**: Playback no usa WebRTC. El navegador recibe fragmentos fMP4 vía HTTP y los reproduce con el elemento `<video>`.
+> **Nota**: Playback no usa WebRTC. El navegador recibe fragmentos fMP4 vía HTTPS y los reproduce con el elemento `<video>`.
 
 ---
 
@@ -387,7 +387,7 @@ El reproductor de grabaciones permite visualizar vídeos grabados bajo demanda:
 
 El **Statistics Dashboard** permite visualizar métricas del servidor y los streams activos en tiempo real:
 
-1. Abrir http://localhost/stats.html
+1. Abrir https://localhost/stats.html
 2. El dashboard se actualiza automáticamente cada 1.5 segundos (configurable)
 3. Visualiza:
    - Total de paths, paths listos y online
@@ -397,7 +397,7 @@ El **Statistics Dashboard** permite visualizar métricas del servidor y los stre
    - Estado individual de cada stream
 
 **Desde otro dispositivo:**
-1. Abrir `http://<IP_SERVIDOR>/stats.html`
+1. Abrir `https://<IP_SERVIDOR>/stats.html`
 2. El dashboard funciona desde cualquier punto de la red
 
 ---
@@ -406,7 +406,7 @@ El **Statistics Dashboard** permite visualizar métricas del servidor y los stre
 
 El **API Control Panel** proporciona interface interactiva para:
 
-1. Acceder a http://localhost/api.html
+1. Acceder a https://localhost/api.html
 2. Explorar endpoints de la API REST v2 de MediaMTX:
    - **Config**: Recargar configuración, obtener información del servidor
    - **Paths**: Listar, crear, editar y eliminar paths
@@ -419,16 +419,16 @@ El **API Control Panel** proporciona interface interactiva para:
 
 | Puerto | Protocolo | Descripción | Latencia |
 |--------|-----------|-------------|----------|
-| **80** | HTTP | Servidor web (interfaz) | - |
+| **80** | HTTP | Servidor web (redirige a HTTPS) | - |
 | **443** | HTTPS | Servidor web seguro (requerido para getUserMedia por IP) | - |
 | **1935** | RTMP | Streaming RTMP | ~2-5s |
 | **8554** | RTSP | Streaming RTSP | ~1-2s |
 | **8890** | UDP | SRT (Secure Reliable Transport) | ~200ms-2s |
-| **8888** | HTTP | HLS (HTTP Live Streaming) | ~6-30s |
-| **8889** | HTTP | WebRTC (WHIP/WHEP) | **~100-300ms** |
+| **8888** | HTTPS | HLS (HTTP Live Streaming) | ~6-30s |
+| **8889** | HTTPS | WebRTC (WHIP/WHEP) | **~100-300ms** |
 | **8189** | UDP | WebRTC ICE/STUN | - |
-| **9997** | HTTP | API REST MediaMTX | - |
-| **9996** | HTTP | Playback server (fMP4) | - |
+| **9997** | HTTPS | API REST MediaMTX | - |
+| **9996** | HTTPS | Playback server (fMP4) | - |
 
 ## API MediaMTX
 
@@ -436,13 +436,13 @@ La API REST está disponible en el puerto 9997:
 
 ```bash
 # Listar streams activos
-curl http://localhost:9997/v3/paths/list
+curl https://localhost:9997/v3/paths/list
 
 # Obtener información de un stream
-curl http://localhost:9997/v3/paths/get/whipLL
+curl https://localhost:9997/v3/paths/get/whipLL
 
 # Estadísticas del servidor
-curl http://localhost:9997/v3/hlsmuxers/list
+curl https://localhost:9997/v3/hlsmuxers/list
 ```
 
 > **Nota**: En la interfaz web, estas llamadas se exponen a través del proxy `/api/mediamtx/*`. Las grabaciones y reproducción se exponen mediante `/api/playback/*`.

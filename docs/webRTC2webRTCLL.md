@@ -20,12 +20,12 @@ wffmpeg \
   -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" \
   -b:v 1800k -maxrate 1800k -bufsize 1800k \
   -pix_fmt yuv420p -shortest \
-  -f whip http://192.168.0.120:8889/webcam/whip
+  -f whip https://192.168.0.120:8889/webcam/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -f whip http://192.168.0.120:8889/webcam/whip
+wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -f whip https://192.168.0.120:8889/webcam/whip
 ```
 
 ### 2. Con Webcam + Buffer
@@ -44,12 +44,12 @@ wffmpeg \
   -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" \
   -b:v 1800k -maxrate 1800k -bufsize 1800k \
   -pix_fmt yuv420p -shortest -buffer_size 5M \
-  -f whip http://192.168.0.120:8889/webcam/whip
+  -f whip https://192.168.0.120:8889/webcam/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip http://192.168.0.120:8889/webcam/whip
+wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip https://192.168.0.120:8889/webcam/whip
 ```
 
 ### 3. Test Pattern (Sin Webcam) - Audio Mono
@@ -65,12 +65,12 @@ wffmpeg \
   -b:v 600k \
   -c:a libopus \
   -ar 48000 -ac 2 -b:a 128k \
-  -f whip http://192.168.0.120:8889/stream/whip
+  -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 ### 4. Test Pattern - Alta Calidad + Zero Latency
@@ -87,12 +87,12 @@ wffmpeg \
   -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" \
   -b:v 1800k -maxrate 1800k -bufsize 1800k \
   -pix_fmt yuv420p -shortest -buffer_size 5M \
-  -f whip http://192.168.0.120:8889/stream/whip
+  -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -re -f lavfi -i testsrc=size=1920x1080:duration=300:rate=25 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -re -f lavfi -i testsrc=size=1920x1080:duration=300:rate=25 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 ---
@@ -117,12 +117,12 @@ wffmpeg \
   -b:v 600k \
   -c:a libopus \
   -ar 48000 -ac 2 -b:a 128k \
-  -f whip http://192.168.0.120:8889/stream/whip
+  -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 ### 2. Video HDMI + Audio → WHIP
@@ -140,12 +140,12 @@ wffmpeg \
   -c:v libx264 \
   -preset ultrafast -tune zerolatency \
   -c:a libopus -b:a 96k \
-  -f whip http://192.168.0.120:8889/stream/whip
+  -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -f alsa -i hw:3,0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -b:a 96k -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -f alsa -i hw:3,0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -b:a 96k -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 ### 3. Video HDMI → WHIP (Sin Audio)
@@ -160,12 +160,12 @@ wffmpeg \
   -vf "scale=in_range=full:out_range=tv,format=yuv420p" \
   -c:v libx264 \
   -preset ultrafast -tune zerolatency -an \
-  -f whip http://192.168.0.120:8889/stream/whip
+  -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 **Una línea (copiar-pegar):**
 ```bash
-wffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -an -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -an -f whip https://192.168.0.120:8889/stream/whip
 ```
 
 ### 4. Video + Audio HDMI → RTSP

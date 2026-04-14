@@ -9,4 +9,4 @@ wffmpeg -v debug -re -f lavfi -i testsrc=size=1280x720:rate=30 ^
 -preset ultrafast -b:v 600k -tune zerolatency -profile:v baseline -level 3.1 -g 60 -keyint_min 60 -bf 0 -x264-params "repeat-headers=1" ^
 -c:a libopus -ar 48000 -ac 2 -b:a 128k ^
 -handshake_timeout 20000 ^
--f whip http://%HOST%:%PORT%/%STREAM%/whip
+-f whip https://%HOST%:%PORT%/%STREAM%/whip

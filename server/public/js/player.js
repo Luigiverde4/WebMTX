@@ -204,7 +204,7 @@ async function playWebRTC(server, streamName) {
 
         // Validar la respuesta del servidor.
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
         }
 
         let answerSDP = await response.text();

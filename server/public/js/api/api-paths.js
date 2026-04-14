@@ -183,7 +183,7 @@ pathSourceEl.addEventListener('change', () => {
     let placeholder = {
         rtsp: 'rtsp://camera-ip:554/stream',
         rtmp: 'rtmp://server/app/stream',
-        http: 'http://server/stream.m3u8'
+        http: 'https://server/stream.m3u8'
     }[pathSourceEl.value] || '';
     pathSourceUrlEl.placeholder = placeholder;
 });

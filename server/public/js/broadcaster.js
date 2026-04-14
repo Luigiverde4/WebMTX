@@ -127,7 +127,7 @@ async function startBroadcast() {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
         }
 
         whipSession = response.headers.get('Location');

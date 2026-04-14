@@ -154,7 +154,7 @@ api: yes
 # Address of the Control API listener.
 apiAddress: :9997
 # Enable TLS/HTTPS on the Control API server.
-apiEncryption: no
+apiEncryption: yes
 # Path to the server key. This is needed only when encryption is yes.
 # This can be generated with:
 # openssl genrsa -out server.key 2048
@@ -163,7 +163,7 @@ apiServerKey: server.key
 # Path to the server certificate.
 apiServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 apiAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the HTTP server.
 # If the server receives a request from one of these entries, IP in logs
@@ -187,7 +187,7 @@ metricsServerKey: server.key
 # Path to the server certificate.
 metricsServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 metricsAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the HTTP server.
 # If the server receives a request from one of these entries, IP in logs
@@ -211,7 +211,7 @@ pprofServerKey: server.key
 # Path to the server certificate.
 pprofServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 pprofAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the HTTP server.
 # If the server receives a request from one of these entries, IP in logs
@@ -226,7 +226,7 @@ playback: yes
 # Address of the playback server listener.
 playbackAddress: :9996
 # Enable TLS/HTTPS on the playback server.
-playbackEncryption: no
+playbackEncryption: yes
 # Path to the server key. This is needed only when encryption is yes.
 # This can be generated with:
 # openssl genrsa -out server.key 2048
@@ -235,7 +235,7 @@ playbackServerKey: server.key
 # Path to the server certificate.
 playbackServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 playbackAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the HTTP server.
 # If the server receives a request from one of these entries, IP in logs
@@ -319,7 +319,7 @@ hls: yes
 hlsAddress: :8888
 # Enable TLS/HTTPS on the HLS server.
 # This is required for Low-Latency HLS.
-hlsEncryption: no
+hlsEncryption: yes
 # Path to the server key. This is needed only when encryption is yes.
 # This can be generated with:
 # openssl genrsa -out server.key 2048
@@ -328,7 +328,7 @@ hlsServerKey: server.key
 # Path to the server certificate.
 hlsServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 hlsAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the HLS server.
 # If the server receives a request from one of these entries, IP in logs
@@ -374,10 +374,10 @@ hlsMuxerCloseAfter: 60s
 
 # Enable publishing and reading streams with the WebRTC protocol.
 webrtc: yes
-# Address of the WebRTC HTTP listener.
+# Address of the WebRTC HTTPS listener.
 webrtcAddress: :8889
 # Enable TLS/HTTPS on the WebRTC server.
-webrtcEncryption: no
+webrtcEncryption: yes
 # Path to the server key.
 # This can be generated with:
 # openssl genrsa -out server.key 2048
@@ -386,7 +386,7 @@ webrtcServerKey: server.key
 # Path to the server certificate.
 webrtcServerCert: server.crt
 # List of allowed CORS origins.
-# Supports wildcards: ['http://*.example.com']
+# Supports wildcards: ['https://*.example.com']
 webrtcAllowOrigins: ['*']
 # List of IPs or CIDRs of proxies placed before the WebRTC server.
 # If the server receives a request from one of these entries, IP in logs
@@ -466,7 +466,7 @@ pathDefaults:
   # * rtsps+ws://existing-url -> the stream is pulled from another RTSP server / camera, with secure WebSocket tunneling
   # * rtmp://existing-url -> the stream is pulled from another RTMP server / camera
   # * rtmps://existing-url -> the stream is pulled from another RTMP server / camera with RTMPS
-  # * http://existing-url/stream.m3u8 -> the stream is pulled from another HLS server / camera
+  # * https://existing-url/stream.m3u8 -> the stream is pulled from another HLS server / camera
   # * https://existing-url/stream.m3u8 -> the stream is pulled from another HLS server / camera with HTTPS
   # * udp+mpegts://ip:port -> the stream is pulled from MPEG-TS over UDP, by listening on the specified address
   # * unix+mpegts://socket -> the stream is pulled from MPEG-TS over Unix socket, by using the socket
