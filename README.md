@@ -16,10 +16,16 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 
 - **Ultra baja latencia**: ~100-300ms gracias a WebRTC
 - **Multi-protocolo**: Soporte para WHIP/WHEP, RTSP, RTMP, HLS y SRT
-- **Multiplataforma**: Scripts para Windows, Linux y Raspberry Pi
-- **Interfaz web**: Reproductor integrado con controles intuitivos
+- **Multiplataforma**: Scripts para Windows, Mac, Android, Linux y Raspberry Pi
+- **Interfaz web completa**: 
+  - Broadcaster (emisor desde navegador)
+  - Player (reproductor WebRTC en vivo)
+  - Playback (reproductor de grabaciones)
+  - **Statistics Dashboard** (monitoreo en tiempo real) 📊
+  - **API Control Panel** (exploración y control de API REST) 🔧
 - **Containerizado**: Despliegue sencillo con Docker Compose
-- **API de control**: Gestión de streams mediante API HTTP
+- **API de control**: Gestión completa de streams mediante API HTTP REST v2
+- **Arquitectura modular**: Componentes JS organizados por funcionalidad
 
 ## Índice
 
@@ -68,6 +74,8 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 2. **Emisión (WHIP)**: FFmpeg, scripts Python o el Broadcaster web codifican el vídeo y lo envían al servidor MediaMTX mediante protocolo WHIP
 3. **Servidor (MediaMTX)**: Recibe los streams y los redistribuye a los clientes conectados
 4. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
+5. **Monitoreo**: Dashboard de estadísticas obtiene métricas en tiempo real via API REST
+6. **Control**: API REST v2 permite gestionar configuración, paths, grabaciones y sesiones
 
 ## Requisitos
 
@@ -75,7 +83,7 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - Docker Engine 20.10+
 - Docker Compose v2.0+
 - 2GB RAM mínimo
-- Puertos disponibles: 80, 443, 1935, 8554, 8888, 8889, 8189/UDP, 9997
+- Puertos disponibles: 80, 443, 1935, 8554, 8888, 8889, 8189/UDP, 9997, 9996
 
 ### Para emisión desde Windows
 - FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_todo_junto.md`)
@@ -187,9 +195,10 @@ Acceder a las interfaces web:
 |----------|-----|-------------|
 | **Index** | http://localhost/ | Página principal con acceso a todas las herramientas |
 | **Broadcaster** | https://localhost/broadcaster.html | Emitir stream desde el navegador (cámara/micrófono) |
-| **Player** | http://localhost/player.html | Reproductor WebRTC principal |
-| **Playback** | http://localhost/playback.html | Reproductor con controles avanzados |
-| **API Control** | http://localhost/api-control.html | Panel de control de la API |
+| **Player** | http://localhost/player.html | Reproductor WebRTC principal con WHEP |
+| **Playback** | http://localhost/playback.html | Reproductor de grabaciones con controles avanzados (fMP4) |
+| **Statistics** | http://localhost/stats.html | Dashboard en tiempo real de estadísticas y métricas del servidor |
+| **API Control** | http://localhost/api.html | Panel avanzado para explorar y controlar la API REST v2 |
 
 > **Acceso por IP**: Para usar el Broadcaster desde otros dispositivos, usar `https://<IP_SERVIDOR>/broadcaster.html`. HTTPS es obligatorio para acceder a la cámara cuando no es localhost.
 
@@ -208,25 +217,39 @@ TFG/
 │       ├── pywhip.py          # Emisor WHIP en Python
 │       └── pywhip_screen.py   # Captura de pantalla
 ├── server/                    # Servidor web Node.js
-│   ├── server.js              # Servidor Express (puerto 80)
+│   ├── server.js              # Servidor Express (puertos 80/443 HTTP/HTTPS)
+│   ├── modules/
+│   │   └── app.js             # Configuración de rutas y proxies
 │   └── public/                # Archivos estáticos
-│       ├── index.html         # Página principal
+│       ├── index.html         # Página principal con enlaces
 │       ├── broadcaster.html   # Emisor WHIP desde navegador
-│       ├── player.html        # Reproductor principal
-│       ├── playback.html      # Reproductor avanzado
-│       ├── api-control.html   # Control de API
-│       ├── js/                # Scripts JavaScript
-│       │   ├── herramientas.js # Utilidades compartidas (escapeHtml, formatBytes)
-│       │   ├── watchdog.js     # Watchdog compartido de tráfico
-│       │   ├── broadcaster-ui.js # UI y dispositivos del broadcaster
-│       │   ├── broadcaster.js  # Lógica de emisión WHIP/WebRTC
-│       │   ├── playback-utils.js # Formateos específicos de playback
-│       │   ├── playback-ui.js  # UI y eventos del reproductor de grabaciones
-│       │   ├── playback-core.js # Carga y reproducción de grabaciones
-│       │   ├── playback.js     # Bootstrap mínimo de playback
-│       │   ├── player.js       # Reproductor WHEP
-│       │   └── api.js          # Cliente y helpers de la API
-│       └── css/               # Estilos CSS
+│       ├── player.html        # Reproductor WHEP (WebRTC en vivo)
+│       ├── playback.html      # Reproductor de grabaciones (fMP4/HTTP)
+│       ├── stats.html         # Dashboard de estadísticas en tiempo real 📊
+│       ├── api.html           # Panel de control API REST v2 🔧
+│       ├── css/               # Estilos CSS
+│       └── js/                # Módulos JavaScript
+│           ├── broadcaster.js      # Bootstrap broadcaster
+│           ├── player.js           # Bootstrap player
+│           ├── playback.js         # Bootstrap playback
+│           ├── stats.js            # Bootstrap stats
+│           ├── api/                # Módulos API
+│           │   ├── api.js          # Cliente HTTP genérico
+│           │   ├── api-config.js   # Endpoints de configuración
+│           │   ├── api-paths.js    # Endpoints de paths/streams
+│           │   ├── api-recordings.js # Endpoints de grabaciones
+│           │   ├── api-sessions.js # Endpoints de sesiones
+│           │   └── api-ui.js       # Helpers de UI para API
+│           ├── ui/                 # Componentes UI
+│           │   ├── broadcaster-ui.js # Selectores de dispositivos
+│           │   ├── playback-ui.js    # Controles de reproducción
+│           │   └── stats-ui.js       # Renderizado dashboard
+│           └── utils/              # Funciones compartidas
+│               ├── utils.js          # Utilidades generales (escapeHtml, formatBytes)
+│               ├── watchdog.js       # Monitor de tráfico/estadísticas
+│               ├── stats-charts.js   # Gráficos en tiempo real
+│               ├── broadcast-utils.js # Helpers para broadcaster
+│               └── playback-utils.js # Helpers para playback
 ├── mediamtx/                  # Configuración de MediaMTX
 │   ├── mediamtx.yml           # Configuración del servidor
 │   └── recordings/            # Directorio para grabaciones
@@ -246,45 +269,81 @@ TFG/
 
 ## Uso
 
-### Iniciar streaming de prueba (Windows)
+### 🎥 Broadcaster - Emitir desde el navegador
 
+El **Broadcaster** es la forma más sencilla de emitir streams sin instalar software. Funciona en cualquier dispositivo con navegador moderno (PC, móvil, tablet, Smart TV).
+
+#### Características
+
+- ✅ Sin instalación de software
+- ✅ Soporte para cámaras y micrófonos del dispositivo
+- ✅ Captura de pantalla (en navegadores soportados)
+- ✅ Múltiples resoluciones para adaptarse a la red
+- ✅ Protocolo WHIP nativo del navegador
+- ✅ Ultra baja latencia (~100-300ms)
+
+#### Cómo usar
+
+**Desde el mismo equipo:**
+1. Abrir http://localhost/broadcaster.html
+2. Seleccionar cámara y micrófono a usar
+3. Elegir resolución deseada (480p, 720p, 1080p)
+4. Introducir nombre del endpoint (ej: `cam1`, `movil`, `pantalla`)
+5. Hacer clic en **🔴 Iniciar Transmisión**
+6. ✅ Stream visible inmediatamente en el Player
+
+**Desde otro dispositivo en la red:**
+1. Abrir `https://<IP_SERVIDOR>/broadcaster.html` (ej: https://192.168.1.100/broadcaster.html)
+2. Mismo proceso que arriba
+3. El stream es accesible por todos los dispositivos de la red
+
+**Acceso seguro:**
+- **localhost**: Funciona sin HTTPS (http://localhost/broadcaster.html)
+- **Por IP**: Requiere HTTPS obligatoriamente para acceder a cámara. Usa certificados mkcert:
+  ```bash
+  cd server
+  mkcert localhost 127.0.0.1 192.168.X.X
+  mv localhost+2.pem cert.pem && mv localhost+2-key.pem key.pem
+  ```
+
+#### Captura de pantalla
+
+El Broadcaster también permite compartir la pantalla:
+1. Hacer clic en **Capturar pantalla** en lugar de seleccionar cámara
+2. Seleccionar ventana o pantalla a compartir
+3. Iniciar transmisión
+
+---
+
+### FFmpeg - Streaming desde línea de comandos
+
+Para automatización o emisión desde servidores sin interfaz gráfica:
+
+**Streaming de prueba (Windows)**
 ```bash
 cd CAMS/WHIP
 .\test.bat
 ```
+Envía un stream de prueba (testsrc + tono de audio) al servidor.
 
-Esto envía un stream de prueba (testsrc + tono de audio) al servidor.
-
-### Iniciar streaming desde webcam (Windows)
-
+**Streaming desde webcam (Windows)**
 ```bash
 cd CAMS/WHIP
 .\webcam.bat
 ```
 
-### Iniciar streaming desde Raspberry Pi
-
+**Streaming desde Raspberry Pi**
 ```bash
 cd rpi
 chmod +x stream_mjpeg_high.sh
 ./stream_mjpeg_high.sh
 ```
 
-### Iniciar streaming desde el navegador (Broadcaster)
+---
 
-El Broadcaster permite emitir directamente desde cualquier dispositivo con navegador (PC, móvil, tablet):
+### Reproducción de streams
 
-1. Abrir http://localhost/broadcaster.html (o `https://<IP>` si accedes por IP)
-2. Seleccionar la cámara y micrófono a usar
-3. Elegir la resolución deseada 
-4. Introducir un nombre para el endpoint (ej: `cam1`, `movil`)
-5. Hacer clic en **🔴 Iniciar Transmisión**
-
-> **Nota**: El Broadcaster utiliza el protocolo WHIP nativo del navegador para enviar el stream a MediaMTX, igual que FFmpeg pero sin necesidad de instalar software adicional.
->
-> **Acceso por IP**: Requiere HTTPS para acceder a la cámara. Usa `https://<IP>/broadcaster.html` con certificados mkcert. Desde `localhost` funciona sin HTTPS.
-
-### Reproducir el stream (WHEP)
+#### Player WebRTC (Ultra baja latencia)
 
 El reproductor utiliza el protocolo **WHEP** (WebRTC-HTTP Egress Protocol) para recibir el stream con ultra baja latencia.
 
@@ -298,30 +357,63 @@ El reproductor utiliza el protocolo **WHEP** (WebRTC-HTTP Egress Protocol) para 
 2. Configurar el servidor con la IP del equipo que ejecuta MediaMTX
 3. Hacer clic en **▶ Reproducir**
 
-**Visualización directa via WHEP (sin interfaz web):**
-
-También puedes acceder directamente al stream via WHEP desde cualquier cliente compatible:
+**Acceso directo via WHEP (sin interfaz web):**
 ```
 http://<IP_SERVIDOR>:8889/<nombre_stream>
 ```
 Ejemplo: `http://192.168.1.100:8889/whipLL`
 
-### Reproducir grabaciones (Playback)
+#### Playback - Reproductor de grabaciones
 
-El reproductor de grabaciones consulta primero la API de control de MediaMTX para listar los paths grabados y después usa el servicio de playback para obtener los fragmentos fMP4.
+El reproductor de grabaciones permite visualizar vídeos grabados bajo demanda:
 
-**Desde el mismo equipo:**
 1. Abrir http://localhost/playback.html
-2. Elegir un stream grabado
-3. Seleccionar el punto de inicio o el modo lookback
+2. Seleccionar un stream grabado de la lista
+3. Elegir el punto de inicio o usar modo lookback
 4. Pulsar **▶ Reproducir desde tiempo seleccionado**
 
-**Desde otro dispositivo en la red:**
-1. Abrir `http://<IP_SERVIDOR>/playback.html`
-2. Cargar la lista de grabaciones
-3. Reproducir la grabación deseada
+**Características:**
+- Búsqueda por fecha/hora
+- Timeline interactivo
+- Controles de reproducción (play/pausa/velocidad)
+- Múltiples formatos (fMP4 via HTTP)
+- Acceso desde cualquier dispositivo en la red
 
-> **Tecnología**: Playback no usa WebRTC. El navegador recibe vídeo fMP4 por HTTP y lo reproduce con el elemento `<video>`.
+> **Nota**: Playback no usa WebRTC. El navegador recibe fragmentos fMP4 vía HTTP y los reproduce con el elemento `<video>`.
+
+---
+
+### 📊 Monitorizar estadísticas en tiempo real
+
+El **Statistics Dashboard** permite visualizar métricas del servidor y los streams activos en tiempo real:
+
+1. Abrir http://localhost/stats.html
+2. El dashboard se actualiza automáticamente cada 1.5 segundos (configurable)
+3. Visualiza:
+   - Total de paths, paths listos y online
+   - Readers/writers activos
+   - Bytes recibidos/enviados
+   - Gráficos de tráfico en tiempo real
+   - Estado individual de cada stream
+
+**Desde otro dispositivo:**
+1. Abrir `http://<IP_SERVIDOR>/stats.html`
+2. El dashboard funciona desde cualquier punto de la red
+
+---
+
+### 🔧 Explorar y controlar la API REST
+
+El **API Control Panel** proporciona interface interactiva para:
+
+1. Acceder a http://localhost/api.html
+2. Explorar endpoints de la API REST v2 de MediaMTX:
+   - **Config**: Recargar configuración, obtener información del servidor
+   - **Paths**: Listar, crear, editar y eliminar paths
+   - **Recordings**: Gestionar grabaciones
+   - **Sessions**: Monitorizar sesiones de lectura/escritura
+3. Ejecutar acciones directamente desde la interfaz
+4. Ver respuestas en formato JSON
 
 ## Puertos y Protocolos
 
@@ -331,6 +423,7 @@ El reproductor de grabaciones consulta primero la API de control de MediaMTX par
 | **443** | HTTPS | Servidor web seguro (requerido para getUserMedia por IP) | - |
 | **1935** | RTMP | Streaming RTMP | ~2-5s |
 | **8554** | RTSP | Streaming RTSP | ~1-2s |
+| **8890** | UDP | SRT (Secure Reliable Transport) | ~200ms-2s |
 | **8888** | HTTP | HLS (HTTP Live Streaming) | ~6-30s |
 | **8889** | HTTP | WebRTC (WHIP/WHEP) | **~100-300ms** |
 | **8189** | UDP | WebRTC ICE/STUN | - |
@@ -415,6 +508,29 @@ python CAMS/list_devices.py
 
 ## Desarrollo
 
+### Arquitectura de módulos JavaScript
+
+La interfaz web está organizada en una arquitectura modular y escalable:
+
+```
+js/
+├── api/              # Capa API REST
+│   ├── api.js        # Cliente HTTP genérico
+│   ├── api-*.js      # Endpoints específicos (config, paths, recordings, sessions)
+│   └── api-ui.js     # Helpers de UI para respuestas API
+├── ui/               # Componentes de Interfaz
+│   ├── *-ui.js       # Renderizado y controles UI
+├── utils/            # Lógica compartida
+│   ├── utils.js      # Utilidades generales
+│   ├── watchdog.js   # Monitoreo de tráfico/WebRTC
+│   ├── *-utils.js    # Helpers específicos por módulo
+│   └── *-charts.js   # Visualizaciones
+├── broadcaster.js    # Entry point broadcaster
+├── player.js         # Entry point player
+├── playback.js       # Entry point playback
+└── stats.js          # Entry point stats
+```
+
 ### Reiniciar servicios
 
 ```bash
@@ -442,9 +558,10 @@ docker exec -it mediamtx sh
 | **[MediaMTX](https://github.com/bluenviron/mediamtx)** | Servidor de medios multi-protocolo |
 | **[FFmpeg](https://ffmpeg.org/)** | Codificación y transmisión de vídeo |
 | **[WebRTC](https://webrtc.org/)** | Comunicación en tiempo real (WHIP/WHEP) |
-| **[Node.js](https://nodejs.org/)** | Servidor web |
-| **[Express](https://expressjs.com/)** | Framework web |
-| **[Docker](https://www.docker.com/)** | Contenedorización |
+| **[Node.js](https://nodejs.org/)** | Runtime JavaScript para el servidor web |
+| **[Express](https://expressjs.com/)** | Framework web (proxy API, archivos estáticos) |
+| **[Docker](https://www.docker.com/)** | Contenedorización de servicios |
+| **JavaScript vanilla** | Frontend interactivo sin dependencias framework |
 
 ## Licencia
 
