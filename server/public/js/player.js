@@ -21,8 +21,6 @@ const PLAYER_STATS_INTERVAL_MS = 500;
 const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 2;
 
 
-
-
 // UI
 /**
  * Actualiza el estado visual del reproductor.
@@ -191,7 +189,7 @@ async function playWebRTC(server, streamName) {
         await pc.setLocalDescription(offer);
 
         // Enviar la oferta al endpoint WHEP.
-        let url = `http://${server}:8889/${streamName}/whep`;
+        let url = `${construirBaseUrlWebRTC(server)}/${encodeURIComponent(streamName)}/whep`;
         console.log('WHEP URL:', url);
         
 

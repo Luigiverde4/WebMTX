@@ -6,7 +6,6 @@
     <title>WHIP Broadcaster</title>
     <link rel="stylesheet" href="css/broadcaster.css">
     <link rel="icon" href="../favicon.ico">
-
 </head>
 <body>
     <div class="container">
@@ -29,7 +28,25 @@
                 <span class="status disconnected" id="status">Sin transmitir</span>
             </div>
         </div>
+        <div class="active-paths">
+            <div class="active-paths-header">
+                <label>🔴 Paths activos (ocupados):</label>
+                <button class="btn-small" onclick="actualizarPathsActivos()">🔄</button>
+            </div>
+            <div id="activePathsList" class="paths-list">
+                <span class="loading">Cargando...</span>
+            </div>
+        </div>
 
+        <div class="quick-endpoints">
+            <label>Endpoints rápidos:</label>
+            <div class="endpoint-buttons">
+                <button onclick="ponerEndpoint('cam1')">cam1</button>
+                <button onclick="ponerEndpoint('cam2')">cam2</button>
+                <button onclick="ponerEndpoint('movil')">movil</button>
+                <button onclick="ponerEndpoint('extra')">extra</button>
+            </div>
+        </div>
         <div class="device-selection">
             <div class="control-group">
                 <label for="videoSource">Cámara:</label>
@@ -54,6 +71,10 @@
                     <option value="auto" selected>Automático</option>
                 </select>
             </div>
+            <div class="control-group">
+                <label for="strict">Strict SDP </label>
+                <input type="checkbox" id="strict">
+            </div>
         </div>
 
         <div class="buttons">
@@ -68,31 +89,6 @@
             <div class="live-indicator" id="liveIndicator">🔴 EN VIVO</div>
         </div>
 
-        <div class="info">
-            <p><strong>URL del stream:</strong> <span id="streamUrl">-</span></p>
-            <p><strong>Protocolo:</strong> WHIP (WebRTC-HTTP Ingestion Protocol)</p>
-            <p><strong>Puerto:</strong> 8889</p>
-        </div>
-
-        <div class="active-paths">
-            <div class="active-paths-header">
-                <label>🔴 Paths activos (ocupados):</label>
-                <button class="btn-small" onclick="actualizarPathsActivos()">🔄</button>
-            </div>
-            <div id="activePathsList" class="paths-list">
-                <span class="loading">Cargando...</span>
-            </div>
-        </div>
-
-        <div class="quick-endpoints">
-            <label>Endpoints rápidos:</label>
-            <div class="endpoint-buttons">
-                <button onclick="ponerEndpoint('cam1')">cam1</button>
-                <button onclick="ponerEndpoint('cam2')">cam2</button>
-                <button onclick="ponerEndpoint('movil')">movil</button>
-                <button onclick="ponerEndpoint('extra')">extra</button>
-            </div>
-        </div>
 
         <div class="stream-stats">
             <div class="stream-stats-header">

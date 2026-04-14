@@ -170,23 +170,6 @@ video {
     50% { opacity: 0.7; }
 }
 
-.info {
-    margin-top: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 13px;
-}
-
-.info p {
-    margin: 5px 0;
-    color: #555;
-}
-
-.info strong {
-    color: #333;
-}
-
 .active-paths {
     margin-top: 15px;
     padding: 15px;
@@ -340,6 +323,13 @@ video {
     background: #e74c3c;
     color: white;
     animation: pulse 1.5s infinite;
+}
+
+#strict {
+    width: 20px;
+    height: 20px;
+    margin-top: 5px;
+    display: inline;
 }
 
 @media (max-width: 768px) {
