@@ -175,9 +175,9 @@ hlsMuxerCloseAfter: 60s
 # Enable publishing and reading streams with the WebRTC protocol.
 webrtc: yes
 webrtcAddress: :8889
-webrtcEncryption: no
-webrtcServerKey: server.key
-webrtcServerCert: server.crt
+webrtcEncryption: yes
+webrtcServerKey: /server.key
+webrtcServerCert: /server.crt
 webrtcAllowOrigins: ['*']
 webrtcTrustedProxies: []
 webrtcLocalUDPAddress: :8189
@@ -191,10 +191,11 @@ webrtcIPsFromInterfacesList: []
 # List of additional hosts or IPs to send to clients.
 # webrtcAdditionalHosts: ['192.168.1.218']
 # webrtcAdditionalHosts: []
-# webrtcAdditionalHosts: ['192.168.0.5']
+webrtcAdditionalHosts: ['192.168.0.5']
+# webrtcAdditionalHosts: ['192.168.0.6']
 # webrtcAdditionalHosts: ['192.168.1.120']
 # webrtcAdditionalHosts: ['10.151.165.147']
-webrtcAdditionalHosts: ['192.168.1.82']
+# webrtcAdditionalHosts: ['192.168.1.82']
 # webrtcAdditionalHosts: ['192.168.1.82', '127.0.0.1']
 
 

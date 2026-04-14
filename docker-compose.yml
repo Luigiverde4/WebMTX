@@ -33,7 +33,7 @@ services:
       - "1935:1935"      # RTMP
       - "8554:8554"      # RTSP
       - "8888:8888"      # HLS
-      - "8889:8889"      # WebRTC HTTP
+      - "8889:8889"      # WebRTC HTTPS
       - "8189:8189/udp"  # WebRTC ICE/UDP
       - "9997:9997"      # API HTTP
     volumes:
@@ -41,6 +41,14 @@ services:
         source: ./mediamtx/mediamtx.yml
         target: /mediamtx.yml
         read_only: false
+      - type: bind
+        source: ./server/key.pem
+        target: /server.key
+        read_only: true
+      - type: bind
+        source: ./server/cert.pem
+        target: /server.crt
+        read_only: true
       - type: bind
         source: ./mediamtx/recordings
         target: /recordings
