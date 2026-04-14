@@ -184,7 +184,7 @@ ffmpeg \
   -f v4l2 -i /dev/video0 \
   -c:v libx264 -preset ultrafast -tune zerolatency \
   -pix_fmt yuv420p \
-  -f whip http://192.168.1.120:8889/cam/whip
+  -f whip https://192.168.1.120:8889/cam/whip
 ```
 
 ### 4.2 Linux - Test Pattern
@@ -193,7 +193,7 @@ ffmpeg \
 ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 \
        -c:v libx264 -preset ultrafast -tune zerolatency \
        -pix_fmt yuv420p -an \
-       -f whip http://192.168.1.120:8889/test/whip
+      -f whip https://192.168.1.120:8889/test/whip
 ```
 
 ### 4.3 Windows - Webcam DirectShow
@@ -207,7 +207,7 @@ ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 \
          -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" \
          -b:v 1800k -maxrate 1800k -bufsize 1800k \
          -pix_fmt yuv420p -shortest \
-         -f whip http://192.168.1.120:8889/webcam/whip
+         -f whip https://192.168.1.120:8889/webcam/whip
 ```
 
 ### 4.4 Windows - Test Pattern
@@ -217,7 +217,7 @@ ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 \
          -f lavfi -i "sine=frequency=1000:sample_rate=48000" \
          -c:v libx264 -pix_fmt yuv420p -preset ultrafast \
          -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k \
-         -f whip http://192.168.1.120:8889/test/whip
+         -f whip https://192.168.1.120:8889/test/whip
 ```
 
 ---

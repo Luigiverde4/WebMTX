@@ -13,18 +13,10 @@ const PORT_HTTP = 80;
 const PORT_HTTPS = 443;
 
 
-// Servidor HTTP
-const httpServer = http.createServer(app);
-httpServer.listen(PORT_HTTP, () => {
-  console.log("Servidor HTTP disponible:");
-  console.log(`  http://localhost:${PORT_HTTP}/`);
-});
-
-// Servidor HTTPS
-
 // Certificados SSL (generados con mkcert)
 let sslOptions = null;
 let httpsServer = null;
+let httpServer = null;
 try {
   // Cargar certificados
   sslOptions = {
@@ -44,6 +36,27 @@ try {
   console.log("   Problemas con certificados / HTTPS. Solo HTTP disponible.");
   console.log("   Genera certificados con: mkcert localhost 127.0.0.1 TU_IP");
   console.log("   Renombra a key.pem y cert.pem en la carpeta server/");
+}
+
+// Servidor HTTP
+if (httpsServer) {
+  httpServer = http.createServer((req, res) => {
+    const host = (req.headers.host || `localhost:${PORT_HTTP}`).replace(/:\d+$/, "");
+    res.writeHead(301, {
+      Location: `https://${host}:${PORT_HTTPS}${req.url}`
+    });
+    res.end();
+  });
+  httpServer.listen(PORT_HTTP, () => {
+    console.log("Servidor HTTP disponible (redirige a HTTPS):");
+    console.log(`  Puerto ${PORT_HTTP} -> HTTPS ${PORT_HTTPS}`);
+  });
+} else {
+  httpServer = http.createServer(app);
+  httpServer.listen(PORT_HTTP, () => {
+    console.log("Servidor HTTP disponible:");
+    console.log(`  Puerto ${PORT_HTTP} disponible sin TLS`);
+  });
 }
 
 

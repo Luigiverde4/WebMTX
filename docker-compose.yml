@@ -32,10 +32,10 @@ services:
     ports:
       - "1935:1935"      # RTMP
       - "8554:8554"      # RTSP
-      - "8888:8888"      # HLS
+      - "8888:8888"      # HLS HTTPS
       - "8889:8889"      # WebRTC HTTPS
       - "8189:8189/udp"  # WebRTC ICE/UDP
-      - "9997:9997"      # API HTTP
+      - "9997:9997"      # API HTTPS
     volumes:
       - type: bind
         source: ./mediamtx/mediamtx.yml

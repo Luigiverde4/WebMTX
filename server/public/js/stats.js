@@ -60,7 +60,7 @@ async function loadStats() {
     try {
         let response = await fetch('/api/mediamtx/v3/paths/list');
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
         }
 
         let data = await response.json();

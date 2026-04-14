@@ -1,5 +1,5 @@
 const path = require("path");
-const http = require("http");
+const https = require("https");
 const express = require("express")
 const app = express();
 
@@ -45,7 +45,7 @@ app.all("/api/mediamtx/*", (req, res) => {
   };
   
   // Realizar la petición al API de MediaMTX
-  const proxyReq = http.request(options, (proxyRes) => {
+  const proxyReq = https.request({ ...options, rejectUnauthorized: false }, (proxyRes) => {
     let data = '';
     proxyRes.on('data', chunk => data += chunk);
     proxyRes.on('end', () => {
@@ -90,7 +90,7 @@ app.all("/api/playback/*", (req, res) => {
     }
   };
 
-  const proxyReq = http.request(options, (proxyRes) => {
+  const proxyReq = https.request({ ...options, rejectUnauthorized: false }, (proxyRes) => {
     res.status(proxyRes.statusCode || 500);
 
     Object.entries(proxyRes.headers).forEach(([headerName, headerValue]) => {

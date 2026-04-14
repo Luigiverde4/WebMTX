@@ -25,4 +25,4 @@ wffmpeg ^
 -application lowdelay -frame_duration 20 -packet_loss 15 -max_delay 0 ^
 -fps_mode cfr -r 30 ^
 -f whip ^
-http://%HOST%:%PORT%/%STREAM%/whip
+https://%HOST%:%PORT%/%STREAM%/whip

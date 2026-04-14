@@ -31,4 +31,4 @@ awffmpeg \
   -packet_loss 15 \
   -max_delay 0 \
   -fps_mode cfr -r 10 \
-  -f whip http://192.168.0.120:8889/multi/whip
+  -f whip https://192.168.0.120:8889/multi/whip

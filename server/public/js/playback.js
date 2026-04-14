@@ -27,7 +27,7 @@ async function loadRecordings() {
         // Usar proxy del backend para evitar errores de red/CORS en el navegador.
         let pathsResponse = await fetch('/api/mediamtx/v3/recordings/list');
         if (!pathsResponse.ok) {
-            throw new Error(`HTTP ${pathsResponse.status}: ${pathsResponse.statusText}`);
+            throw new Error(`HTTPS ${pathsResponse.status}: ${pathsResponse.statusText}`);
         }
 
         let pathsData = await pathsResponse.json();

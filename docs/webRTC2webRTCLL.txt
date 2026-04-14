@@ -4,29 +4,29 @@ webRTC a webRTC low latency
 # IMPORTANTE: Cambiar IP a 192.168.0.120 (no 192.168.1.120)
 
 # Con webcam (Trust QHD Webcam)
-wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -f whip http://192.168.0.120:8889/webcam/whip
+wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -f whip https://192.168.0.120:8889/webcam/whip
 
 # Con webcam + buffer_size
-wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip http://192.168.0.120:8889/webcam/whip
+wffmpeg -f dshow -rtbufsize 200M -video_size 1920x1080 -framerate 25 -i video="Trust QHD Webcam" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip https://192.168.0.120:8889/webcam/whip
 
 # Con testsrc (sin webcam) - con audio mono
-wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip https://192.168.0.120:8889/stream/whip
 
 # Con testsrc (sin webcam) - higher bitrate, zero latency
-wffmpeg -re -f lavfi -i testsrc=size=1920x1080:duration=300:rate=25 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip http://192.168.0.120:8889/stream/whip
+wffmpeg -re -f lavfi -i testsrc=size=1920x1080:duration=300:rate=25 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -c:v libx264 -preset ultrafast -tune zerolatency -profile:v baseline -level 3.0 -x264-params "keyint=25:min-keyint=25:no-scenecut=1:ref=1:bframes=0" -b:v 1800k -maxrate 1800k -bufsize 1800k -pix_fmt yuv420p -shortest -buffer_size 5M -f whip https://192.168.0.120:8889/stream/whip
 
 # ============ LINUX (v4l2 + ALSA) ============
 # NOTA: Usar ffmpeg (no wffmpeg), rutas /dev/videoX, hw:X,Y para audio
 # Listar dispositivos: ffmpeg -sources dshow (Windows) / v4l2-ctl --list-devices (Linux)
 
 # Con testsrc (sin webcam) - con audio mono
-ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip http://192.168.0.120:8889/stream/whip
+ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=30 -f lavfi -i "sine=frequency=1000:sample_rate=48000" -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b:v 600k -c:a libopus -ar 48000 -ac 2 -b:a 128k -f whip https://192.168.0.120:8889/stream/whip
 
 # Video + audio HDMI → WHIP (v4l2 + ALSA)
-ffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -f alsa -i hw:3,0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -b:a 96k -f whip http://192.168.0.120:8889/stream/whip
+ffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -f alsa -i hw:3,0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -b:a 96k -f whip https://192.168.0.120:8889/stream/whip
 
 # Video HDMI → WHIP (sin audio)
-    tency -an -f whip http://192.168.0.120:8889/stream/whip
+    tency -an -f whip https://192.168.0.120:8889/stream/whip
 
 # Audio + Video HDMI → RTSP
 ffmpeg -use_wallclock_as_timestamps 1 -fflags +genpts -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 25 -i /dev/video0 -f alsa -i hw:3,0 -vf "scale=in_range=full:out_range=tv,format=yuv420p" -c:v libx264 -preset ultrafast -tune zerolatency -c:a libopus -f rtsp rtsp://127.0.0.1:8554/cam

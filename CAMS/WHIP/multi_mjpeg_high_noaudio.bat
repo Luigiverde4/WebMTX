@@ -26,4 +26,4 @@ wffmpeg ^
 -f whip ^
 -buffer_size 512M ^
 -pkt_size 1200 ^
-http://%HOST%:%PORT%/%STREAM%/whip
+https://%HOST%:%PORT%/%STREAM%/whip

@@ -96,7 +96,7 @@ async function request(method, endpoint, options = {}) {
             ? errorPayload
             : errorPayload?.message || errorPayload?.error || null;
 
-        throw new Error(errorMessage || `Error HTTP ${response.status}`);
+        throw new Error(errorMessage || `Error HTTPS ${response.status}`);
     }
 
     return await leerRespuestaApi(response);

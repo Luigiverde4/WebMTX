@@ -66,9 +66,9 @@ authJWTInHTTPQuery: true
 # Enable controlling the server through the Control API.
 api: yes
 apiAddress: :9997
-apiEncryption: no
-apiServerKey: server.key
-apiServerCert: server.crt
+apiEncryption: yes
+apiServerKey: /server.key
+apiServerCert: /server.crt
 apiAllowOrigins: ['*']
 apiTrustedProxies: []
 
@@ -102,9 +102,9 @@ pprofTrustedProxies: []
 # Enable downloading recordings from the playback server.
 playback: yes
 playbackAddress: :9996
-playbackEncryption: no
-playbackServerKey: server.key
-playbackServerCert: server.crt
+playbackEncryption: yes
+playbackServerKey: /server.key
+playbackServerCert: /server.crt
 playbackAllowOrigins: ['*']
 playbackTrustedProxies: []
 
@@ -148,9 +148,9 @@ rtmpServerCert: server.crt
 hls: yes
 # Address of the HLS listener.
 hlsAddress: :8888
-hlsEncryption: no
-hlsServerKey: server.key
-hlsServerCert: server.crt
+hlsEncryption: yes
+hlsServerKey: /server.key
+hlsServerCert: /server.crt
 hlsAllowOrigins: ['*']
 hlsTrustedProxies: []
 hlsAlwaysRemux: no
@@ -191,11 +191,11 @@ webrtcIPsFromInterfacesList: []
 # List of additional hosts or IPs to send to clients.
 # webrtcAdditionalHosts: ['192.168.1.218']
 # webrtcAdditionalHosts: []
-webrtcAdditionalHosts: ['192.168.0.5']
+# webrtcAdditionalHosts: ['192.168.0.5']
 # webrtcAdditionalHosts: ['192.168.0.6']
 # webrtcAdditionalHosts: ['192.168.1.120']
 # webrtcAdditionalHosts: ['10.151.165.147']
-# webrtcAdditionalHosts: ['192.168.1.82']
+webrtcAdditionalHosts: ['192.168.1.82']
 # webrtcAdditionalHosts: ['192.168.1.82', '127.0.0.1']
 
 
