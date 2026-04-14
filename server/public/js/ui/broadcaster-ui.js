@@ -12,6 +12,7 @@ let codecStatsEl = document.getElementById('codecStats');
 // Entradas de usuario
 let serverInput = document.getElementById('server');
 let endpointInput = document.getElementById('endpoint');
+let strictCheck = document.getElementById('strict');
 
 // Fuentes multimedia
 let videoSource = document.getElementById('videoSource');
@@ -423,16 +424,27 @@ async function actualizarDispositivos() {
  */
 async function cogerStreamVideoAudioLocal() {
     let [width, height] = resolution.value.split('x').map(Number);
-
-    let constraints = {
-        video: {
-            deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
-            width: { ideal: width },
-            height: { ideal: height },
-            frameRate: { ideal: 30 }
-        }
+    let constraints;
+    if (strictCheck.checked) {
+        constraints = {
+            video: {
+                deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
+                width: { strict: width },
+                height: { strict: height },
+                frameRate: { strict: 30 }
+            }
+    }
+    }else {
+        constraints = {
+            video: {
+                deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
+                width: { ideal: width },
+                height: { ideal: height },
+                frameRate: { ideal: 30 }
+            }
+    }
     };
-
+    console.log('Solicitando stream con constraints:', constraints);
     if (audioSource.value !== 'none') {
         constraints.audio = {
             deviceId: audioSource.value ? { exact: audioSource.value } : undefined,
