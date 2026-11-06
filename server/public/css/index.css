@@ -1,58 +1,123 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Inicio: lo que está en directo arriba, herramientas y salidas OBS debajo */
+
+.inicio {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+        "directo directo"
+        "herramientas obs";
+    gap: var(--e-7) var(--e-6);
 }
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    min-height: 100vh;
+.inicio__directo { grid-area: directo; }
+.inicio__herramientas { grid-area: herramientas; }
+.inicio__obs { grid-area: obs; }
+.inicio__herramientas h2,
+.inicio__obs h2 { margin-bottom: var(--e-3); }
+.inicio__obs > p { margin-bottom: var(--e-4); max-width: 60ch; }
+
+/* --- Lista de cámaras en directo ---------------------------------------- */
+.directo {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
+    border: 1px solid var(--linea-suave);
+    border-radius: var(--radio-panel);
+    background: var(--superficie);
+    overflow: hidden;
 }
-h1 {
-    margin-bottom: 40px;
-    font-size: 2.5rem;
-    text-align: center;
-}
-.tools-container {
+.directo > .vacio { border: 0; border-radius: 0; }
+.directo__item {
+    --cam: var(--cam-blanco);
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    max-width: 800px;
-    padding: 20px;
+    grid-template-columns: 6px minmax(140px, 1.2fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--e-4);
+    padding: var(--e-3) var(--e-4) var(--e-3) 0;
+    border-bottom: 1px solid var(--linea-suave);
 }
-.tool-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 30px 20px;
-    text-align: center;
+.directo__item:last-child { border-bottom: 0; }
+.directo__color {
+    align-self: stretch;
+    background: var(--cam);
+}
+.directo__nombre {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.directo__nombre strong {
+    font-size: var(--t-xl);
+    font-stretch: 75%;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+.directo__pistas { display: flex; flex-wrap: wrap; gap: var(--e-1); }
+.directo__pistas span {
+    font-size: var(--t-xs);
+    color: var(--texto-2);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio-control);
+    padding: 0 var(--e-1);
+}
+.directo__datos {
+    display: flex;
+    gap: var(--e-5);
+    font-size: var(--t-s);
+}
+.directo__datos dt { color: var(--texto-3); font-size: var(--t-xs); }
+.directo__datos dd { font-size: var(--t-l); font-weight: 600; }
+.directo__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--e-2); }
+
+/* --- Herramientas -------------------------------------------------------- */
+.herramientas { display: flex; flex-direction: column; }
+.herramientas li {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: var(--e-4);
+    align-items: baseline;
+    padding: var(--e-3) 0;
+    border-bottom: 1px solid var(--linea-suave);
+}
+.herramientas li:first-child { border-top: 1px solid var(--linea-suave); }
+.herramientas a {
+    font-weight: 650;
+    font-stretch: 80%;
+    font-size: var(--t-l);
     text-decoration: none;
-    color: #fff;
-    transition: transform 0.3s, background 0.3s;
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.tool-card:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.2);
+.herramientas a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.herramientas p { color: var(--texto-2); }
+
+/* --- Salidas OBS --------------------------------------------------------- */
+.salidas { display: flex; flex-direction: column; gap: var(--e-4); }
+.salida {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--e-2);
 }
-.tool-card h2 {
-    font-size: 1.3rem;
-    margin-bottom: 10px;
+.salida__texto { grid-column: 1 / -1; display: flex; flex-direction: column; }
+.salida__url { font-size: var(--t-s); }
+
+/* --- Responsive ---------------------------------------------------------- */
+@media (max-width: 900px) {
+    .inicio {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "directo" "herramientas" "obs";
+        gap: var(--e-6);
+    }
+    .directo__item {
+        grid-template-columns: 6px minmax(0, 1fr) auto;
+        grid-template-areas:
+            "color nombre datos"
+            "color acciones acciones";
+        row-gap: var(--e-2);
+    }
+    .directo__color { grid-area: color; }
+    .directo__nombre { grid-area: nombre; }
+    .directo__datos { grid-area: datos; gap: var(--e-4); }
+    .directo__acciones { grid-area: acciones; justify-content: flex-start; }
 }
-.tool-card p {
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
-.icon {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
-}
-footer {
-    margin-top: 40px;
-    opacity: 0.6;
-    font-size: 0.85rem;
+@media (max-width: 600px) {
+    .herramientas li { grid-template-columns: minmax(0, 1fr); gap: var(--e-1); }
 }

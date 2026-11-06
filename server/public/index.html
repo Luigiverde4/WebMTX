@@ -3,47 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebRTC Streaming - TFG</title>
+    <title>Inicio | Poliwood</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/index.css">
-    <link rel="icon" href="./favicon.ico">
 </head>
 <body>
-    <h1>🎥 WebRTC Streaming Tools</h1>
-    
-    <div class="tools-container">
-        <a href="broadcaster.html" class="tool-card">
-            <div class="icon">📡</div>
-            <h2>Broadcaster</h2>
-            <p>Emitir stream de video</p>
-        </a>
-        
-        <a href="player.html" class="tool-card">
-            <div class="icon">▶️</div>
-            <h2>Player</h2>
-            <p>Reproducir streams</p>
-        </a>
-        
-        <a href="playback.html" class="tool-card">
-            <div class="icon">🔄</div>
-            <h2>Playback</h2>
-            <p>Reproducción de grabaciones</p>
-        </a>
-        
-        <a href="api.html" class="tool-card">
-            <div class="icon">⚙️</div>
-            <h2>API Control</h2>
-            <p>Control y configuración</p>
-        </a>
+    <header class="cabecera">
+        <a class="marca" href="index.html">Poliwood</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html" aria-current="page">Inicio</a>
+            <a href="broadcaster.html">Emitir</a>
+            <a href="player.html">Ver</a>
+            <a href="playback.html">Repeticiones</a>
+            <a href="stats.html">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
 
-        <a href="stats.html" class="tool-card">
-            <div class="icon">📊</div>
-            <h2>Statistics</h2>
-            <p>Ver estadísticas del sistema</p>
-        </a>
-    </div>
-    
-    <footer>
-        TFG - Streaming de baja latencia con WebRTC
+    <main class="pagina inicio">
+        <section class="inicio__directo" aria-labelledby="tituloDirecto">
+            <div class="titulo-pagina">
+                <h1 id="tituloDirecto">En directo</h1>
+                <p id="resumenDirecto" class="cifra">Comprobando cámaras…</p>
+            </div>
+            <ul id="listaDirecto" class="directo"></ul>
+        </section>
+
+        <section class="inicio__herramientas" aria-labelledby="tituloHerramientas">
+            <h2 id="tituloHerramientas">Herramientas</h2>
+            <ul class="herramientas">
+                <li>
+                    <a href="broadcaster.html">Emitir</a>
+                    <p>Publica la cámara y el micrófono de este dispositivo (móvil o portátil).</p>
+                </li>
+                <li>
+                    <a href="player.html">Ver</a>
+                    <p>Monitoriza cualquier cámara en directo con baja latencia.</p>
+                </li>
+                <li>
+                    <a href="playback.html">Repeticiones</a>
+                    <p>Recupera lo grabado, marca momentos y lánzalos a OBS.</p>
+                </li>
+                <li>
+                    <a href="stats.html">Estadísticas</a>
+                    <p>Tráfico, espectadores y estado de cada cámara en tiempo real.</p>
+                </li>
+                <li>
+                    <a href="api.html">API</a>
+                    <p>Paths, sesiones, configuración y grabaciones de MediaMTX.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="inicio__obs" aria-labelledby="tituloObs">
+            <h2 id="tituloObs">Salidas para OBS</h2>
+            <p class="texto-2">Añádelas como fuente de navegador a 1920×1080. Solo muestran vídeo sobre negro.</p>
+            <ul class="salidas">
+                <li class="salida">
+                    <div class="salida__texto">
+                        <strong>Repeticiones</strong>
+                        <span class="texto-2 texto-peq">Lo que envíes desde Repeticiones.</span>
+                    </div>
+                    <input class="salida__url" id="urlDisplay" type="text" readonly aria-label="URL de la salida de repeticiones">
+                    <button type="button" class="boton boton--peq" data-copiar="urlDisplay">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#copiar"/></svg>
+                        Copiar
+                    </button>
+                </li>
+                <li class="salida">
+                    <div class="salida__texto">
+                        <strong>Cámara a pantalla completa</strong>
+                        <span class="texto-2 texto-peq">Cambia <code>stream=</code> por la cámara que quieras, o cópiala desde la lista de arriba.</span>
+                    </div>
+                    <input class="salida__url" id="urlNeoplayer" type="text" readonly aria-label="URL de la salida de cámara">
+                    <button type="button" class="boton boton--peq" data-copiar="urlNeoplayer">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#copiar"/></svg>
+                        Copiar
+                    </button>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="pie">
+        WebMTX, sistema de streaming de baja latencia con MediaMTX y Node.js (TFG).
     </footer>
+
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/api/api.js"></script>
+    <script src="js/ui/avisos.js"></script>
+    <script src="js/index.js"></script>
 </body>
 </html>
