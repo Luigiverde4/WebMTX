@@ -74,7 +74,9 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 **Nombres de funciones.** Las que se llaman desde `onclick`, `onchange` o `data-load` son contrato: si cambias un nombre, actualiza el HTML.
 
 **Sistema de diseño.** Está en `css/base.css`: tokens en `:root`, componentes y la barra de tally.
-- Cada cámara tiene un color fijo que asigna `js/utils/camaras.js`.
+- Cada cámara tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). La paleta está validada con el validador de la skill dataviz contra el fondo oscuro; si la cambias, vuelve a validarla.
+- `[hidden]` siempre gana a los `display` de las clases (regla global en base.css): usa `hidden` para mostrar y ocultar, no `style.display`.
+- Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
 - El rojo y el verde se reservan para el estado tally: en antena / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 
