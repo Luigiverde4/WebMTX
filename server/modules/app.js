@@ -12,7 +12,7 @@ const PLAYBACK_API_PORT = Number(process.env.PLAYBACK_PORT || 9996);
 app.use(express.json());
 
 // Servir archivos estáticos desde la carpeta public
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "..", "public")));
 // Exponer librerías cliente instaladas por npm 
 app.use("/vendor", express.static(path.join(__dirname, "..", "node_modules")));
 
@@ -115,4 +115,84 @@ app.all("/api/playback/*", (req, res) => {
   proxyReq.end();
 });
 
+
+// CONTROL DE REPETICIONES PARA OBS
+// La página de repeticiones (control) fija qué repetición mostrar; los displays
+// (display.html como fuente de navegador en OBS) se suscriben por SSE y
+// reproducen lo que aquí se guarde. Estado en memoria: se pierde al reiniciar.
+const PREFIJO_URL_REPETICION = "/api/playback/get?";
+const MAX_LABEL = 120;
+
+let estadoRepeticion = { id: 0, cmd: "stop", label: "", ts: Date.now() };
+const clientesSSE = new Set();
+
+// Envía el estado actual a todos los displays conectados.
+function difundirRepeticion() {
+  const payload = `data: ${JSON.stringify(estadoRepeticion)}\n\n`;
+  for (const res of clientesSSE) {
+    res.write(payload);
+  }
+}
+
+// El control fija una repetición a mostrar. Solo se aceptan URLs del proxy de
+// playback: lo que llega aquí sale en antena, no puede ser una URL arbitraria.
+app.post("/api/replay/select", (req, res) => {
+  const { url, seekOffset, label } = req.body || {};
+  if (typeof url !== "string" || !url.startsWith(PREFIJO_URL_REPETICION)) {
+    return res.status(400).json({ error: `"url" debe empezar por ${PREFIJO_URL_REPETICION}` });
+  }
+  estadoRepeticion = {
+    id: estadoRepeticion.id + 1, // Incrementa siempre: permite re-disparar la misma
+    cmd: "play",
+    url,
+    seekOffset: Math.max(0, Number(seekOffset) || 0),
+    label: String(label || "").slice(0, MAX_LABEL),
+    ts: Date.now()
+  };
+  difundirRepeticion();
+  res.json(estadoRepeticion);
+});
+
+// El control limpia el display (deja de mostrar nada).
+app.post("/api/replay/stop", (req, res) => {
+  estadoRepeticion = { id: estadoRepeticion.id + 1, cmd: "stop", label: "", ts: Date.now() };
+  difundirRepeticion();
+  res.json(estadoRepeticion);
+});
+
+// Estado actual (para sincronizar al entrar, o depurar).
+app.get("/api/replay/current", (req, res) => {
+  res.json(estadoRepeticion);
+});
+
+// Canal SSE: el display recibe el estado al conectar y en cada cambio.
+app.get("/api/replay/events", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive"
+  });
+  res.write("retry: 3000\n\n");
+  res.write(`data: ${JSON.stringify(estadoRepeticion)}\n\n`); // Estado inicial
+  clientesSSE.add(res);
+  req.on("close", () => clientesSSE.delete(res));
+});
+
+// Latido para mantener vivas las conexiones SSE a través de timeouts intermedios.
+// unref(): el temporizador no impide que el proceso termine.
+setInterval(() => {
+  for (const res of clientesSSE) {
+    res.write(": ping\n\n");
+  }
+}, 15000).unref();
+
+// Cierra las conexiones SSE abiertas (lo usa server.js al recibir SIGTERM).
+function cerrarClientesReplay() {
+  for (const res of clientesSSE) {
+    res.end();
+  }
+  clientesSSE.clear();
+}
+
 module.exports = app;
+module.exports.cerrarClientesReplay = cerrarClientesReplay;

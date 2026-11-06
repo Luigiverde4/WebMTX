@@ -1,7 +1,8 @@
 logLevel: info
-logDestinations: [stdout]
+logDestinations: [stdout, file]
 logStructured: no
-logFile: mediamtx.log
+# Montado desde ./mediamtx/logs (ver docker-compose.yml). MediaMTX no rota el fichero.
+logFile: /logs/mediamtx.log
 sysLogPrefix: mediamtx
 
 # Timeout of read operations.
@@ -232,16 +233,33 @@ pathDefaults:
 
   ###############################################
   # Default path settings -> Record
+  #
+  # Estos valores se aplican a CUALQUIER cámara que publique (ver paths -> all_others).
+  # Pensados para grabar varias cámaras durante un evento y hacer repeticiones en
+  # directo desde el playback server (:9996). Coste de disco aproximado:
+  #   GB/día ~= (bitrate_Mbps / 8) * 3600 * horas * nº_cámaras
+  #   ej. 4 cámaras @ 5 Mbps, 8h -> ~72 GB/día  ->  con 7d de retención ~500 GB.
+  # Las grabaciones viven en el volumen Docker recordings_volume
+  # (exportarlas con scripts/exportar-grabaciones.ps1).
 
   record: yes
   recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
-  # Format of recorded segments: fmp4 or mpegts.
+  # Formato del segmento: fmp4 o mpegts.
+  # OBLIGATORIO fmp4: el playback server solo permite seek por timestamp (repeticiones) con fMP4.
   recordFormat: fmp4
+  # Cada cuánto se vuelca un "part" a disco. Marca cuán reciente puede ser una repetición:
+  # con 1s, lo grabado hace ~1-2s ya es reproducible (el front deja 4s de margen).
   recordPartDuration: 1s
   recordMaxPartSize: 50M
-  recordSegmentDuration: 1h
-  # Delete segments after this timespan. Set to 0s to disable automatic deletion.
-  recordDeleteAfter: 1d
+  # Duración de cada FICHERO. El playback server cose segmentos en una línea temporal
+  # continua, así que una repetición puede cruzar este límite sin cortes.
+  # Para streams aún vivos, el playback server localiza el inicio leyendo las cabeceras
+  # (moof) de cada part desde el principio del fichero: ficheros largos = repeticiones
+  # lentas cerca del directo. Con 10m y parts de 1s son ~600 parts como máximo.
+  recordSegmentDuration: 10m
+  # Borra segmentos más antiguos que esto = ventana máxima de repetición hacia atrás.
+  # Vigila el disco (ver cálculo arriba). 0s = no borrar nunca.
+  recordDeleteAfter: 7d
 
   ###############################################
   # Default path settings -> Publisher source (when source is "publisher")
@@ -310,11 +328,13 @@ pathDefaults:
 ###############################################
 # Path settings
 paths:
+  # Catch-all: acepta y graba CUALQUIER cámara que publique (cam1, cam2, movil...)
+  # sin declararlas una a una. Hereda todo de pathDefaults (incluida la grabación),
+  # que es la única fuente de verdad.
+  #
+  # Si una cámara necesita ajustes propios, declárala como un path aparte, p.ej.:
+  #   cam_sala:
+  #     recordDeleteAfter: 30d   # solo esta cámara se conserva 30 días
+  #   cam_test:
+  #     record: no               # esta no se graba
   all_others:
-    record: yes
-    recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
-    recordFormat: fmp4
-    recordPartDuration: 1s
-    recordMaxPartSize: 50M
-    recordSegmentDuration: 1h
-    recordDeleteAfter: 1d

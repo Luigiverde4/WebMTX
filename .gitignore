@@ -44,3 +44,5 @@ docs/ffmpeg_JL/
 
 # Certificates
 *.pem
+# Exportaciones de grabaciones (scripts/exportar-grabaciones.ps1)
+mediamtx/grabaciones_exportadas/
