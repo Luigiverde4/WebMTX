@@ -189,7 +189,7 @@ webrtcIPsFromInterfaces: no
 # An empty value means to use all available interfaces.
 webrtcIPsFromInterfacesList: []
 # List of additional hosts or IPs to send to clients.
-webrtcAdditionalHosts: ['192.168.1.82', '192.168.1.48', '192.168.1.120', '192.168.0.5', '192.168.0.6', '10.151.165.147']
+webrtcAdditionalHosts: ['192.168.1.82', '192.168.1.48', '192.168.1.120', '192.168.0.5', '192.168.0.6', '10.151.165.147', '192.168.88.2']
 
 
 webrtcICEServers2: []
