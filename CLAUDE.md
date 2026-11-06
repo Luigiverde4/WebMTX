@@ -4,7 +4,7 @@ Guía para Claude Code (claude.ai/code) al trabajar en este repositorio.
 
 ## Qué es
 
-Sistema de streaming de baja latencia (TFG, usado por POLIWOOD-UPV). Un servidor **Node.js/Express** fino delante de **MediaMTX**:
+Sistema genérico de streaming de baja latencia (TFG). Un servidor **Node.js/Express** fino delante de **MediaMTX**:
 
 - El navegador hace todo el WebRTC (WHIP para emitir, WHEP para ver).
 - Node sirve los estáticos y hace de proxy de las dos APIs HTTPS de MediaMTX, para evitar problemas de CORS y de certificados autofirmados. Además gestiona el control de repeticiones para OBS (SSE).

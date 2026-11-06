@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio | Poliwood</title>
+    <title>Inicio | WebMTX</title>
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
     <header class="cabecera">
-        <a class="marca" href="index.html">Poliwood</a>
+        <a class="marca" href="index.html">WebMTX</a>
         <nav class="nav" aria-label="Secciones">
             <a href="index.html" aria-current="page">Inicio</a>
             <a href="broadcaster.html">Emitir</a>
@@ -34,24 +34,39 @@
             <h2 id="tituloHerramientas">Herramientas</h2>
             <ul class="herramientas">
                 <li>
-                    <a href="broadcaster.html">Emitir</a>
-                    <p>Publica la cámara y el micrófono de este dispositivo (móvil o portátil).</p>
+                    <a class="herramienta" href="broadcaster.html">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#camara"/></svg></span>
+                        <span class="herramienta__nombre">Emitir</span>
+                        <span class="herramienta__texto">Publica la cámara y el micrófono de este dispositivo (móvil o portátil).</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="player.html">Ver</a>
-                    <p>Monitoriza cualquier cámara en directo con baja latencia.</p>
+                    <a class="herramienta" href="player.html">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#ojo"/></svg></span>
+                        <span class="herramienta__nombre">Ver</span>
+                        <span class="herramienta__texto">Monitoriza cualquier cámara en directo con baja latencia.</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="playback.html">Repeticiones</a>
-                    <p>Recupera lo grabado, marca momentos y lánzalos a OBS.</p>
+                    <a class="herramienta" href="playback.html">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#repetir"/></svg></span>
+                        <span class="herramienta__nombre">Repeticiones</span>
+                        <span class="herramienta__texto">Recupera lo grabado, marca momentos y lánzalos a OBS.</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="stats.html">Estadísticas</a>
-                    <p>Tráfico, espectadores y estado de cada cámara en tiempo real.</p>
+                    <a class="herramienta" href="stats.html">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#grafica"/></svg></span>
+                        <span class="herramienta__nombre">Estadísticas</span>
+                        <span class="herramienta__texto">Tráfico, espectadores y estado de cada cámara en tiempo real.</span>
+                    </a>
                 </li>
                 <li>
-                    <a href="api.html">API</a>
-                    <p>Paths, sesiones, configuración y grabaciones de MediaMTX.</p>
+                    <a class="herramienta" href="api.html">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#servidor"/></svg></span>
+                        <span class="herramienta__nombre">API</span>
+                        <span class="herramienta__texto">Paths, sesiones, configuración y grabaciones de MediaMTX.</span>
+                    </a>
                 </li>
             </ul>
         </section>
@@ -62,6 +77,7 @@
             <ul class="salidas">
                 <li class="salida">
                     <div class="salida__texto">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#repetir"/></svg></span>
                         <strong>Repeticiones</strong>
                         <span class="texto-2 texto-peq">Lo que envíes desde Repeticiones.</span>
                     </div>
@@ -73,6 +89,7 @@
                 </li>
                 <li class="salida">
                     <div class="salida__texto">
+                        <span class="herramienta__icono" aria-hidden="true"><svg class="icono"><use href="img/iconos.svg#pantalla"/></svg></span>
                         <strong>Cámara a pantalla completa</strong>
                         <span class="texto-2 texto-peq">Cambia <code>stream=</code> por la cámara que quieras, o cópiala desde la lista de arriba.</span>
                     </div>

@@ -8,7 +8,7 @@
  * reproducción se reconstruye al pincharlo, igual que en el resto del panel.
  */
 
-const CLAVE_MARCADOS = 'poliwood.playback.marcados';
+const CLAVE_MARCADOS = 'webmtx.playback.marcados';
 
 // Cuántos momentos se conservan (los más recientes).
 const MAX_MARCADOS = 50;

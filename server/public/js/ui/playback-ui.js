@@ -42,7 +42,7 @@ let firmaPintada = '';
 let ajustandoTimeline = false;
 
 // Clave de localStorage donde se recuerdan los controles entre recargas.
-const CLAVE_PREFERENCIAS = 'poliwood.playback.preferencias';
+const CLAVE_PREFERENCIAS = 'webmtx.playback.preferencias';
 
 // Mientras se restaura el estado guardado, los desplegables pasan por valores
 // intermedios (se vacían al repintarlos). Guardar en ese momento machacaría las
