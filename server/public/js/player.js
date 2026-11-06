@@ -1,38 +1,67 @@
 /**
  * REPRODUCTOR WHEP - MEDIA MTX
- * Gestiona la reproducción WebRTC de un stream publicado por el servidor.
+ * Gestiona la reproducción WebRTC de un stream publicado por el servidor,
+ * con reconexión automática y vigilancia del tráfico recibido.
  */
 
 // Elementos DOM
-let statusEl = document.getElementById('status')
-let stopBtn = document.getElementById('stopBtn')
-let server = document.getElementById('server')
-let streamName = document.getElementById('streamName')
+let statusEl = document.getElementById('status');
+let stopBtn = document.getElementById('stopBtn');
+let server = document.getElementById('server');
+let streamName = document.getElementById('streamName');
 let video = document.getElementById('video');
+let videoVacio = document.getElementById('videoVacio');
 let endpointButtons = document.getElementById('endpointButtons');
 
 // Estado global
 let pc = null; // WebRTC PeerConnection
+let whepSession = null; // URL de la sesión WHEP (para cerrarla al parar)
 let activePaths = []; // Paths activos en MediaMTX
-let inboundStatsWatchdog = null; // Watchdog compartido para recepción RTP
 let isStoppingPlay = false; // Evita ejecuciones solapadas de stopPlay
 
-const PLAYER_STATS_INTERVAL_MS = 500;
-const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 2;
+// Reconexión automática
+let playerActivo = false;   // El usuario quiere estar reproduciendo (controla si se reintenta)
+let isConnecting = false;   // Evita conexiones solapadas
+let reconnectTimer = null;  // Temporizador de reintento pendiente
+let disconnectTimer = null; // Margen de gracia ante un 'disconnected' transitorio de ICE
+let currentServer = '';     // Último server usado (para reconectar)
+let currentStream = '';     // Último stream usado (para reconectar)
+const RECONNECT_DELAY_MS = 2000;
+const ICE_DISCONNECT_GRACE_MS = 4000; // Espera antes de tratar 'disconnected' como caída real
+
+// Watchdog de recepción: si no llegan bytes durante 4 s, se reconecta
+let inboundWatchdog = null;
+let muestraRecepcionPrevia = null;
+const INBOUND_STATS_INTERVAL_MS = 1000;
+const STALLED_BYTES_RECEIVED_MAX_SAMPLES = 4;
+
+// Sondeo de endpoints activos
+let pollPathsTimer = null;       // Intervalo de refresco automático
+let ultimoPathsRender = '';      // Firma del último render (evita parpadeo si no cambia nada)
+const POLL_PATHS_INTERVAL_MS = 4000;
 
 
 // UI
 /**
- * Actualiza el estado visual del reproductor.
- * @param {string} status - Clase visual a aplicar.
+ * Actualiza el estado visual del reproductor (píldora y tally).
+ * @param {'disconnected'|'connecting'|'connected'|'error'} status
  * @param {string} text - Texto descriptivo del estado.
  */
 function actualizarEstado(status, text) {
-    statusEl.className = `status ${status}`;
+    statusEl.className = `estado ${status}`;
     statusEl.textContent = text;
+
+    if (status === 'connected') {
+        ponerTally('recibiendo', { estado: 'Recibiendo', detalle: currentStream, cronometro: true });
+    } else if (status === 'connecting') {
+        ponerTally('conectando', { estado: text, detalle: currentStream });
+    } else if (status === 'error') {
+        ponerTally('error', { estado: text, detalle: currentStream });
+    } else {
+        ponerTally('inactivo', { estado: 'Sin señal', detalle: 'Elige una cámara' });
+    }
+    videoVacio.hidden = status === 'connected';
 }
-
-
 
 
 // CONTROL DE REPRODUCCIÓN
@@ -40,106 +69,210 @@ function actualizarEstado(status, text) {
  * Inicia la reproducción del stream indicado por el usuario.
  */
 async function startPlay() {
-    if (!streamName.value.trim()) {
-        alert('Por favor, introduce el nombre del stream');
+    let nombre = streamName.value.trim();
+    if (!nombre) {
+        mostrarAviso('Escribe el nombre de la cámara o elige una de la lista.', 'aviso');
         streamName.focus();
         return;
     }
 
-    localStorage.setItem('player_server', server.value.trim());
-    localStorage.setItem('player_streamName', streamName.value.trim());
+    localStorage.setItem('player_streamName', nombre);
 
     stopPlay(); // Detener cualquier reproducción anterior
-    await playWebRTC(server.value.trim(), streamName.value.trim());
+    playerActivo = true; // A partir de aquí, reintentar si se cae la conexión
+    await playWebRTC(server.value.trim(), nombre);
 }
 
+/**
+ * Para la reproducción a petición del usuario (sin reconectar).
+ */
 function stopPlay() {
     if (isStoppingPlay) return;
     isStoppingPlay = true;
 
-    pararPollingStatsEntrantes();
+    // Parada solicitada por el usuario: desactivar la reconexión automática.
+    playerActivo = false;
+    limpiarReconexion();
+    cerrarConexion();
 
-    // Cerrar la conexión WebRTC si existe.
-    if (pc) {
-        pc.close();
-        pc = null;
-    }
-    
     // Limpiar el elemento de vídeo.
     video.pause();
     video.srcObject = null;
-    video.src = '';
-    
+    video.removeAttribute('src');
+
     actualizarEstado('disconnected', 'Desconectado');
     stopBtn.disabled = true;
+    ponerBotonesEndpoint(); // Quitar el resaltado del endpoint
     isStoppingPlay = false;
 }
 
+/**
+ * Cierra la conexión WebRTC actual (y su sesión WHEP en el servidor) y
+ * desengancha sus manejadores para que su propio cierre no dispare la reconexión.
+ */
+function cerrarConexion() {
+    cancelarDesconexionTransitoria();
+    pararPollingStatsEntrantes();
+    if (pc) {
+        pc.ontrack = null;
+        pc.oniceconnectionstatechange = null;
+        pc.close();
+        pc = null;
+    }
+    if (whepSession) {
+        fetch(whepSession, { method: 'DELETE' }).catch(() => {});
+        whepSession = null;
+    }
+}
 
+/**
+ * Cancela el margen de gracia pendiente ante un 'disconnected' transitorio.
+ */
+function cancelarDesconexionTransitoria() {
+    if (disconnectTimer) {
+        clearTimeout(disconnectTimer);
+        disconnectTimer = null;
+    }
+}
+
+/**
+ * Cancela un reintento de reconexión pendiente.
+ */
+function limpiarReconexion() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+}
+
+/**
+ * Programa un reintento de conexión si el usuario sigue queriendo reproducir.
+ */
+function programarReconexion() {
+    if (!playerActivo || reconnectTimer) return;
+    actualizarEstado('connecting', 'Reconectando');
+    stopBtn.disabled = false; // Permitir cancelar los reintentos
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        if (playerActivo) playWebRTC(currentServer, currentStream);
+    }, RECONNECT_DELAY_MS);
+}
+
+/**
+ * Gestiona una caída de la conexión: limpia el vídeo, cierra y reconecta si
+ * el usuario seguía queriendo reproducir.
+ */
+function manejarCaidaConexion() {
+    video.srcObject = null;
+    cerrarConexion();
+
+    if (playerActivo) {
+        programarReconexion();
+    } else {
+        actualizarEstado('disconnected', 'Desconectado');
+        stopBtn.disabled = true;
+    }
+}
+
+/**
+ * Ante un 'disconnected' de ICE, espera un margen de gracia por si se recupera
+ * solo. Si al expirar sigue sin estar conectado, lo trata como caída.
+ * @param {RTCPeerConnection} conexion - Conexión que entró en 'disconnected'.
+ */
+function programarComprobacionDesconexion(conexion) {
+    if (disconnectTimer) return; // Ya hay una comprobación en marcha
+    actualizarEstado('connecting', 'Conexión inestable');
+
+    disconnectTimer = setTimeout(() => {
+        disconnectTimer = null;
+        if (pc !== conexion) return; // La conexión ya fue reemplazada
+
+        const estadoICE = conexion.iceConnectionState;
+        if (estadoICE !== 'connected' && estadoICE !== 'completed') {
+            console.warn('ICE sigue caído tras el margen de gracia, reconectando');
+            manejarCaidaConexion();
+        }
+    }, ICE_DISCONNECT_GRACE_MS);
+}
 
 
 // WATCHDOG DE RECEPCIÓN RTP
 /**
- * Lee estadísticas inbound-rtp y detecta si el stream se ha quedado sin recibir tráfico.
+ * Lee inbound-rtp, pinta los datos de recepción y devuelve los bytes recibidos.
+ * @returns {Promise<{monitorable: boolean, totalBytes: number}>}
  */
 async function actualizarInboundStats() {
-    if (!pc) return;
+    if (!pc) return { monitorable: false, totalBytes: 0 };
 
-    try {
-        let stats = await pc.getStats();
-        let totalBytesReceived = 0;
-        let inboundRows = 0;
+    let stats = await pc.getStats();
+    let totalBytes = 0;
+    let hayInbound = false;
+    let perdidos = 0;
+    let recibidos = 0;
+    let videoReport = null;
 
-        stats.forEach(report => {
-            if (report.type !== 'inbound-rtp' || report.isRemote) return;
-            if (report.kind !== 'audio' && report.kind !== 'video') return;
+    stats.forEach(report => {
+        if (report.type !== 'inbound-rtp') return;
+        hayInbound = true;
+        totalBytes += report.bytesReceived || 0;
+        perdidos += report.packetsLost || 0;
+        recibidos += report.packetsReceived || 0;
+        if (report.kind === 'video') videoReport = report;
+    });
 
-            inboundRows += 1;
-            totalBytesReceived += typeof report.bytesReceived === 'number' ? report.bytesReceived : 0;
-        });
-
-        return {
-            monitorable: inboundRows > 0,
-            totalBytes: totalBytesReceived
-        };
-    } catch (error) {
-        console.warn('No se pudieron leer estadísticas inbound WebRTC:', error);
-        return { monitorable: false, totalBytes: 0 };
+    let ahora = performance.now();
+    if (muestraRecepcionPrevia && ahora > muestraRecepcionPrevia.t) {
+        let kbps = Math.max(0, Math.round(((totalBytes - muestraRecepcionPrevia.bytes) * 8) / (ahora - muestraRecepcionPrevia.t)));
+        document.getElementById('recBitrate').textContent = `${(kbps / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps`;
     }
+    muestraRecepcionPrevia = { bytes: totalBytes, t: ahora };
+
+    if (videoReport) {
+        document.getElementById('recImagen').textContent = videoReport.frameWidth
+            ? `${videoReport.frameWidth}×${videoReport.frameHeight} a ${Math.round(videoReport.framesPerSecond || 0)} fps`
+            : 'Esperando fotogramas…';
+        let bufer = videoReport.jitterBufferEmittedCount
+            ? Math.round((videoReport.jitterBufferDelay / videoReport.jitterBufferEmittedCount) * 1000)
+            : null;
+        document.getElementById('recBufer').textContent = bufer !== null ? `${bufer} ms` : '—';
+    }
+    let total = perdidos + recibidos;
+    document.getElementById('recPerdidos').textContent = total
+        ? `${perdidos.toLocaleString('es-ES')} (${((perdidos / total) * 100).toLocaleString('es-ES', { maximumFractionDigits: 2 })} %)`
+        : '—';
+
+    return { monitorable: hayInbound, totalBytes };
 }
 
 /**
- * Inicia la vigilancia de bytesReceived para detectar cortes silenciosos.
+ * Arranca la vigilancia de bytes recibidos: si se estancan, se reconecta.
  */
 function empezarPollingStatsEntrantes() {
     pararPollingStatsEntrantes();
-
-    inboundStatsWatchdog = createTrafficWatchdog({
-        intervalMs: PLAYER_STATS_INTERVAL_MS,
+    muestraRecepcionPrevia = null;
+    inboundWatchdog = createTrafficWatchdog({
+        intervalMs: INBOUND_STATS_INTERVAL_MS,
         maxStalledSamples: STALLED_BYTES_RECEIVED_MAX_SAMPLES,
         sample: actualizarInboundStats,
         onStalled: () => {
-            console.warn('bytesReceived estancado, deteniendo reproducción');
-            stopPlay();
+            console.warn('bytesReceived estancado: reconectando');
+            if (playerActivo) mostrarAviso(`No llegan datos de ${currentStream}. Reconectando…`, 'aviso');
+            manejarCaidaConexion();
         },
-        onError: error => {
-            console.warn('No se pudieron leer estadísticas inbound WebRTC:', error);
-        }
+        onError: error => console.warn('No se pudieron leer estadísticas de recepción:', error)
     });
-
-    inboundStatsWatchdog.start();
+    inboundWatchdog.start();
 }
 
-/**
- * Detiene la vigilancia de bytesReceived.
- */
 function pararPollingStatsEntrantes() {
-    if (inboundStatsWatchdog) {
-        inboundStatsWatchdog.stop();
-        inboundStatsWatchdog = null;
+    if (inboundWatchdog) {
+        inboundWatchdog.stop();
+        inboundWatchdog = null;
     }
+    ['recImagen', 'recBitrate', 'recPerdidos', 'recBufer'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+    });
 }
-
 
 
 // REPRODUCCIÓN WHEP
@@ -149,52 +282,67 @@ function pararPollingStatsEntrantes() {
  * @param {string} streamName - Nombre del stream a reproducir.
  */
 async function playWebRTC(server, streamName) {
-    actualizarEstado('connecting', 'Conectando WebRTC...');
-    
+    if (isConnecting) return; // Ya hay un intento de conexión en curso
+    isConnecting = true;
+
+    currentServer = server;
+    currentStream = streamName;
+    actualizarEstado('connecting', 'Conectando');
+    ponerBotonesEndpoint();
+
+    // Cerrar cualquier conexión previa antes de crear una nueva.
+    cerrarConexion();
+
     try {
-        // pc = new RTCPeerConnection({
-        //     iceServers: [{
-        //         urls: 'stun:stun.l.google.com:19302'
-        //     }]
-        // });
-        
-        pc = new RTCPeerConnection();
-        
-        
+        const conexion = new RTCPeerConnection();
+        pc = conexion;
+
         // Renderizar el stream cuando lleguen pistas remotas.
-        pc.ontrack = (event) => {
+        conexion.ontrack = (event) => {
             console.log('Track recibido:', event.track.kind);
             video.srcObject = event.streams[0];
-            actualizarEstado('connected', 'Conectado (WebRTC)');
+            actualizarEstado('connected', 'Recibiendo');
             stopBtn.disabled = false;
+            ponerBotonesEndpoint(); // Resaltar el endpoint en reproducción
+            if (!inboundWatchdog) empezarPollingStatsEntrantes();
         };
-        
+
         // Vigilar cambios de estado de ICE.
-        pc.oniceconnectionstatechange = () => {
-            console.log('ICE state:', pc.iceConnectionState);
-            if (pc.iceConnectionState === 'disconnected' || 
-                pc.iceConnectionState === 'failed' ||
-                pc.iceConnectionState === 'closed') {
-                actualizarEstado('disconnected', 'Desconectado');
-                stopBtn.disabled = true;
+        conexion.oniceconnectionstatechange = () => {
+            if (pc !== conexion) return; // Ignorar conexiones ya reemplazadas
+
+            const estadoICE = conexion.iceConnectionState;
+            console.log('ICE state:', estadoICE);
+
+            if (estadoICE === 'connected' || estadoICE === 'completed') {
+                // Conectividad (re)establecida: cancelar un posible margen de gracia.
+                cancelarDesconexionTransitoria();
+                if (video.srcObject) actualizarEstado('connected', 'Recibiendo');
+                return;
+            }
+
+            if (estadoICE === 'failed' || estadoICE === 'closed') {
+                manejarCaidaConexion(); // Fallo duro: caída inmediata
+                return;
+            }
+
+            if (estadoICE === 'disconnected') {
+                // Suele ser transitorio (microcorte de red): margen antes de reconectar.
+                programarComprobacionDesconexion(conexion);
             }
         };
 
         // Solicitar recepción de audio y vídeo.
-        pc.addTransceiver('video', { direction: 'recvonly' });
-        pc.addTransceiver('audio', { direction: 'recvonly' });
+        conexion.addTransceiver('video', { direction: 'recvonly' });
+        conexion.addTransceiver('audio', { direction: 'recvonly' });
 
-        // Crear la oferta SDP local.
-        let offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        const offer = await conexion.createOffer();
+        await conexion.setLocalDescription(offer);
 
-        // Enviar la oferta al endpoint WHEP.
-        let url = `${construirBaseUrlWebRTC(server)}/${encodeURIComponent(streamName)}/whep`;
+        const url = `${construirBaseUrlWebRTC(server)}/${encodeURIComponent(streamName)}/whep`;
         console.log('WHEP URL:', url);
-        
 
-        // Intercambiar SDP con el servidor.
-        let response = await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/sdp'
@@ -202,26 +350,41 @@ async function playWebRTC(server, streamName) {
             body: offer.sdp
         });
 
-        // Validar la respuesta del servidor.
         if (!response.ok) {
-            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
+            throw new Error(response.status === 404
+                ? `${streamName} no está emitiendo`
+                : `HTTP ${response.status} ${response.statusText}`);
         }
 
-        let answerSDP = await response.text();
-        await pc.setRemoteDescription(new RTCSessionDescription({
+        // Location relativo (/cam1/whep/<id>): se resuelve contra la URL de WHEP
+        const location = response.headers.get('Location');
+        if (pc === conexion) {
+            whepSession = location ? new URL(location, url).toString() : null;
+        } else if (location) {
+            fetch(new URL(location, url), { method: 'DELETE' }).catch(() => {});
+        }
+
+        const answerSDP = await response.text();
+        await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
             sdp: answerSDP
         }));
 
-        empezarPollingStatsEntrantes();
-
         console.log('WebRTC iniciado correctamente');
-        
     } catch (error) {
         console.error('Error en WebRTC:', error);
-        actualizarEstado('disconnected', 'Error al conectar');
-        alert('Error al iniciar WebRTC: ' + error.message);
-        stopPlay();
+        cerrarConexion();
+
+        if (playerActivo) {
+            // Probablemente el emisor aún no está disponible: reintentar.
+            actualizarEstado('connecting', `Esperando a ${streamName}`);
+            programarReconexion();
+        } else {
+            actualizarEstado('error', 'No se pudo conectar');
+            stopBtn.disabled = true;
+        }
+    } finally {
+        isConnecting = false;
     }
 }
 
@@ -231,10 +394,8 @@ async function playWebRTC(server, streamName) {
  */
 async function reproducirEndpointRapido(endpoint) {
     streamName.value = endpoint;
-    streamName.focus();
     await startPlay();
 }
-
 
 
 // ENDPOINTS MEDIAMTX
@@ -244,56 +405,83 @@ async function reproducirEndpointRapido(endpoint) {
 function ponerBotonesEndpoint() {
     if (!endpointButtons) return;
 
+    // Resaltar el endpoint que se está reproduciendo ahora mismo.
+    let resaltado = playerActivo ? currentStream : '';
+
+    // Solo redibujar si la lista o el resaltado cambian (evita parpadeo al sondear).
+    let firma = JSON.stringify(activePaths) + '|' + resaltado;
+    if (firma === ultimoPathsRender) return;
+    ultimoPathsRender = firma;
+
     if (activePaths.length === 0) {
-        endpointButtons.innerHTML = '<span class="empty">Sin endpoints disponibles</span>';
+        endpointButtons.innerHTML = '<p class="texto-2 texto-peq">Ninguna cámara está emitiendo ahora mismo. La lista se actualiza sola.</p>';
         return;
     }
 
     endpointButtons.innerHTML = activePaths
-        .map(path => `<button type="button" onclick='reproducirEndpointRapido(${JSON.stringify(path)})'>${escapeHtml(path)}</button>`)
+        .map(path => {
+            let activo = path === resaltado;
+            return `<button type="button" class="chip-camara${activo ? ' activo' : ''}" aria-pressed="${activo}" data-camara="${escapeHtml(path)}" onclick='reproducirEndpointRapido(${escapeHtml(JSON.stringify(path))})'>
+                <span class="chip-camara__nombre">${escapeHtml(path)}</span>
+                ${activo ? '<span class="chip-camara__estado">En monitor</span>' : ''}
+            </button>`;
+        })
         .join('');
+    endpointButtons.querySelectorAll('[data-camara]').forEach(chip => aplicarColorCamara(chip, chip.dataset.camara));
 }
 
 /**
- * Carga paths activos usando la API de MediaMTX.
+ * Carga los paths activos desde la API de MediaMTX.
+ * @param {boolean} [mostrarCarga] - Mostrar "Cargando..." (solo en la primera carga).
  */
-async function actualizarPathsActivosPlayer() {
+async function actualizarPathsActivosPlayer(mostrarCarga = false) {
     if (!endpointButtons) return;
 
-    endpointButtons.innerHTML = '<span class="loading">Cargando...</span>';
+    if (mostrarCarga) {
+        endpointButtons.innerHTML = '<span class="texto-2 texto-peq">Cargando…</span>';
+        ultimoPathsRender = ''; // Forzar el primer render tras "Cargando..."
+    }
 
     try {
         let data = await GET('/paths/list');
-        activePaths = [];
-
-        if (data.items && data.items.length > 0) {
-            activePaths = data.items
-                .filter(path => path.ready)
-                .map(path => path.name);
-        }
-
+        activePaths = (data.items || [])
+            .filter(path => path.ready)
+            .map(path => path.name)
+            .sort();
         ponerBotonesEndpoint();
     } catch (error) {
         console.error('Error al cargar paths activos:', error);
-        endpointButtons.innerHTML = '<span class="error">No se pudo cargar la lista</span>';
+        // En el sondeo silencioso no machacamos la lista por un fallo puntual de red.
+        if (mostrarCarga) {
+            endpointButtons.innerHTML = '<p class="mensaje-linea error">No se pudo consultar MediaMTX.</p>';
+        }
     }
 }
 
 
-
-
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', async () => {
-    let savedServer = window.location.origin.replace(/^https?:\/\//, '');
+    server.value = window.location.host;
+    // ?stream=cam1 abre directamente esa cámara (enlaces desde Inicio)
+    let streamUrl = new URLSearchParams(window.location.search).get('stream');
     let savedStream = localStorage.getItem('player_streamName');
-    
-    if (savedServer) server.value = savedServer;
-    if (savedStream) streamName.value = savedStream;
+    if (streamUrl || savedStream) streamName.value = streamUrl || savedStream;
+    actualizarEstado('disconnected', 'Desconectado');
 
-    await actualizarPathsActivosPlayer();
+    // Primera carga visible y, a partir de ahí, sondeo automático silencioso.
+    await actualizarPathsActivosPlayer(true);
+    pollPathsTimer = setInterval(() => {
+        if (!document.hidden) actualizarPathsActivosPlayer(false);
+    }, POLL_PATHS_INTERVAL_MS);
+
+    if (streamUrl) startPlay();
 });
 
-// Registrar actividad básica del vídeo.
-video.addEventListener('play', () => {
-    console.log('Video iniciado');
+streamName.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Enter') startPlay();
+});
+
+// Al cerrar la pestaña, liberar la sesión en el servidor
+window.addEventListener('pagehide', () => {
+    if (whepSession) fetch(whepSession, { method: 'DELETE', keepalive: true }).catch(() => {});
 });

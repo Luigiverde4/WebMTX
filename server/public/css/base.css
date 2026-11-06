@@ -104,6 +104,8 @@ h1, h2, h3, h4, p, ul, ol, dl, dd, figure, fieldset { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
 fieldset { border: 0; padding: 0; min-width: 0; }
 a { color: inherit; }
+/* hidden siempre gana a los display de las clases */
+[hidden] { display: none !important; }
 
 :focus-visible {
   outline: 2px solid var(--foco);
@@ -745,3 +747,15 @@ input[type="range"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- Desplegables (details/summary) --------------------------------------- */
+.desplegable summary {
+  cursor: pointer;
+  color: var(--texto-2);
+  font-size: var(--t-s);
+  font-weight: 550;
+  padding: var(--e-1) 0;
+}
+.desplegable summary:hover { color: var(--texto); }
+.desplegable[open] summary { margin-bottom: var(--e-2); }
+.texto-3 { color: var(--texto-3); font-weight: 400; }

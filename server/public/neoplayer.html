@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salida de cámara | Poliwood</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/obs.css">
+</head>
+<body>
+    <!--
+        Salida para OBS: añádela como fuente de navegador con ?stream=<cámara>.
+        Parámetros: ?stream=cam1  ·  &ajuste=cubrir (rellena recortando)
+                    &fondo=transparente  ·  &debug=1 (muestra avisos dentro de OBS)
+    -->
+    <video id="videoPlayer" class="salida-video" autoplay playsinline muted></video>
+
+    <div class="espera depuracion-solo" id="espera" hidden>Esperando a la cámara…</div>
+    <button type="button" class="aviso-salida depuracion-solo" id="avisoSonido" hidden>
+        Sin sonido: el navegador bloquea el audio hasta que hagas clic. Haz clic para activarlo.
+    </button>
+
+    <section class="selector" id="selector" hidden aria-labelledby="tituloSelector">
+        <div class="selector__caja">
+            <h1 id="tituloSelector">Elige la cámara de esta salida</h1>
+            <p>Esta página muestra una cámara a pantalla completa para OBS. Añade <code>?stream=nombre</code> a la dirección o elige una de las que están emitiendo:</p>
+            <ul id="selectorLista"><li>Cargando…</li></ul>
+        </div>
+    </section>
+
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/neoplayer.js"></script>
+</body>
+</html>
