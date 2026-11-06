@@ -43,7 +43,7 @@ function ponerIntervaloRefresco(value) {
     }
 
     if (refreshIntervalLabelEl) {
-        refreshIntervalLabelEl.textContent = `(${(nextValue / 1000).toFixed(nextValue % 1000 === 0 ? 0 : 2).replace(/\.0+$/, '')}s)`;
+        refreshIntervalLabelEl.textContent = textoIntervalo(nextValue);
     }
 
     if (autoRefreshEl.checked) {
@@ -60,7 +60,7 @@ async function loadStats() {
     try {
         let response = await fetch('/api/mediamtx/v3/paths/list');
         if (!response.ok) {
-            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
 
         let data = await response.json();
@@ -68,7 +68,7 @@ async function loadStats() {
 
         renderizarResumen(items);
         updateCharts(items);
-        lastUpdateEl.textContent = `Ultima actualizacion: ${new Date().toLocaleTimeString()}`;
+        lastUpdateEl.textContent = `Actualizado a las ${new Date().toLocaleTimeString('es-ES')}`;
     } catch (error) {
         console.error('Error cargando estadisticas:', error);
         renderizarErrorStats(error);
@@ -98,7 +98,7 @@ refreshIntervalInputEl.addEventListener('blur', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     refreshIntervalInputEl.value = String(REFRESH_INTERVAL_MS);
     if (refreshIntervalLabelEl) {
-        refreshIntervalLabelEl.textContent = `(${(REFRESH_INTERVAL_MS / 1000).toFixed(REFRESH_INTERVAL_MS % 1000 === 0 ? 0 : 2).replace(/\.0+$/, '')}s)`;
+        refreshIntervalLabelEl.textContent = textoIntervalo(REFRESH_INTERVAL_MS);
     }
     initCharts();
     await loadStats();

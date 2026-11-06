@@ -47,13 +47,14 @@
   --aviso: #e9a23b;
   --aviso-tenue: rgba(233, 162, 59, 0.14);
 
-  /* Identidad de cámara (carta de ajuste, sin rojo ni verde) */
-  --cam-amarillo: #d9c82e;
-  --cam-cian: #2ec4d9;
-  --cam-magenta: #c25bd6;
-  --cam-azul: #4f7be8;
-  --cam-naranja: #e07b39;
-  --cam-blanco: #c9d3dc;
+  /* Identidad de cámara: paleta categórica validada (dataviz) contra la superficie
+     oscura, en este orden de pares adyacentes. Sin rojo, verde ni ámbar: son tally. */
+  --cam-azul: #3987e5;
+  --cam-naranja: #d95926;
+  --cam-cian: #16a3b8;
+  --cam-magenta: #d55181;
+  --cam-violeta: #9085e9;
+  --cam-neutro: #93a1b0;   /* sin cámara asignada */
 
   --foco: #9cc3ff;
 
@@ -510,9 +511,9 @@ input[type="range"] {
 .boton--peq .icono { width: 16px; height: 16px; }
 
 /* --- Chips de cámara ----------------------------------------------------- */
-/* El color de cada cámara llega en la custom property --cam (js/utils/camaras.js) */
+/* El color de cada cámara llega en la custom property --cam (js/utils/camaras.js),
+   puesta en el propio elemento o heredada del contenedor; si no hay, neutro. */
 .chip-camara {
-  --cam: var(--cam-blanco);
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
@@ -532,13 +533,13 @@ input[type="range"] {
   width: 4px;
   align-self: stretch;
   border-radius: 2px;
-  background: var(--cam);
+  background: var(--cam, var(--cam-neutro));
 }
-.chip-camara:hover { border-color: var(--cam); }
+.chip-camara:hover { border-color: var(--cam, var(--cam-neutro)); }
 .chip-camara[aria-pressed="true"],
 .chip-camara.activo {
-  border-color: var(--cam);
-  box-shadow: inset 0 0 0 1px var(--cam);
+  border-color: var(--cam, var(--cam-neutro));
+  box-shadow: inset 0 0 0 1px var(--cam, var(--cam-neutro));
 }
 /* En uso por otro emisor: lámpara roja pequeña */
 .chip-camara.ocupado::after {
@@ -551,12 +552,11 @@ input[type="range"] {
 .chips { display: flex; flex-wrap: wrap; gap: var(--e-2); }
 
 .punto-camara {
-  --cam: var(--cam-blanco);
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  background: var(--cam);
+  background: var(--cam, var(--cam-neutro));
   flex: none;
 }
 

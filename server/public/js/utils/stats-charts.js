@@ -1,7 +1,81 @@
 /**
  * DASHBOARD STATS - CALCULO, RENDER Y GRAFICOS
  * Funciones de procesamiento de datos y actualizacion de UI/charts.
+ *
+ * Color: cada cámara usa su color de identidad (js/utils/camaras.js), igual que
+ * en el resto de páginas. Entrada y salida se distinguen por el trazo
+ * (continuo / discontinuo) además de por la leyenda, nunca solo por color.
  */
+
+const TRAZO_SALIDA = [6, 4];
+
+/**
+ * Lee un token de color de base.css.
+ * @param {string} nombre - p. ej. '--texto-2'
+ * @param {string} respaldo
+ */
+function tokenColor(nombre, respaldo) {
+    return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim() || respaldo;
+}
+
+function coloresGraficas() {
+    return {
+        texto: tokenColor('--texto', '#e6ebf0'),
+        texto2: tokenColor('--texto-2', '#93a1b0'),
+        texto3: tokenColor('--texto-3', '#6f7d8c'),
+        rejilla: tokenColor('--linea-suave', '#2f3945'),
+        superficie: tokenColor('--superficie-2', '#2b3540')
+    };
+}
+
+/**
+ * Opciones comunes: una sola escala Y, rejilla discreta, tooltip con todas las
+ * series del instante bajo el cursor (crosshair por índice).
+ * @param {{enteros?: boolean, leyenda?: boolean}} [config]
+ */
+function opcionesGrafica({ enteros = false, leyenda = true } = {}) {
+    let c = coloresGraficas();
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            x: {
+                ticks: { color: c.texto2, maxTicksLimit: 6, maxRotation: 0 },
+                grid: { display: false },
+                border: { color: c.rejilla }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: { color: c.texto2, maxTicksLimit: 5, precision: enteros ? 0 : undefined },
+                grid: { color: c.rejilla },
+                border: { display: false }
+            }
+        },
+        plugins: {
+            legend: {
+                display: leyenda,
+                align: 'start',
+                labels: { color: c.texto, usePointStyle: true, pointStyle: 'line', boxWidth: 24, padding: 12 }
+            },
+            tooltip: {
+                backgroundColor: c.superficie,
+                titleColor: c.texto,
+                bodyColor: c.texto,
+                borderColor: c.rejilla,
+                borderWidth: 1,
+                padding: 10,
+                boxPadding: 4,
+                usePointStyle: true
+            }
+        },
+        elements: {
+            line: { borderWidth: 2, tension: 0.25 },
+            point: { radius: 0, hoverRadius: 4, hitRadius: 8 }
+        }
+    };
+}
 
 // INICIALIZACION DE GRAFICOS
 /**
@@ -10,108 +84,43 @@
 function initCharts() {
     if (typeof Chart === 'undefined') {
         console.warn('Chart.js no esta disponible, se omiten los graficos.');
+        let aviso = document.getElementById('avisoGraficas');
+        if (aviso) aviso.hidden = false;
         return;
     }
 
-    let throughputCtx = document.getElementById('totalThroughputChart');
-    let streamThroughputCtx = document.getElementById('streamThroughputChart');
-    let readersCtx = document.getElementById('readersByPathChart');
+    let c = coloresGraficas();
+    Chart.defaults.font.family = 'Archivo, "Segoe UI", system-ui, sans-serif';
 
-    throughputChart = new Chart(throughputCtx, {
+    throughputChart = new Chart(document.getElementById('totalThroughputChart'), {
         type: 'line',
         data: {
             labels: [],
             datasets: [
-                {
-                    label: 'Entrada (Mbps)',
-                    data: [],
-                    borderColor: '#4ade80',
-                    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.25,
-                    fill: true
-                },
-                {
-                    label: 'Salida (Mbps)',
-                    data: [],
-                    borderColor: '#60a5fa',
-                    backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.25,
-                    fill: true
-                }
+                { label: 'Entrada', data: [], borderColor: c.texto, backgroundColor: c.texto },
+                { label: 'Salida', data: [], borderColor: c.texto2, backgroundColor: c.texto2, borderDash: TRAZO_SALIDA }
             ]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                x: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-                y: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' }, beginAtZero: true }
-            },
-            plugins: {
-                legend: { labels: { color: '#ecf3ff' } }
-            }
-        }
+        options: opcionesGrafica()
     });
 
-    streamThroughputChart = new Chart(streamThroughputCtx, {
+    streamThroughputChart = new Chart(document.getElementById('streamThroughputChart'), {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: []
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                x: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-                y: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' }, beginAtZero: true }
-            },
-            plugins: {
-                legend: { labels: { color: '#ecf3ff' } }
-            }
-        }
+        data: { labels: [], datasets: [] },
+        options: opcionesGrafica()
     });
 
-    readersChart = new Chart(readersCtx, {
+    readersChart = new Chart(document.getElementById('readersByPathChart'), {
         type: 'bar',
         data: {
             labels: [],
-            datasets: [
-                {
-                    label: 'Readers',
-                    data: [],
-                    backgroundColor: '#fbbf24',
-                    borderColor: '#f59e0b',
-                    borderWidth: 1
-                }
-            ]
+            datasets: [{ label: 'Espectadores', data: [], backgroundColor: [], borderRadius: 4, maxBarThickness: 36 }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                x: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-                y: {
-                    ticks: { color: '#a8b3c9', precision: 0 },
-                    grid: { color: 'rgba(255,255,255,0.08)' },
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                legend: { labels: { color: '#ecf3ff' } }
-            }
-        }
+        options: opcionesGrafica({ enteros: true, leyenda: false })
     });
 }
 
-// CALCULOS 
+// CALCULOS
 /**
  * Calcula throughput global y por stream a partir del delta de bytes entre muestras.
  * @param {Array<object>} items - Paths devueltos por la API de MediaMTX.
@@ -179,25 +188,37 @@ function computeSeriesMetrics(series) {
     };
 }
 
+function formatoMbps(valor) {
+    return `${valor.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Mbps`;
+}
+
+function htmlPistas(tracks) {
+    return tracks.length > 0
+        ? tracks.map(track => `<span class="pista">${escapeHtml(typeof track === 'string' ? track : track?.codec || '?')}</span>`).join('')
+        : '<span class="pista">Sin pistas</span>';
+}
+
 
 // CICLO DE ACTUALIZACION
 /**
- * Renderiza/actualiza una section por stream con metadatos y chart de 3 lineas.
+ * Renderiza/actualiza una sección por stream con metadatos y, si hay Chart.js,
+ * su gráfica de entrada/salida/total. Las secciones se pintan siempre.
  * @param {Array<object>} items - Paths activos.
  * @param {string[]} labels - Etiquetas temporales.
  */
 function updateStreamBlocks(items, labels) {
-    if (!streamSectionsContainerEl || typeof Chart === 'undefined') return;
+    if (!streamSectionsContainerEl) return;
+    let hayGraficas = typeof Chart !== 'undefined';
 
     if (!items || items.length === 0) {
-        streamSectionsContainerEl.innerHTML = '<div class="empty-state">No hay streams activos ahora mismo</div>';
+        streamSectionsContainerEl.innerHTML = '<div class="empty-state vacio"><strong>No hay ningún path en MediaMTX.</strong> Las cámaras aparecen aquí en cuanto empiezan a emitir.</div>';
         perStreamChartInstances.forEach(chart => chart.destroy());
         perStreamChartInstances.clear();
         return;
     }
 
-    // Limpia el placeholder inicial de carga para que no conviva con las secciones reales.
-    streamSectionsContainerEl.querySelectorAll('.empty-state').forEach(node => node.remove());
+    // Limpia el placeholder inicial de carga o de error para que no conviva con las secciones reales.
+    streamSectionsContainerEl.querySelectorAll('.empty-state, .vacio').forEach(node => node.remove());
 
     let itemsByName = new Map(items.map(path => [path.name || 'sin nombre', path]));
     let streamNames = [...itemsByName.keys()];
@@ -217,11 +238,11 @@ function updateStreamBlocks(items, labels) {
         }
     });
 
-    streamNames.forEach((streamName, index) => {
+    streamNames.forEach(streamName => {
         let path = itemsByName.get(streamName);
         let readersCount = Array.isArray(path.readers) ? path.readers.length : 0;
-        let sourceType = path.source && path.source.type ? path.source.type : '-';
-        let sourceId = path.source && path.source.id ? path.source.id : '-';
+        let sourceType = path.source && path.source.type ? path.source.type : '—';
+        let sourceId = path.source && path.source.id ? path.source.id : '';
         let tracks = Array.isArray(path.tracks) ? path.tracks : [];
 
         let canvasId = obtenerIdCanvasStream(streamName);
@@ -230,140 +251,80 @@ function updateStreamBlocks(items, labels) {
 
         if (!cardEl) {
             cardEl = document.createElement('section');
-            cardEl.className = 'stream-section';
+            cardEl.className = 'stream-section panel';
             cardEl.id = blockId;
+            aplicarColorCamara(cardEl, streamName);
             cardEl.innerHTML = `
-                <div class="path-top">
-                    <div class="path-name">${escapeHtml(streamName)}</div>
-                    <span id="status-${canvasId}" class="status-pill ${path.ready ? 'status-ready' : 'status-off'}">${path.ready ? 'READY' : 'NO READY'}</span>
-                </div>
+                <header class="stream-section__cabecera">
+                    <span class="punto-camara" aria-hidden="true"></span>
+                    <h3>${escapeHtml(streamName)}</h3>
+                    <span id="status-${canvasId}" class="estado"></span>
+                </header>
 
-                <div class="path-meta">
-                    <div class="meta-item">
-                        <div class="meta-label">Online</div>
-                        <div id="online-${canvasId}" class="meta-value">${path.online ? 'Si' : 'No'}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Readers</div>
-                        <div id="readers-${canvasId}" class="meta-value">${readersCount}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Bytes recibidos</div>
-                        <div id="rx-${canvasId}" class="meta-value">${formatBytes(path.bytesReceived || 0)}</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">Bytes enviados</div>
-                        <div id="tx-${canvasId}" class="meta-value">${formatBytes(path.bytesSent || 0)}</div>
-                    </div>
-                </div>
+                <dl class="datos stream-section__datos">
+                    <dt>Online</dt><dd id="online-${canvasId}"></dd>
+                    <dt>Espectadores</dt><dd id="readers-${canvasId}"></dd>
+                    <dt>Recibido</dt><dd id="rx-${canvasId}"></dd>
+                    <dt>Enviado</dt><dd id="tx-${canvasId}"></dd>
+                    <dt>Origen</dt><dd id="source-${canvasId}"></dd>
+                </dl>
 
-                <div class="meta-item" style="margin-bottom: 8px;">
-                    <div class="meta-label">Source</div>
-                    <div id="source-${canvasId}" class="meta-value">${escapeHtml(sourceType)} (${escapeHtml(sourceId)})</div>
-                </div>
+                <div class="pistas" id="tracks-${canvasId}"></div>
 
-                <div class="tracks" id="tracks-${canvasId}">
-                    ${tracks.length > 0 ? tracks.map(track => `<span class="track">${escapeHtml(track)}</span>`).join('') : '<span class="track">Sin tracks</span>'}
-                </div>
+                ${hayGraficas ? `<div class="grafica__lienzo grafica__lienzo--peq"><canvas id="${canvasId}" role="img" aria-label="Tráfico de ${escapeHtml(streamName)} en Mbps"></canvas></div>` : ''}
 
-                <div class="stream-chart-wrap">
-                    <canvas id="${canvasId}"></canvas>
-                </div>
-
-                <div class="throughput-stats">
-                    <div class="throughput-stat">
-                        <div class="meta-label">Throughput min</div>
-                        <div id="min-${canvasId}" class="meta-value">0.000 Mbps</div>
-                    </div>
-                    <div class="throughput-stat">
-                        <div class="meta-label">Throughput medio</div>
-                        <div id="avg-${canvasId}" class="meta-value">0.000 Mbps</div>
-                    </div>
-                    <div class="throughput-stat">
-                        <div class="meta-label">Throughput max</div>
-                        <div id="max-${canvasId}" class="meta-value">0.000 Mbps</div>
-                    </div>
-                </div>
+                <dl class="stream-section__metricas">
+                    <div><dt>Mínimo</dt><dd id="min-${canvasId}" class="cifra">—</dd></div>
+                    <div><dt>Media</dt><dd id="avg-${canvasId}" class="cifra">—</dd></div>
+                    <div><dt>Máximo</dt><dd id="max-${canvasId}" class="cifra">—</dd></div>
+                </dl>
             `;
             streamSectionsContainerEl.appendChild(cardEl);
         }
 
         let statusEl = document.getElementById(`status-${canvasId}`);
         if (statusEl) {
-            statusEl.textContent = path.ready ? 'READY' : 'NO READY';
-            statusEl.className = `status-pill ${path.ready ? 'status-ready' : 'status-off'}`;
+            statusEl.textContent = path.ready ? 'Listo' : 'No listo';
+            statusEl.className = `estado ${path.ready ? 'ok' : 'aviso'}`;
         }
 
-        ponerTextoPorId(`online-${canvasId}`, path.online ? 'Si' : 'No');
+        ponerTextoPorId(`online-${canvasId}`, path.online ? 'Sí' : 'No');
         ponerTextoPorId(`readers-${canvasId}`, String(readersCount));
         ponerTextoPorId(`rx-${canvasId}`, formatBytes(path.bytesReceived || 0));
         ponerTextoPorId(`tx-${canvasId}`, formatBytes(path.bytesSent || 0));
-        ponerTextoPorId(`source-${canvasId}`, `${sourceType} (${sourceId})`);
+        ponerTextoPorId(`source-${canvasId}`, sourceId ? `${sourceType} (${sourceId})` : sourceType);
 
         let tracksEl = document.getElementById(`tracks-${canvasId}`);
         if (tracksEl) {
-            tracksEl.innerHTML = tracks.length > 0
-                ? tracks.map(track => `<span class="track">${escapeHtml(track)}</span>`).join('')
-                : '<span class="track">Sin tracks</span>';
+            let html = htmlPistas(tracks);
+            if (tracksEl.innerHTML !== html) tracksEl.innerHTML = html;
         }
 
         let totalSeries = allStreamThroughputSeries.get(streamName) || [];
         let inputSeries = allStreamInputSeries.get(streamName) || [];
         let outputSeries = allStreamOutputSeries.get(streamName) || [];
         let stats = computeSeriesMetrics(totalSeries);
-        ponerTextoPorId(`min-${canvasId}`, `${stats.min.toFixed(3)} Mbps`);
-        ponerTextoPorId(`avg-${canvasId}`, `${stats.avg.toFixed(3)} Mbps`);
-        ponerTextoPorId(`max-${canvasId}`, `${stats.max.toFixed(3)} Mbps`);
+        ponerTextoPorId(`min-${canvasId}`, formatoMbps(stats.min));
+        ponerTextoPorId(`avg-${canvasId}`, formatoMbps(stats.avg));
+        ponerTextoPorId(`max-${canvasId}`, formatoMbps(stats.max));
+
+        if (!hayGraficas) return;
 
         let chart = perStreamChartInstances.get(canvasId);
         if (!chart) {
-            let ctx = document.getElementById(canvasId);
-            chart = new Chart(ctx, {
+            let color = colorDeCamara(streamName);
+            let c = coloresGraficas();
+            chart = new Chart(document.getElementById(canvasId), {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [
-                        {
-                            label: 'Entrada',
-                            data: inputSeries,
-                            borderColor: '#4ade80',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.25,
-                            fill: false
-                        },
-                        {
-                            label: 'Salida',
-                            data: outputSeries,
-                            borderColor: '#60a5fa',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.25,
-                            fill: false
-                        },
-                        {
-                            label: 'Throughput',
-                            data: totalSeries,
-                            borderColor: '#f59e0b',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.25,
-                            fill: false
-                        }
+                        { label: 'Entrada', data: inputSeries, borderColor: color, backgroundColor: color },
+                        { label: 'Salida', data: outputSeries, borderColor: color, backgroundColor: color, borderDash: TRAZO_SALIDA },
+                        { label: 'Total', data: totalSeries, borderColor: c.texto3, backgroundColor: c.texto3, borderWidth: 1 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    scales: {
-                        x: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-                        y: { ticks: { color: '#a8b3c9' }, grid: { color: 'rgba(255,255,255,0.08)' }, beginAtZero: true }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#ecf3ff' } }
-                    }
-                }
+                options: opcionesGrafica()
             });
             perStreamChartInstances.set(canvasId, chart);
         } else {
@@ -399,39 +360,26 @@ function updateAllStreamSeries(items, perStream, labelsLen) {
     });
 
     currentNames.forEach(streamName => {
-        if (!allStreamThroughputSeries.has(streamName)) {
-            allStreamThroughputSeries.set(streamName, new Array(Math.max(0, labelsLen - 1)).fill(0));
-        }
-        if (!allStreamInputSeries.has(streamName)) {
-            allStreamInputSeries.set(streamName, new Array(Math.max(0, labelsLen - 1)).fill(0));
-        }
-        if (!allStreamOutputSeries.has(streamName)) {
-            allStreamOutputSeries.set(streamName, new Array(Math.max(0, labelsLen - 1)).fill(0));
-        }
+        [allStreamThroughputSeries, allStreamInputSeries, allStreamOutputSeries].forEach(mapa => {
+            if (!mapa.has(streamName)) mapa.set(streamName, new Array(Math.max(0, labelsLen - 1)).fill(0));
+        });
 
         let sample = valueByName.get(streamName) || { inMbps: 0, outMbps: 0, mbps: 0 };
-        let totalSeries = allStreamThroughputSeries.get(streamName);
-        let inputSeries = allStreamInputSeries.get(streamName);
-        let outputSeries = allStreamOutputSeries.get(streamName);
-
-        totalSeries.push(Number(sample.mbps.toFixed(3)));
-        inputSeries.push(Number(sample.inMbps.toFixed(3)));
-        outputSeries.push(Number(sample.outMbps.toFixed(3)));
-
-        while (totalSeries.length > labelsLen) {
-            totalSeries.shift();
-        }
-        while (inputSeries.length > labelsLen) {
-            inputSeries.shift();
-        }
-        while (outputSeries.length > labelsLen) {
-            outputSeries.shift();
-        }
+        let pares = [
+            [allStreamThroughputSeries.get(streamName), sample.mbps],
+            [allStreamInputSeries.get(streamName), sample.inMbps],
+            [allStreamOutputSeries.get(streamName), sample.outMbps]
+        ];
+        pares.forEach(([serie, valor]) => {
+            serie.push(Number(valor.toFixed(3)));
+            while (serie.length > labelsLen) serie.shift();
+        });
     });
 }
 
 /**
  * Actualiza el grafico combinado con los streams mas activos del momento.
+ * El color sigue a la cámara (no al puesto en el ranking).
  * @param {string[]} labels - Etiquetas temporales del eje X.
  */
 function updateCombinedStreamThroughputChart(labels) {
@@ -441,31 +389,31 @@ function updateCombinedStreamThroughputChart(labels) {
         .map(([name, series]) => ({ name, latest: series.length > 0 ? series[series.length - 1] : 0 }))
         .sort((a, b) => b.latest - a.latest)
         .slice(0, MAX_STREAM_DATASETS)
-        .map(item => item.name);
+        .map(item => item.name)
+        .sort();
 
     streamThroughputChart.data.labels = labels;
-    streamThroughputChart.data.datasets = topStreams.map((streamName, index) => ({
-        label: streamName,
-        data: allStreamThroughputSeries.get(streamName),
-        borderColor: STREAM_COLORS[index % STREAM_COLORS.length],
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.25,
-        fill: false
-    }));
+    streamThroughputChart.data.datasets = topStreams.map(streamName => {
+        let color = colorDeCamara(streamName);
+        return {
+            label: streamName,
+            data: allStreamThroughputSeries.get(streamName),
+            borderColor: color,
+            backgroundColor: color
+        };
+    });
     streamThroughputChart.update('none');
 }
 
 /**
  * Actualiza todas las visualizaciones del dashboard con un nuevo muestreo.
+ * Sin Chart.js se siguen calculando series y pintando las secciones por stream.
  * @param {Array<object>} items - Paths activos devueltos por API.
  */
 function updateCharts(items) {
-    if (!throughputChart || !readersChart) return;
-
     let nowMs = Date.now();
     let throughput = computeThroughput(items, nowMs);
-    let label = new Date(nowMs).toLocaleTimeString();
+    let label = new Date(nowMs).toLocaleTimeString('es-ES');
 
     throughputHistory.push({
         label,
@@ -477,32 +425,23 @@ function updateCharts(items) {
         throughputHistory.shift();
     }
 
-    throughputChart.data.labels = throughputHistory.map(point => point.label);
-    throughputChart.data.datasets[0].data = throughputHistory.map(point => point.inMbps);
-    throughputChart.data.datasets[1].data = throughputHistory.map(point => point.outMbps);
-    throughputChart.update('none');
+    let labels = throughputHistory.map(point => point.label);
 
-    updateAllStreamSeries(items, throughput.perStream, throughputChart.data.labels.length);
-    updateCombinedStreamThroughputChart(throughputChart.data.labels);
-    updateStreamBlocks(items, throughputChart.data.labels);
+    if (throughputChart) {
+        throughputChart.data.labels = labels;
+        throughputChart.data.datasets[0].data = throughputHistory.map(point => point.inMbps);
+        throughputChart.data.datasets[1].data = throughputHistory.map(point => point.outMbps);
+        throughputChart.update('none');
+    }
 
-    readersChart.data.labels = items.map(path => path.name || 'sin nombre');
-    readersChart.data.datasets[0].data = items.map(path => (Array.isArray(path.readers) ? path.readers.length : 0));
-    readersChart.update('none');
+    updateAllStreamSeries(items, throughput.perStream, labels.length);
+    updateCombinedStreamThroughputChart(labels);
+    updateStreamBlocks(items, labels);
+
+    if (readersChart) {
+        readersChart.data.labels = items.map(path => path.name || 'sin nombre');
+        readersChart.data.datasets[0].data = items.map(path => (Array.isArray(path.readers) ? path.readers.length : 0));
+        readersChart.data.datasets[0].backgroundColor = items.map(path => colorDeCamara(path.name));
+        readersChart.update('none');
+    }
 }
-
-
-
-// UTILS
-/**
- * Formatea una fecha ISO a formato local legible.
- * @param {string|undefined} isoDate - Fecha en formato ISO.
- * @returns {string}
- */
-function formatDateTime(isoDate) {
-    if (!isoDate) return '-';
-    let parsed = new Date(isoDate);
-    if (Number.isNaN(parsed.getTime())) return '-';
-    return parsed.toLocaleString();
-}
-
