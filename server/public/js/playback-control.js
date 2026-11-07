@@ -21,9 +21,7 @@ async function enviarAlDisplay() {
             let detalle = await response.json().catch(() => ({}));
             throw new Error(detalle.error || `HTTP ${response.status}`);
         }
-        setEstado(`Enviado a OBS: ${ultimaSeleccion.label}`, 'ok');
     } catch (error) {
-        setEstado(`No se pudo enviar a OBS: ${error.message}`, 'error');
         mostrarAviso(`No se pudo enviar a OBS: ${error.message}`, 'error');
     }
 }
@@ -35,9 +33,8 @@ async function quitarDelDisplay() {
     try {
         let response = await fetch('/api/replay/stop', { method: 'POST' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        setEstado('Salida de OBS vaciada', 'ok');
     } catch (error) {
-        setEstado(`No se pudo vaciar la salida de OBS: ${error.message}`, 'error');
+        avisarError(`No se pudo vaciar la salida de OBS: ${error.message}`);
     }
 }
 
