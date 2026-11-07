@@ -193,19 +193,75 @@ function ajustarOpcionesSegunCapacidades(pistaVideo) {
 /**
  * Cambia el dispositivo o la captura local si todavía no hay transmisión activa.
  */
-async function cambioDispositivo() {
+function cambioDispositivo() {
     guardarAjustesDesdeUi();
-    // Solo se reabre la cámara en previsualización; en emisión se aplica al volver a emitir
+    // Encadenados: si se tocan varios selectores seguidos, cada reapertura
+    // espera a la anterior en vez de pisarse
+    colaCambioCaptura = colaCambioCaptura.then(reabrirCaptura, reabrirCaptura);
+    return colaCambioCaptura;
+}
+
+// Ajustes con los que se abrió la cámara que se está viendo: si la nueva
+// configuración no abre, se vuelve a ellos en vez de dejar la preview en negro.
+let capturaAbiertaCon = null;
+let colaCambioCaptura = Promise.resolve();
+
+/** Motivo legible de un fallo de getUserMedia. */
+function motivoFalloCamara(error) {
+    let motivos = {
+        NotReadableError: 'está ocupada por otra aplicación o no responde',
+        AbortError: 'está ocupada por otra aplicación o no responde',
+        NotFoundError: 'ya no está conectada',
+        OverconstrainedError: 'no admite esa configuración',
+        NotAllowedError: 'el navegador no tiene permiso'
+    };
+    return motivos[error && error.name] || (error && error.message) || 'error desconocido';
+}
+
+/**
+ * Reabre cámara y micro con los ajustes de la UI (solo en previsualización;
+ * emitiendo se aplica al volver a emitir). Si falla, vuelve a la anterior.
+ */
+async function reabrirCaptura() {
     if (estadoEmision !== ESTADOS_EMISION.PREVISUALIZANDO || !localStream) return;
+    let anteriores = capturaAbiertaCon;
+    localStream.getTracks().forEach(track => track.stop());
+
+    // Abre y, si mientras tanto se empezó a emitir, suelta lo abierto
+    let abrir = async () => {
+        let stream = await cogerStreamVideoAudioLocal();
+        if (estadoEmision !== ESTADOS_EMISION.PREVISUALIZANDO) {
+            stream.getTracks().forEach(track => track.stop());
+            return false;
+        }
+        localStream = stream;
+        preview.srcObject = stream;
+        capturaAbiertaCon = leerAjustesDeReconexion();
+        return true;
+    };
+
     try {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = await cogerStreamVideoAudioLocal();
-        preview.srcObject = localStream;
+        await abrir();
+        return;
     } catch (error) {
+        console.error('No se pudo abrir la cámara con la nueva configuración:', error);
+        if (anteriores) {
+            ponerAjustesDeCaptura(anteriores);
+            try {
+                if (await abrir()) {
+                    guardarAjustesDesdeUi();
+                    revisarCambiosPendientes();
+                    mostrarAviso(`No se pudo abrir con esa configuración: la cámara ${motivoFalloCamara(error)}. Sigues viendo la anterior.`, 'aviso');
+                }
+                return;
+            } catch (errorAnterior) {
+                console.error('Tampoco se pudo volver a la cámara anterior:', errorAnterior);
+            }
+        }
         localStream = null;
         preview.srcObject = null;
         actualizarVacioPreview();
-        mostrarError('No se pudo abrir la cámara con esa configuración', error);
+        mostrarAviso(`No se pudo abrir la cámara: ${motivoFalloCamara(error)}.`, 'error');
         cambiarEstadoEmision(ESTADOS_EMISION.ERROR, { mensaje: 'No se pudo abrir la cámara' });
     }
 }
