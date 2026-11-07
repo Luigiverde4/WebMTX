@@ -4,7 +4,8 @@
   "description": "Servidor para TFG WHIP Streaming",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:local": "node --env-file-if-exists=../.env server.js"
   },
   "dependencies": {
     "chart.js": "^4.5.1",

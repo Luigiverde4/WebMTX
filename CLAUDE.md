@@ -36,8 +36,12 @@ pwsh scripts/streams-prueba.ps1            # publica cam1/cam2 sintéticos con f
 - **`server/cert.pem` y `server/key.pem`:** los generas con `scripts/gen-certs.ps1`. Están en `.gitignore`.
   - Los cargan Node y MediaMTX; este último los monta como `/server.crt` y `/server.key`.
   - Sin ellos Node no arranca (sale con un mensaje de error). Además el navegador no concede cámara ni micrófono fuera de HTTPS, salvo en localhost.
-- **`mediamtx.yml` → `webrtcAdditionalHosts`:** es un array con las IPs LAN desde las que se usa el sistema, una por red habitual. Si cambias de red, añade la IP nueva al array.
-- **`HTTP_REDIRECT`:** por defecto `true`, y el puerto 80 redirige a HTTPS. Ponlo a `false` (con un `.env` o en el entorno) y comenta el puerto 80 en `docker-compose.yml` si otro servicio necesita ese puerto.
+- **`.env`** (plantilla documentada en `.env.example`; el `.env` no se sube a git): todo lo que depende del equipo.
+  - `WEBRTC_HOSTS` es obligatoria: si falta, compose se niega a arrancar. Son las IPs LAN separadas por comas.
+  - El resto (`PUERTO_HTTPS`, `PUERTO_HTTP`, `HTTP_REDIRECT`, `RETENCION_GRABACIONES`, `NIVEL_LOG_MEDIAMTX`, `NODE_ENV`) tiene valor por defecto.
+  - **Regla:** nada que dependa del equipo se escribe en `mediamtx.yml` ni en `docker-compose.yml`. MediaMTX lo recibe como `MTX_<PARÁMETRO>` (p. ej. `MTX_WEBRTCADDITIONALHOSTS`), que sobrescribe su yml.
+  - El compose pasa a cada servicio solo sus variables, con `${VAR:-por_defecto}` y sin `env_file`.
+  - Tras cambiar el `.env`: `docker compose up -d` (`restart` no lo relee). `docker compose config` muestra los valores resueltos.
 
 ## Arquitectura
 
