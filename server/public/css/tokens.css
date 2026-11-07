@@ -113,6 +113,8 @@
   --cam-neutro: var(--gris-400);       /* sin cámara asignada */
 
   --monitor: var(--gris-1000);         /* fondo del vídeo: siempre negro */
+  --sobre-video: var(--gris-0);        /* controles encima del vídeo */
+  --fondo-sobre-video: rgb(0 0 0 / 0.55);
   --velo: rgb(8 11 15 / 0.7);          /* fondo de los diálogos */
   --sombra-flotante: 0 8px 24px rgb(0 0 0 / 0.35);
 

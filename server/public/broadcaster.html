@@ -33,15 +33,18 @@
 
         <!-- Columna principal: monitor, acciones y lo que realmente se envía -->
         <section class="emisor__monitor" aria-label="Previsualización y emisión">
-            <div class="monitor">
+            <div class="monitor emisor__pantalla" id="monitorEmisor">
                 <video id="preview" muted autoplay playsinline aria-label="Previsualización de la cámara local"></video>
                 <div class="monitor__vacio" id="previewVacio">Pulsa Previsualizar o toca aquí para ver la cámara</div>
                 <div class="en-antena" id="liveIndicator" hidden>
                     <span aria-hidden="true"></span>En antena
                 </div>
+                <button type="button" class="boton-monitor" id="pantallaCompletaBtn" onclick="alternarPantallaCompleta(event)" aria-label="Ver a pantalla completa">
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#expandir"/></svg>
+                </button>
             </div>
 
-            <div class="acciones">
+            <div class="acciones emisor__acciones">
                 <button type="button" class="boton" id="previewBtn" onclick="visualizarPreview()">
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#ojo"/></svg>
                     Previsualizar
@@ -59,7 +62,7 @@
                 </div>
             </div>
 
-            <div class="panel">
+            <div class="panel emisor__enviando">
                 <div class="panel__cabecera">
                     <h2>Lo que se está enviando</h2>
                 </div>
@@ -79,7 +82,7 @@
 
         <!-- Columna de ajustes -->
         <div class="emisor__ajustes">
-            <section class="panel" aria-labelledby="tituloDestino">
+            <section class="panel emisor__destino" aria-labelledby="tituloDestino">
                 <div class="panel__cabecera">
                     <h2 id="tituloDestino">Destino</h2>
                 </div>
@@ -120,7 +123,7 @@
                 </div>
             </section>
 
-            <section class="panel" aria-labelledby="tituloFuentes">
+            <section class="panel emisor__fuentes" aria-labelledby="tituloFuentes">
                 <div class="panel__cabecera">
                     <h2 id="tituloFuentes">Fuentes</h2>
                     <button type="button" class="boton boton--fantasma boton--peq" onclick="actualizarDispositivos()">
@@ -140,7 +143,7 @@
                 </div>
             </section>
 
-            <section class="panel" aria-labelledby="tituloVideo">
+            <section class="panel emisor__video" aria-labelledby="tituloVideo">
                 <div class="panel__cabecera">
                     <h2 id="tituloVideo">Vídeo</h2>
                 </div>
@@ -217,7 +220,7 @@
                 </div>
             </section>
 
-            <section class="panel" aria-labelledby="tituloAudio">
+            <section class="panel emisor__audio" aria-labelledby="tituloAudio">
                 <div class="panel__cabecera">
                     <h2 id="tituloAudio">Audio</h2>
                 </div>

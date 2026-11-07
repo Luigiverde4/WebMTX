@@ -505,6 +505,48 @@ function pintarEstadoEmision(estado, contexto = {}) {
     liveIndicator.hidden = !ESTADOS_EN_AIRE.has(estado);
 }
 
+/**
+ * Pone el monitor (vídeo + rótulo "En antena") a pantalla completa, o sale.
+ * En el móvil, si la imagen es horizontal, intenta girar a apaisado.
+ * @param {Event} [evento]
+ */
+async function alternarPantallaCompleta(evento) {
+    if (evento) evento.stopPropagation(); // no disparar la previsualización del clic en el monitor
+    let monitor = document.getElementById('monitorEmisor');
+
+    if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+        return;
+    }
+
+    try {
+        if (monitor.requestFullscreen) {
+            await monitor.requestFullscreen({ navigationUI: 'hide' });
+        } else if (monitor.webkitRequestFullscreen) {
+            monitor.webkitRequestFullscreen();
+        } else if (preview.webkitEnterFullscreen) {
+            preview.webkitEnterFullscreen(); // iPhone: solo el vídeo admite pantalla completa
+            return;
+        }
+        let horizontal = preview.videoWidth >= preview.videoHeight;
+        if (horizontal && screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape').catch(() => {}); // no todos los navegadores lo permiten
+        }
+    } catch (error) {
+        mostrarAviso(`No se pudo poner a pantalla completa: ${error.message}`, 'aviso');
+    }
+}
+
+function actualizarBotonPantallaCompleta() {
+    let boton = document.getElementById('pantallaCompletaBtn');
+    let dentro = Boolean(document.fullscreenElement);
+    boton.setAttribute('aria-label', dentro ? 'Salir de pantalla completa' : 'Ver a pantalla completa');
+    boton.querySelector('use').setAttribute('href', `img/iconos.svg#${dentro ? 'contraer' : 'expandir'}`);
+    if (!dentro && screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+}
+
+document.addEventListener('fullscreenchange', actualizarBotonPantallaCompleta);
+
 function actualizarVacioPreview() {
     previewVacioEl.hidden = Boolean(preview.srcObject);
 }

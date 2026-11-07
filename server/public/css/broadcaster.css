@@ -29,6 +29,34 @@
 
     .emisor .monitor { cursor: pointer; }
 
+    /* Botón de pantalla completa sobre el vídeo */
+    .boton-monitor {
+        position: absolute;
+        inset-block-end: var(--e-3);
+        inset-inline-end: var(--e-3);
+        display: grid;
+        place-items: center;
+        inline-size: var(--alto-control-grande);
+        block-size: var(--alto-control-grande);
+        border: 0;
+        border-radius: var(--radio-panel);
+        background: var(--fondo-sobre-video);
+        color: var(--sobre-video);
+        cursor: pointer;
+    }
+    .boton-monitor .icono { inline-size: var(--tam-icono-grande); block-size: var(--tam-icono-grande); }
+
+    /* El contenedor entero va a pantalla completa: el rótulo "En antena" sigue visible */
+    .monitor:fullscreen {
+        aspect-ratio: auto;
+        inline-size: 100%;
+        block-size: 100%;
+        border: 0;
+        border-radius: 0;
+    }
+    .monitor:fullscreen .en-antena { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
+    .monitor:fullscreen .boton-monitor { inset-block-end: var(--e-5); inset-inline-end: var(--e-5); }
+
     /* Rótulo sobre el monitor mientras se emite */
     .en-antena {
         position: absolute;
@@ -73,9 +101,20 @@
     @media (max-width: 1280px) {
         .emisor { --ancho-ajustes: 340px; }
     }
+    /* Una columna: en el móvil lo primero tras el vídeo son las fuentes (lo
+       primero que se toca), luego los botones y el resto de ajustes.
+       display: contents saca los paneles de sus columnas para poder ordenarlos. */
     @media (max-width: 900px) {
-        .emisor { grid-template-columns: minmax(0, 1fr); }
-        .emisor__monitor { position: static; }
+        .emisor { display: flex; flex-direction: column; gap: var(--e-4); }
+        .emisor__monitor,
+        .emisor__ajustes { display: contents; }
+        .emisor__pantalla { order: 1; }
+        .emisor__fuentes { order: 2; }
+        .emisor__acciones { order: 3; }
+        .emisor__destino { order: 4; }
+        .emisor__video { order: 5; }
+        .emisor__audio { order: 6; }
+        .emisor__enviando { order: 7; }
     }
     @media (max-width: 600px) {
         .acciones__principales { inline-size: 100%; margin-inline-start: 0; }
