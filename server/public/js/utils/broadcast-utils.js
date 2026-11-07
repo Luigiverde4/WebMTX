@@ -132,7 +132,8 @@ function construirConstraints(exacta) {
             echoCancellation: echoCancellationCheck.checked,
             noiseSuppression: noiseSuppressionCheck.checked,
             autoGainControl: autoGainControlCheck.checked,
-            channelCount: { ideal: 2 },
+            // Sin channelCount: MediaMTX no negocia Opus estéreo (stereo=1),
+            // así que Chrome codifica en mono aunque el micro dé dos canales.
             sampleRate: { ideal: 48000 }
         };
     } else {
@@ -160,7 +161,6 @@ async function cogerStreamVideoAudioLocal() {
 
     let pistaVideo = stream.getVideoTracks()[0];
     if (pistaVideo) {
-        pistaVideo.contentHint = contentHintSelect.value || 'detail';
         ajustarOpcionesSegunCapacidades(pistaVideo);
     }
     mostrarAplicado(stream);

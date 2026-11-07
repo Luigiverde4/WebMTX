@@ -50,9 +50,15 @@ function aplicarCodecVideoPreferido(pcConnection, preferredCodec) {
 
 /**
  * Aplica los parámetros de codificación de la UI a los senders de una conexión:
- * bitrate de vídeo, escala de resolución enviada, preferencia de degradación,
- * prioridad del encoder (contentHint) y bitrate de audio. Se puede llamar en
- * cualquier momento: con la emisión en marcha se aplica sin renegociar.
+ * bitrate de vídeo, escala de resolución enviada, preferencia de degradación y
+ * bitrate de audio. Se puede llamar en cualquier momento: con la emisión en
+ * marcha se aplica sin renegociar.
+ *
+ * No se usa track.contentHint: con "detail" o "text" Chrome trata la cámara
+ * como una captura de pantalla y nunca baja la resolución, sea cual sea
+ * degradationPreference (medido: 1080p a 10 fps con las tres opciones). Sin
+ * hint, la preferencia funciona: a 0,8 Mbps, mantener fotogramas da 480×270 a
+ * 27 fps; mantener resolución, 1080p a 10 fps; equilibrar, 640×360 a 13 fps.
  * @param {RTCPeerConnection} pcConnection
  */
 async function configurarCalidadVideo(pcConnection) {
@@ -66,7 +72,6 @@ async function configurarCalidadVideo(pcConnection) {
         }
 
         if (sender.track.kind === 'video') {
-            sender.track.contentHint = contentHintSelect.value || 'detail';
             params.encodings[0].maxBitrate = cogerBitrateVideo();
             params.encodings[0].scaleResolutionDownBy = Number(escalaEnvioSelect.value) || 1;
             params.encodings[0].maxFramerate = Number(frameRateSelect.value) || 30;
@@ -95,7 +100,6 @@ async function configurarCalidadVideo(pcConnection) {
         videoBps: cogerBitrateVideo(),
         escala: escalaEnvioSelect.value,
         degradacion: degradacionSelect.value,
-        contentHint: contentHintSelect.value,
         audioBps: audioBitrateSelect.value
     });
 }

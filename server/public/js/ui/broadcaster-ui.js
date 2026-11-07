@@ -21,7 +21,6 @@ let frameRateSelect = document.getElementById('frameRate');
 let videoCodecPreference = document.getElementById('videoCodecPreference');
 let bitrateInput = document.getElementById('bitrate');
 let bitrateValueEl = document.getElementById('bitrateValue');
-let contentHintSelect = document.getElementById('contentHint');
 let degradacionSelect = document.getElementById('degradacion');
 let escalaEnvioSelect = document.getElementById('escalaEnvio');
 let audioBitrateSelect = document.getElementById('audioBitrate');
@@ -49,7 +48,18 @@ const STALLED_BYTES_SENT_MAX_SAMPLES = 6;
 const PATHS_SONDEO_MS = 5000;
 const CODEC_RECOMENDADO = 'video/h264';
 
-const VIDEO_CODEC_EXCLUDES = new Set(['video/rtx', 'video/red', 'video/ulpfec', 'video/flexfec-03']);
+// No son códecs de imagen (retransmisión y corrección de errores), salvo VP8:
+// MediaMTX no graba VP8 en fMP4 ("skipping track (VP8)") y se quedaría sin
+// repeticiones. Por eso tampoco hay "Automático": Chrome elige VP8 por defecto.
+const VIDEO_CODEC_EXCLUDES = new Set(['video/rtx', 'video/red', 'video/ulpfec', 'video/flexfec-03', 'video/vp8']);
+
+// Por qué un códec que no es H264 puede dar problemas. En Chrome los cuatro se
+// publican, se ven por WHEP y se graban; el riesgo está en otros visores.
+const AVISOS_CODEC = {
+    'video/vp9': 'VP9 se graba bien, pero algunos navegadores (sobre todo Safari) pueden no reproducirlo. Si dudas, usa H264.',
+    'video/av1': 'AV1 suele gastar bastante más CPU al codificar y no todos los equipos lo reproducen. Si dudas, usa H264.',
+    'video/h265': 'H265 solo se ve en navegadores con decodificación por hardware (Chrome en Windows con GPU compatible). Muchos visores no podrán verlo.'
+};
 
 // AJUSTES PERSISTENTES
 /**
@@ -63,7 +73,6 @@ function guardarAjustesDesdeUi() {
         resolucion: resolution.value,
         fps: frameRateSelect.value,
         bitrateMbps: Number(bitrateInput.value),
-        contentHint: contentHintSelect.value,
         degradacion: degradacionSelect.value,
         escala: escalaEnvioSelect.value,
         audioBitrate: audioBitrateSelect.value,
@@ -71,7 +80,6 @@ function guardarAjustesDesdeUi() {
         ruido: noiseSuppressionCheck.checked,
         ganancia: autoGainControlCheck.checked
     });
-    localStorage.setItem('broadcaster_video_codec', videoCodecPreference.value || 'auto');
 }
 
 function seleccionarSiExiste(select, valor) {
@@ -89,7 +97,6 @@ function restaurarAjustesEnUi() {
     if (!ajustes) return;
     seleccionarSiExiste(resolution, ajustes.resolucion);
     seleccionarSiExiste(frameRateSelect, ajustes.fps);
-    seleccionarSiExiste(contentHintSelect, ajustes.contentHint);
     seleccionarSiExiste(degradacionSelect, ajustes.degradacion);
     seleccionarSiExiste(escalaEnvioSelect, ajustes.escala);
     seleccionarSiExiste(audioBitrateSelect, ajustes.audioBitrate);
@@ -127,7 +134,7 @@ function actualizarOpcionesCodecVideo() {
     // la versión anterior guardaba H265 por defecto.
     let ajustes = leerAjustesEmisor();
     let previousValue = ajustes ? (ajustes.codec || '') : '';
-    let options = [{ value: 'auto', label: 'Automático (lo decide el navegador)' }];
+    let options = [];
 
     if (typeof RTCRtpSender !== 'undefined' && typeof RTCRtpSender.getCapabilities === 'function') {
         let capabilities = RTCRtpSender.getCapabilities('video');
@@ -151,7 +158,9 @@ function actualizarOpcionesCodecVideo() {
         .map(option => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
         .join('');
 
-    let defaultValue = options.some(option => option.value === CODEC_RECOMENDADO) ? CODEC_RECOMENDADO : 'auto';
+    // Sin getCapabilities (navegador muy antiguo): 'auto' deja el códec al navegador
+    if (options.length === 0) options.push({ value: 'auto', label: 'El del navegador' });
+    let defaultValue = options.some(option => option.value === CODEC_RECOMENDADO) ? CODEC_RECOMENDADO : options[0].value;
     videoCodecPreference.value = options.some(option => option.value === previousValue) ? previousValue : defaultValue;
     avisarSiCodecNoRecomendado();
 }
@@ -174,11 +183,9 @@ function guardarPreferenciaCodecVideo() {
 
 function avisarSiCodecNoRecomendado() {
     let codec = cogerVideoCodecPreferencia();
-    let noRecomendado = codec !== CODEC_RECOMENDADO && codec !== 'auto';
-    codecAvisoEl.textContent = noRecomendado
-        ? 'Con este códec las repeticiones pueden no reproducirse en el navegador. Usa H264 si vas a repetir jugadas.'
-        : '';
-    codecAvisoEl.classList.toggle('mensaje-linea--error', noRecomendado);
+    let aviso = AVISOS_CODEC[codec] || '';
+    codecAvisoEl.textContent = aviso;
+    codecAvisoEl.classList.toggle('mensaje-linea--error', Boolean(aviso));
 }
 
 /**
@@ -719,7 +726,7 @@ endpointInput.addEventListener('input', revisarCambiosPendientes);
 // Ajustes aplicables en directo
 bitrateInput.addEventListener('input', actualizarEtiquetaBitrate);
 bitrateInput.addEventListener('change', () => { actualizarEtiquetaBitrate(); guardarAjustesDesdeUi(); aplicarAjustesEnDirecto(); });
-[contentHintSelect, degradacionSelect, escalaEnvioSelect, audioBitrateSelect].forEach(control => {
+[degradacionSelect, escalaEnvioSelect, audioBitrateSelect].forEach(control => {
     control.addEventListener('change', () => { guardarAjustesDesdeUi(); aplicarAjustesEnDirecto(); });
 });
 
