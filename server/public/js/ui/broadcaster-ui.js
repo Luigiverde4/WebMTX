@@ -200,44 +200,108 @@ function actualizarEtiquetaBitrate() {
 }
 
 
-// LO QUE SE ESTÁ ENVIANDO
+// OBJETIVO FRENTE A REAL
+// Resolución, fps y bitrate de vídeo son objetivos: los pide la app, pero el
+// resultado lo deciden la cámara (modos, luz), la CPU y la red. Junto a cada
+// uno se enseña lo real; en ámbar y diciendo quién lo impide si no coincide.
+
+// Lo que entrega la cámara (getSettings) y lo que se pidió al abrirla:
+// se compara con eso, no con el selector (que puede tener cambios pendientes).
+let capturaReal = null;   // { ancho, alto, fps, anchoPedido, altoPedido, fpsPedido }
+// Lo que sale codificado (outbound-rtp); el bitrate, suavizado (~2 s).
+let envioReal = null;     // { ancho, alto, fps, kbps, motivo }
+
+const QUIEN_LIMITA = { cpu: 'falta CPU', bandwidth: 'falta red', other: 'lo limita el navegador' };
+
 /**
- * Muestra lo que la cámara entrega de verdad (getSettings) frente a lo pedido.
- * @param {MediaStream} stream
+ * Guarda lo que entrega la cámara de verdad (getSettings) frente a lo pedido.
+ * @param {MediaStream|null} stream
  */
 function mostrarAplicado(stream) {
     let pista = stream ? stream.getVideoTracks()[0] : null;
-    let camaraEl = document.getElementById('aplicadoCamara');
-    let capturaEl = document.getElementById('aplicadoCaptura');
-    let avisoEl = document.getElementById('aplicadoAviso');
-
     if (!pista) {
-        camaraEl.textContent = '—';
-        capturaEl.textContent = '—';
-        avisoEl.textContent = '';
-        return;
+        capturaReal = null;
+    } else {
+        let ajustes = pista.getSettings();
+        let [anchoPedido, altoPedido] = resolution.value.split('x').map(Number);
+        capturaReal = {
+            ancho: ajustes.width,
+            alto: ajustes.height,
+            fps: ajustes.frameRate ? Math.round(ajustes.frameRate * 10) / 10 : null,
+            anchoPedido,
+            altoPedido,
+            fpsPedido: Number(frameRateSelect.value)
+        };
     }
-
-    let ajustes = pista.getSettings();
-    camaraEl.textContent = pista.label || 'Cámara';
-    let fps = ajustes.frameRate ? Math.round(ajustes.frameRate * 10) / 10 : '?';
-    capturaEl.textContent = `${ajustes.width || '?'}×${ajustes.height || '?'} a ${fps} fps`;
-
-    let [anchoPedido, altoPedido] = resolution.value.split('x').map(Number);
-    let fpsPedido = Number(frameRateSelect.value);
-    let difiere = (ajustes.width && ajustes.width !== anchoPedido) || (ajustes.height && ajustes.height !== altoPedido);
-    let fpsDifiere = ajustes.frameRate && Math.abs(ajustes.frameRate - fpsPedido) > 1;
-    avisoEl.textContent = difiere || fpsDifiere
-        ? `La cámara no da ${anchoPedido}×${altoPedido} a ${fpsPedido} fps: entrega lo más cercano que admite.`
-        : '';
+    pintarObjetivos();
 }
 
-const MOTIVOS_LIMITACION = {
-    none: 'Ninguna',
-    cpu: 'CPU: el equipo no llega a codificar a esta calidad',
-    bandwidth: 'Red: el ancho de banda no da para más',
-    other: 'Otra'
-};
+function ponerReal(id, texto, difiere = false) {
+    let el = document.getElementById(id);
+    el.textContent = texto;
+    el.classList.toggle('campo__real--difiere', difiere);
+}
+
+/**
+ * Pinta bajo cada ajuste "objetivo" lo que se consigue de verdad.
+ */
+function pintarObjetivos() {
+    let c = capturaReal;
+    let e = envioReal;
+    let limita = e && QUIEN_LIMITA[e.motivo];
+    // Chrome no cuenta como "limitación" que el codificador tire fotogramas para
+    // no pasarse del bitrate: se deduce de ir pegado al techo.
+    let techoKbps = cogerBitrateVideo() / 1000;
+    let enElTecho = Boolean(e && e.kbps !== null && e.kbps >= techoKbps * 0.85);
+
+    // Resolución: cámara frente a lo pedido; envío frente a lo esperable tras "Resolución enviada"
+    if (!c) {
+        ponerReal('realResolucion', 'Se verá al previsualizar');
+    } else {
+        let camaraNoDa = c.ancho && (c.ancho !== c.anchoPedido || c.alto !== c.altoPedido);
+        let texto = `Cámara: ${c.ancho || '?'}×${c.alto || '?'}`;
+        let reducida = false;
+        if (e && e.ancho) {
+            texto += ` · enviando ${e.ancho}×${e.alto}`;
+            let esperado = Math.round((c.ancho || 0) / (Number(escalaEnvioSelect.value) || 1));
+            reducida = e.ancho < esperado - 8;
+        }
+        if (camaraNoDa) texto += ' (la cámara no da más)';
+        else if (reducida) texto += ` (${limita || 'la reduce el navegador'})`;
+        ponerReal('realResolucion', texto, camaraNoDa || reducida);
+    }
+
+    // Fps: cámara frente a lo pedido; envío frente a la cámara
+    if (!c) {
+        ponerReal('realFps', 'Se verá al previsualizar');
+    } else {
+        let camaraNoDa = c.fps && c.fps < c.fpsPedido - 1;
+        let texto = `Cámara: ${c.fps ?? '?'}`;
+        let bajan = false;
+        if (e && e.fps !== null) {
+            texto += ` · enviando ${e.fps}`;
+            bajan = Boolean(c.fps && e.fps < c.fps - 2);
+        }
+        if (camaraNoDa) texto += ' (la cámara no da más; con poca luz muchas bajan)';
+        else if (bajan) texto += ` (${limita || 'la imagen pide más bitrate del que hay'})`;
+        ponerReal('realFps', texto, Boolean(camaraNoDa || bajan));
+    }
+
+    // Bitrate: por debajo del techo es normal (la imagen no pide más); pegado
+    // al techo, el techo es lo que limita
+    if (!e || e.kbps === null) {
+        ponerReal('realBitrate', 'Se verá al emitir');
+    } else {
+        let mbps = (e.kbps / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+        let motivo = limita || (enElTecho ? 'en el techo: súbelo si la red lo permite' : '');
+        ponerReal('realBitrate', `Enviando: ${mbps} Mbps${motivo ? ` (${motivo})` : ''}`, Boolean(motivo));
+    }
+
+    // La regla de degradación solo se enseña mientras actúa
+    let degradacionEl = document.getElementById('realDegradacion');
+    degradacionEl.hidden = !limita;
+    if (limita) degradacionEl.textContent = `Actuando ahora: ${limita}`;
+}
 
 // STATS RTP
 /**
@@ -330,15 +394,22 @@ async function actualizarCodecStats() {
         });
 
         if (report.kind === 'video') {
+            // Media móvil: con muestras cada 500 ms, ~2 s de memoria (el número no baila)
+            let kbpsSuavizado = kbps === null ? (envioReal ? envioReal.kbps : null)
+                : envioReal && envioReal.kbps !== null ? Math.round(envioReal.kbps * 0.75 + kbps * 0.25) : kbps;
+            envioReal = {
+                ancho: report.frameWidth || null,
+                alto: report.frameHeight || null,
+                fps: report.framesPerSecond !== undefined ? Math.round(report.framesPerSecond) : null,
+                kbps: kbpsSuavizado,
+                motivo: report.qualityLimitationReason || 'none'
+            };
             let codificacion = report.frameWidth
-                ? `${report.frameWidth}×${report.frameHeight} a ${Math.round(report.framesPerSecond || 0)} fps`
+                ? `${report.frameWidth}×${report.frameHeight} a ${envioReal.fps ?? 0} fps`
                 : 'Esperando fotogramas…';
-            let textoCodificacion = `${codificacion}${kbps !== null ? `, ${(kbps / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps` : ''}`;
-            document.getElementById('aplicadoCodificacion').textContent = textoCodificacion;
-            // El mismo resumen, bajo el vídeo (el panel completo está al final de los controles)
-            document.getElementById('resumenEnvio').textContent = textoCodificacion;
-            let motivo = report.qualityLimitationReason || 'none';
-            document.getElementById('aplicadoLimitacion').textContent = MOTIVOS_LIMITACION[motivo] || motivo;
+            // Resumen bajo el vídeo
+            document.getElementById('resumenEnvio').textContent = `${codificacion}${kbpsSuavizado !== null ? `, ${(kbpsSuavizado / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps` : ''}`;
+            pintarObjetivos();
         }
 
         totalBytesSent += bytesSent;
@@ -394,8 +465,8 @@ function stopCodecStatsPolling() {
     }
 
     ponerMensajeStatsCodec('Sin datos: empieza a emitir para ver el tráfico.');
-    document.getElementById('aplicadoCodificacion').textContent = '—';
-    document.getElementById('aplicadoLimitacion').textContent = '—';
+    envioReal = null;
+    pintarObjetivos();
     document.getElementById('resumenEnvio').textContent = '';
 }
 

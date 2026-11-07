@@ -53,6 +53,7 @@
   --verde-500: #2fb457;
   --verde-300: #7fd99a;
   --ambar-500: #e9a23b;
+  --ambar-700: #8a5a10;
   --azul-foco-claro: #9cc3ff;
   --azul-foco-oscuro: #1d5fd6;
 
@@ -104,6 +105,7 @@
   --aviso-tenue-hover: rgb(233 162 59 / 0.24);
   --texto-peligro: var(--rojo-300);
   --texto-exito: var(--verde-300);
+  --texto-aviso: var(--ambar-500);        /* texto de "no coincide con lo pedido" */
 
   --cam-azul: var(--cam-oscuro-1);
   --cam-naranja: var(--cam-oscuro-2);
@@ -199,6 +201,7 @@
 
     --texto-peligro: var(--rojo-700);
     --texto-exito: var(--verde-700);
+    --texto-aviso: var(--ambar-700);
 
     --cam-azul: var(--cam-claro-1);
     --cam-naranja: var(--cam-claro-2);

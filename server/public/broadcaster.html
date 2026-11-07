@@ -147,9 +147,11 @@
                                 <option value="auto">Automático</option>
                             </select>
                         </div>
+                        <!-- "objetivo": lo pides tú; la cámara, el navegador o la red deciden el resultado.
+                             Debajo, el valor real (campo__real), en ámbar si no coincide. -->
                         <div class="campo">
-                            <label for="resolution">Resolución</label>
-                            <select id="resolution">
+                            <label for="resolution">Resolución pedida <span class="objetivo" title="Objetivo: la cámara puede dar otra">objetivo</span></label>
+                            <select id="resolution" aria-describedby="realResolucion">
                                 <option value="3840x2160">2160p (3840×2160)</option>
                                 <option value="2560x1440">1440p (2560×1440)</option>
                                 <option value="1920x1080" selected>1080p (1920×1080)</option>
@@ -158,10 +160,11 @@
                                 <option value="854x480">480p (854×480)</option>
                                 <option value="640x360">360p (640×360)</option>
                             </select>
+                            <span class="campo__real cifra" id="realResolucion">Se verá al previsualizar</span>
                         </div>
                         <div class="campo">
-                            <label for="frameRate">Fotogramas por segundo</label>
-                            <select id="frameRate">
+                            <label for="frameRate">Fps pedidos <span class="objetivo" title="Objetivo: la cámara, la luz, la CPU o la red pueden dar menos">objetivo</span></label>
+                            <select id="frameRate" aria-describedby="realFps">
                                 <option value="15">15</option>
                                 <option value="24">24</option>
                                 <option value="25">25</option>
@@ -169,6 +172,7 @@
                                 <option value="50">50</option>
                                 <option value="60">60</option>
                             </select>
+                            <span class="campo__real cifra" id="realFps">Se verá al previsualizar</span>
                         </div>
                     </div>
                     <p class="mensaje-linea" id="codecAviso"></p>
@@ -191,12 +195,13 @@
                 </div>
                 <div class="pila">
                     <div class="campo">
-                        <label for="bitrate">Bitrate máximo de vídeo</label>
+                        <label for="bitrate">Bitrate máximo de vídeo <span class="objetivo" title="Objetivo: es un techo; la imagen y la red deciden cuánto se gasta">objetivo</span></label>
                         <div class="rango">
-                            <input type="range" id="bitrate" min="1" max="20" step="0.5" value="8">
+                            <input type="range" id="bitrate" min="1" max="20" step="0.5" value="8" aria-describedby="realBitrate">
                             <output id="bitrateValue" class="rango__valor" for="bitrate">8 Mbps</output>
                         </div>
-                        <span class="campo__ayuda">Es un techo: con imagen sencilla se gasta menos. Al bajarlo se nota en un segundo; al subirlo, el envío crece poco a poco mientras comprueba que la red aguanta.</span>
+                        <span class="campo__real cifra" id="realBitrate">Se verá al emitir</span>
+                        <span class="campo__ayuda">Es un techo: con imagen sencilla se gasta menos, y al subirlo el envío crece poco a poco mientras comprueba que la red aguanta.</span>
                     </div>
 
                     <div class="campos">
@@ -207,6 +212,8 @@
                                 <option value="maintain-framerate">Bajar resolución, mantener fluidez</option>
                                 <option value="balanced">Un poco de cada</option>
                             </select>
+                            <!-- Solo aparece mientras la regla está actuando -->
+                            <span class="campo__real campo__real--difiere" id="realDegradacion" hidden></span>
                         </div>
                         <div class="campo">
                             <label for="escalaEnvio">Resolución enviada</label>
@@ -233,16 +240,9 @@
 
             <section class="panel emisor__enviando" aria-labelledby="tituloEnviando">
                 <div class="panel__cabecera">
-                    <h2 id="tituloEnviando">Lo que se está enviando</h2>
+                    <h2 id="tituloEnviando">Tráfico por pista</h2>
+                    <p class="panel__nota">Lo que la cámara y la red dan de verdad está junto a cada ajuste "objetivo".</p>
                 </div>
-                <dl class="datos" id="aplicado">
-                    <dt>Cámara</dt><dd id="aplicadoCamara">—</dd>
-                    <dt>Captura</dt><dd id="aplicadoCaptura">—</dd>
-                    <dt>Codificación</dt><dd id="aplicadoCodificacion">—</dd>
-                    <dt>Limitación</dt><dd id="aplicadoLimitacion">—</dd>
-                </dl>
-                <p class="mensaje-linea" id="aplicadoAviso"></p>
-                <h3 class="emisor__subtitulo">Tráfico por pista</h3>
                 <div id="codecStats" class="tabla-scroll">
                     <p class="vacio">Sin datos: empieza a emitir para ver el tráfico.</p>
                 </div>
