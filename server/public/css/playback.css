@@ -100,7 +100,6 @@
     }
     .salida-obs__texto { min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
     .salida-obs__texto h2 { font-size: var(--t-l); }
-    .salida-obs__pendiente.listo { color: var(--texto); }
     .salida-obs__estado { color: var(--texto-2); }
     .salida-obs__estado.activo { color: var(--texto-peligro); font-weight: 600; }
     .salida-obs__botones { display: flex; gap: var(--e-2); }

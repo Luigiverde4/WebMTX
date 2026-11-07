@@ -193,21 +193,14 @@ function pintarColorStream() {
 }
 
 /**
- * Muestra junto al botón de envío qué repetición se mandaría al display.
- * Refleja `ultimaSeleccion` (lo último que se previsualizó), NO lo marcado en
- * los desplegables: el envío manda lo reproducido, no lo seleccionado.
+ * "Enviar a OBS" solo se activa cuando hay algo previsualizado, y entonces
+ * dice qué se mandaría. Refleja `ultimaSeleccion` (lo último que se
+ * reprodujo), NO lo marcado en los desplegables: se envía lo reproducido.
  */
 function actualizarPendienteEnvio() {
-    if (!obsPendingEl) return;
-
-    if (!ultimaSeleccion) {
-        obsPendingEl.textContent = 'Reproduce algo primero: se envía lo que estés previsualizando.';
-        obsPendingEl.classList.remove('listo');
-        return;
-    }
-
-    obsPendingEl.textContent = `Se enviará ${ultimaSeleccion.label}`;
-    obsPendingEl.classList.add('listo');
+    document.getElementById('enviarObsBtn').disabled = !ultimaSeleccion;
+    obsPendingEl.hidden = !ultimaSeleccion;
+    obsPendingEl.textContent = ultimaSeleccion ? `Se enviará ${ultimaSeleccion.label}` : '';
 }
 
 /**
