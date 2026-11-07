@@ -3,18 +3,14 @@
  * Gestiona exclusivamente la publicación WebRTC hacia el servidor.
  */
 
-// Estado global de emisión
+// Recursos de la emisión. En qué punto está la emisión NO se deduce de ellos:
+// lo dice estadoEmision (js/utils/estado-emision.js).
 let pc = null;
 let localStream = null;
 let whipSession = null;
-let isStoppingBroadcast = false;
 // Cada intento de emisión tiene un número; si se cancela o empieza otro, los
 // awaits del intento anterior lo detectan y se desentienden.
 let intentoEmision = 0;
-let temporizadorGraciaIce = null;
-
-// Margen ante ICE 'disconnected' (micro-cortes de wifi/4G) antes de cortar la emisión
-const GRACIA_ICE_EMISOR_MS = 4000;
 
 /**
  * Aplica la preferencia de códec de vídeo elegida en la UI si el navegador la soporta.
@@ -149,12 +145,11 @@ async function startBroadcast() {
     localStorage.setItem('broadcaster_endpoint', endpoint);
     guardarAjustesDesdeUi();
 
+    // Mientras se esperaba la confirmación pudo empezar otra emisión
+    if (!cambiarEstadoEmision(ESTADOS_EMISION.ABRIENDO)) return;
+
     let intento = ++intentoEmision;
     let cancelado = () => intento !== intentoEmision;
-
-    actualizarEstado('connecting', 'Conectando');
-    startBtn.disabled = true;
-    stopBtn.disabled = false; // Permitir cancelar en cualquier momento de la conexión
 
     let conexion = null;
 
@@ -173,6 +168,7 @@ async function startBroadcast() {
         preview.srcObject = localStream;
         actualizarVacioPreview();
 
+        cambiarEstadoEmision(ESTADOS_EMISION.NEGOCIANDO);
         console.log('[broadcaster] creando RTCPeerConnection');
         conexion = new RTCPeerConnection();
         pc = conexion;
@@ -190,24 +186,14 @@ async function startBroadcast() {
             let estadoIce = conexion.iceConnectionState;
             console.log('ICE state:', estadoIce);
 
+            // El margen de gracia lo gestiona el estado 'inestable' (estado-emision.js)
             if (estadoIce === 'connected' || estadoIce === 'completed') {
-                clearTimeout(temporizadorGraciaIce);
-                temporizadorGraciaIce = null;
-                if (statusEl.classList.contains('connecting') && whipSession) {
-                    actualizarEstado('live', 'En antena');
-                }
+                recuperarDeInestable();
             } else if (estadoIce === 'disconnected') {
-                actualizarEstado('connecting', 'Conexión inestable');
-                clearTimeout(temporizadorGraciaIce);
-                temporizadorGraciaIce = setTimeout(() => {
-                    if (pc === conexion && conexion.iceConnectionState === 'disconnected') {
-                        mostrarAviso('Emisión detenida: se perdió la conexión con el servidor.', 'error');
-                        stopBroadcast();
-                    }
-                }, GRACIA_ICE_EMISOR_MS);
+                cambiarEstadoEmision(ESTADOS_EMISION.INESTABLE);
             } else if (estadoIce === 'failed' || estadoIce === 'closed') {
                 mostrarAviso('Emisión detenida: la conexión WebRTC falló.', 'error');
-                stopBroadcast();
+                stopBroadcast({ error: 'La conexión WebRTC falló' });
             }
         };
 
@@ -250,19 +236,22 @@ async function startBroadcast() {
             sdp: answerSDP
         }));
 
+        // Si ICE ya se cortó, 'inestable' recordará volver aquí al recuperarse
+        if (estadoEmision === ESTADOS_EMISION.NEGOCIANDO) cambiarEstadoEmision(ESTADOS_EMISION.ESPERANDO_TRAFICO);
+        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.ESPERANDO_TRAFICO;
+
         await esperarStreamSaliente(conexion);
         if (cancelado()) return; // Se canceló esperando tráfico saliente
 
-        actualizarEstado('live', 'En antena');
-        liveIndicator.hidden = false;
+        if (estadoEmision === ESTADOS_EMISION.ESPERANDO_TRAFICO) cambiarEstadoEmision(ESTADOS_EMISION.EN_ANTENA);
+        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.EN_ANTENA;
         startCodecStatsPolling();
         console.log('Transmisión WHIP iniciada correctamente');
     } catch (error) {
         // Solo reportar si el fallo es del intento vigente (no de uno cancelado)
         if (!cancelado()) {
             mostrarError('No se pudo empezar a emitir', error);
-            await stopBroadcast();
-            actualizarEstado('error', 'No se pudo empezar a emitir');
+            await stopBroadcast({ error: 'No se pudo empezar a emitir' });
         }
     }
 
@@ -271,10 +260,12 @@ async function startBroadcast() {
 
 /**
  * Detiene la transmisión (o cancela la conexión en curso) y libera recursos locales.
+ * @param {{error?: string}} [opciones] - Con error, termina en 'error' en vez de 'inactivo'.
  */
-async function stopBroadcast() {
-    if (isStoppingBroadcast) return;
-    isStoppingBroadcast = true;
+async function stopBroadcast(opciones = {}) {
+    // Solo hay algo que detener mientras se emite o se conecta; esto también
+    // evita paradas dobles (el estado 'deteniendo' no admite volver a entrar).
+    if (!cambiarEstadoEmision(ESTADOS_EMISION.DETENIENDO)) return;
     intentoEmision += 1; // Invalida cualquier intento en curso
 
     console.log('[broadcaster] stopBroadcast()', {
@@ -283,8 +274,6 @@ async function stopBroadcast() {
         hasLocalStream: Boolean(localStream)
     });
 
-    clearTimeout(temporizadorGraciaIce);
-    temporizadorGraciaIce = null;
     stopCodecStatsPolling();
 
     let sesion = whipSession;
@@ -310,14 +299,15 @@ async function stopBroadcast() {
     preview.srcObject = null;
     actualizarVacioPreview();
     mostrarAplicado(null);
-    liveIndicator.hidden = true;
-    actualizarEstado('disconnected', 'Sin emitir');
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
+
+    if (opciones.error) {
+        cambiarEstadoEmision(ESTADOS_EMISION.ERROR, { mensaje: opciones.error });
+    } else {
+        cambiarEstadoEmision(ESTADOS_EMISION.INACTIVO);
+    }
 
     console.log('Transmisión detenida');
     setTimeout(() => actualizarPathsActivos(true), 1000);
-    isStoppingBroadcast = false;
 }
 
 /**

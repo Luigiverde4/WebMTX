@@ -195,16 +195,17 @@ function ajustarOpcionesSegunCapacidades(pistaVideo) {
  */
 async function cambioDispositivo() {
     guardarAjustesDesdeUi();
-    if (localStream && !pc) {
-        try {
-            localStream.getTracks().forEach(track => track.stop());
-            localStream = await cogerStreamVideoAudioLocal();
-            preview.srcObject = localStream;
-        } catch (error) {
-            localStream = null;
-            preview.srcObject = null;
-            actualizarVacioPreview();
-            mostrarError('No se pudo abrir la cámara con esa configuración', error);
-        }
+    // Solo se reabre la cámara en previsualización; en emisión se aplica al volver a emitir
+    if (estadoEmision !== ESTADOS_EMISION.PREVISUALIZANDO || !localStream) return;
+    try {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = await cogerStreamVideoAudioLocal();
+        preview.srcObject = localStream;
+    } catch (error) {
+        localStream = null;
+        preview.srcObject = null;
+        actualizarVacioPreview();
+        mostrarError('No se pudo abrir la cámara con esa configuración', error);
+        cambiarEstadoEmision(ESTADOS_EMISION.ERROR, { mensaje: 'No se pudo abrir la cámara' });
     }
 }

@@ -365,7 +365,7 @@ function startCodecStatsPolling() {
                 watchdogAlertShown = true;
                 mostrarAviso('Emisión detenida: no salían datos hacia el servidor durante 3 s. Comprueba la red y vuelve a emitir.', 'error');
             }
-            stopBroadcast();
+            stopBroadcast({ error: 'No salían datos hacia el servidor' });
         },
         onError: error => {
             console.warn('No se pudieron leer estadísticas WebRTC:', error);
@@ -461,25 +461,48 @@ function marcarEndpointElegido() {
 
 
 // UI
-/**
- * Actualiza el estado visual del emisor (píldora junto a los botones y tally).
- * @param {'disconnected'|'connecting'|'live'|'error'} status
- * @param {string} text - Texto a mostrar.
- */
-function actualizarEstado(status, text) {
-    statusEl.className = `estado ${status}`;
-    statusEl.textContent = text;
+// Cómo se ve cada estado de la emisión (js/utils/estado-emision.js).
+// pildora: clase de .estado · tally: estado de la barra · texto: lo que se lee.
+const VISTA_ESTADO_EMISION = {
+    inactivo: { pildora: 'disconnected', tally: 'inactivo', texto: 'Sin emitir' },
+    previsualizando: { pildora: 'disconnected', tally: 'inactivo', texto: 'Previsualizando' },
+    abriendo: { pildora: 'connecting', tally: 'conectando', texto: 'Abriendo la cámara' },
+    negociando: { pildora: 'connecting', tally: 'conectando', texto: 'Conectando' },
+    esperando_trafico: { pildora: 'connecting', tally: 'conectando', texto: 'Comprobando el envío' },
+    // En 'inestable' el tally sigue en rojo para no reiniciar el cronómetro por un microcorte
+    en_antena: { pildora: 'live', tally: 'antena', texto: 'En antena' },
+    inestable: { pildora: 'connecting', tally: 'antena', texto: 'Conexión inestable' },
+    deteniendo: { pildora: 'connecting', tally: 'conectando', texto: 'Deteniendo' },
+    error: { pildora: 'error', tally: 'error', texto: 'Error' }
+};
 
+/**
+ * Pinta TODA la UI que depende del estado de la emisión: píldora, tally,
+ * botones y rótulo "En antena". Es el único sitio que la toca.
+ * @param {string} estado - Uno de ESTADOS_EMISION.
+ * @param {{mensaje?: string}} [contexto]
+ */
+function pintarEstadoEmision(estado, contexto = {}) {
+    let vista = VISTA_ESTADO_EMISION[estado] || VISTA_ESTADO_EMISION.inactivo;
+    let texto = estado === 'error' && contexto.mensaje ? contexto.mensaje : vista.texto;
     let endpoint = endpointInput.value;
-    if (status === 'live') {
-        ponerTally('antena', { estado: 'En antena', detalle: endpoint, cronometro: true });
-    } else if (status === 'connecting') {
-        ponerTally('conectando', { estado: text, detalle: endpoint });
-    } else if (status === 'error') {
-        ponerTally('error', { estado: text });
+
+    statusEl.className = `estado ${vista.pildora}`;
+    statusEl.textContent = texto;
+
+    if (vista.tally === 'antena') {
+        ponerTally('antena', { estado: texto, detalle: endpoint, cronometro: true });
+    } else if (vista.tally === 'inactivo') {
+        ponerTally('inactivo', { estado: 'Sin emitir', detalle: estado === 'previsualizando' ? 'Previsualizando' : '' });
     } else {
-        ponerTally('inactivo', { estado: 'Sin emitir', detalle: localStream ? 'Previsualizando' : '' });
+        ponerTally(vista.tally, { estado: texto, detalle: vista.tally === 'error' ? '' : endpoint });
     }
+
+    let libre = sinEmisionEnCurso();
+    startBtn.disabled = !libre;
+    stopBtn.disabled = libre || estado === 'deteniendo';
+    document.getElementById('previewBtn').disabled = !libre;
+    liveIndicator.hidden = !ESTADOS_EN_AIRE.has(estado);
 }
 
 function actualizarVacioPreview() {
@@ -490,29 +513,36 @@ function actualizarVacioPreview() {
  * Muestra la previsualización local cuando aún no existe stream activo.
  */
 async function visualizarPreview() {
-    if (pc) return; // no tocar preview si hay emisión activa
+    if (!sinEmisionEnCurso()) return; // no tocar la preview mientras se emite o se conecta
+    if (localStream) return;
 
-    if (!localStream) {
-        try {
-            localStream = await cogerStreamVideoAudioLocal();
-            preview.srcObject = localStream;
-            actualizarVacioPreview();
-            actualizarEstado('disconnected', 'Sin emitir');
-        } catch (error) {
-            mostrarError('No se pudo iniciar la previsualización', error);
+    try {
+        localStream = await cogerStreamVideoAudioLocal();
+        // Pudo empezar una emisión mientras se abría la cámara
+        if (!sinEmisionEnCurso()) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+            return;
         }
+        preview.srcObject = localStream;
+        actualizarVacioPreview();
+        cambiarEstadoEmision(ESTADOS_EMISION.PREVISUALIZANDO);
+    } catch (error) {
+        mostrarError('No se pudo iniciar la previsualización', error);
+        cambiarEstadoEmision(ESTADOS_EMISION.ERROR, { mensaje: 'No se pudo abrir la cámara' });
     }
 }
 
 /**
- * Muestra un error al usuario (aviso + estado) y deja detalle técnico en consola.
+ * Muestra un error al usuario (aviso) y deja detalle técnico en consola.
+ * No cambia el estado de la emisión: eso lo decide quien llama (un fallo al
+ * refrescar dispositivos no debe marcar error en mitad de una emisión).
  * @param {string} userMessage - Mensaje breve.
  * @param {Error|string} error - Detalle técnico del fallo.
  */
 function mostrarError(userMessage, error) {
     let detail = error && error.message ? error.message : String(error || 'Error desconocido');
     console.error(userMessage, error);
-    actualizarEstado('error', userMessage);
     mostrarAviso(`${userMessage}. Detalle: ${detail}`, 'error');
 }
 
@@ -525,7 +555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let savedEndpoint = localStorage.getItem('broadcaster_endpoint');
     if (savedEndpoint) endpointInput.value = sanitizarEndpoint(savedEndpoint);
     marcarEndpointElegido();
-    actualizarEstado('disconnected', 'Sin emitir');
+    pintarEstadoEmision(estadoEmision);
 
     actualizarPathsActivos(true);
     setInterval(() => {
