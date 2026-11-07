@@ -1,6 +1,8 @@
 const path = require("path");
 const https = require("https");
 const express = require("express")
+const { crearCanalSSE } = require("./sse");
+const { routerMarcados, cerrarClientesMarcados } = require("./marcados");
 const app = express();
 
 const MEDIAMTX_API_HOST = process.env.MEDIAMTX_HOST || "localhost";
@@ -136,14 +138,11 @@ const PREFIJO_URL_REPETICION = "/api/playback/get?";
 const MAX_LABEL = 120;
 
 let estadoRepeticion = { id: 0, cmd: "stop", label: "", ts: Date.now() };
-const clientesSSE = new Set();
+const canalRepeticion = crearCanalSSE();
 
 // Envía el estado actual a todos los displays conectados.
 function difundirRepeticion() {
-  const payload = `data: ${JSON.stringify(estadoRepeticion)}\n\n`;
-  for (const res of clientesSSE) {
-    res.write(payload);
-  }
+  canalRepeticion.difundir(estadoRepeticion);
 }
 
 // El control fija una repetición a mostrar. Solo se aceptan URLs del proxy de
@@ -179,31 +178,17 @@ app.get("/api/replay/current", (req, res) => {
 
 // Canal SSE: el display recibe el estado al conectar y en cada cambio.
 app.get("/api/replay/events", (req, res) => {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    "Connection": "keep-alive"
-  });
-  res.write("retry: 3000\n\n");
-  res.write(`data: ${JSON.stringify(estadoRepeticion)}\n\n`); // Estado inicial
-  clientesSSE.add(res);
-  req.on("close", () => clientesSSE.delete(res));
+  canalRepeticion.conectar(req, res, estadoRepeticion);
 });
 
-// Latido para mantener vivas las conexiones SSE a través de timeouts intermedios.
-// unref(): el temporizador no impide que el proceso termine.
-setInterval(() => {
-  for (const res of clientesSSE) {
-    res.write(": ping\n\n");
-  }
-}, 15000).unref();
+
+// MOMENTOS MARCADOS COMPARTIDOS (ver modules/marcados.js)
+app.use("/api/marcados", routerMarcados);
 
 // Cierra las conexiones SSE abiertas (lo usa server.js al recibir SIGTERM).
 function cerrarClientesReplay() {
-  for (const res of clientesSSE) {
-    res.end();
-  }
-  clientesSSE.clear();
+  canalRepeticion.cerrarTodos();
+  cerrarClientesMarcados();
 }
 
 module.exports = app;

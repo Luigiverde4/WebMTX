@@ -212,6 +212,8 @@ WebMTX/
 ├── server/                        # Servidor web Node.js (montado en el contenedor 'server')
 │   ├── server.js                  # HTTPS :443 y redirección :80 (HTTP_REDIRECT)
 │   ├── modules/app.js             # Estáticos, proxies /api/mediamtx y /api/playback, /api/replay (SSE)
+│   ├── modules/marcados.js        # /api/marcados: momentos marcados compartidos (JSON en datos_volume + SSE)
+│   ├── modules/sse.js             # Canal SSE reutilizable (repeticiones y marcas)
 │   └── public/                    # Front: HTML/CSS/JS sin build
 │       ├── index.html             # Inicio: cámaras en directo y herramientas
 │       ├── broadcaster.html       # Emitir (WHIP)
@@ -329,7 +331,9 @@ Las grabaciones están en el volumen Docker `webmtx_recordings_volume`: el acces
 .\scripts\exportar-grabaciones.ps1 -Destino D:\copias    # todas, a otra carpeta
 ```
 
-> ⚠️ `docker compose down -v` borra los volúmenes, **incluidas las grabaciones**. Usa `docker compose down` sin `-v`.
+> ⚠️ `docker compose down -v` borra los volúmenes, **incluidas las grabaciones y los momentos marcados** (`datos_volume`). Usa `docker compose down` sin `-v`.
+
+Los **momentos marcados** (Repeticiones y Archivo) se guardan en el servidor, en `marcados.json` dentro del volumen `webmtx_datos_volume`, y se comparten entre todos los equipos: una marca hecha en un ordenador aparece al momento en los demás.
 
 ## Puertos y Protocolos
 
@@ -479,7 +483,7 @@ pwsh scripts/smoke.ps1 -RequiereReplay -CompruebaRedireccion
 
 ```powershell
 docker compose restart server     # tras tocar server/*.js (el front no necesita reinicio)
-docker compose down               # sin -v: -v borra las grabaciones
+docker compose down               # sin -v: -v borra las grabaciones y las marcas
 docker compose up -d --build
 ```
 

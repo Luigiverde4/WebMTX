@@ -46,3 +46,6 @@ docs/ffmpeg_JL/
 *.pem
 # Exportaciones de grabaciones (scripts/exportar-grabaciones.ps1)
 mediamtx/grabaciones_exportadas/
+
+# Datos de la app al ejecutar Node fuera de Docker (npm run start:local)
+server/datos/

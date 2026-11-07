@@ -97,6 +97,14 @@ if ($r.StatusCode -eq 404 -and -not $RequiereReplay) {
     Esperar "estado = stop" ($actual.cmd -eq "stop")
 }
 
+Write-Host "Momentos marcados compartidos (/api/marcados)" -ForegroundColor Cyan
+$r = Peticion "$Base/api/marcados"
+$marcas = $null
+try { $marcas = ConvertFrom-Json $r.Content -NoEnumerate } catch {}
+Esperar "GET /api/marcados (lista)" ($r.StatusCode -eq 200 -and $marcas -is [array]) "-> $($r.StatusCode)"
+$r = Peticion "$Base/api/marcados" "POST" @{ stream = "../x"; iso = "2026-01-01T00:00:00Z" }
+Esperar "POST /api/marcados (stream inválido rechazado)" ($r.StatusCode -eq 400) "-> $($r.StatusCode)"
+
 if ($CompruebaRedireccion) {
     Write-Host "Redireccion HTTP" -ForegroundColor Cyan
     $http = $Base -replace '^https://', 'http://'

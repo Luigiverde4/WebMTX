@@ -21,6 +21,11 @@ services:
       - type: volume
         source: node_modules_volume
         target: /home/app/node_modules
+      # Datos que guarda la app (momentos marcados compartidos: marcados.json).
+      # OJO: `docker compose down -v` también borra este volumen.
+      - type: volume
+        source: datos_volume
+        target: /datos
     depends_on:
       - mediamtx
     environment:
@@ -30,6 +35,7 @@ services:
       - PUERTO_HTTPS_PUBLICO=${PUERTO_HTTPS:-443}
       # Internas: nombre del servicio en la red de Docker (no tocar)
       - MEDIAMTX_HOST=mediamtx
+      - DATOS_DIR=/datos
     networks:
       - tfg-network
 
@@ -84,3 +90,4 @@ networks:
 volumes:
   node_modules_volume:
   recordings_volume:
+  datos_volume:
