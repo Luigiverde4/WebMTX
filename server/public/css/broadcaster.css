@@ -101,16 +101,16 @@
     @media (max-width: 1280px) {
         .emisor { --ancho-ajustes: 340px; }
     }
-    /* Una columna: en el móvil lo primero tras el vídeo son las fuentes (lo
-       primero que se toca), luego los botones y el resto de ajustes.
+    /* Una columna: en el móvil, tras el vídeo van los botones de emitir y
+       luego las fuentes (lo primero que se toca); después, el resto de ajustes.
        display: contents saca los paneles de sus columnas para poder ordenarlos. */
     @media (max-width: 900px) {
         .emisor { display: flex; flex-direction: column; gap: var(--e-4); }
         .emisor__monitor,
         .emisor__ajustes { display: contents; }
         .emisor__pantalla { order: 1; }
-        .emisor__fuentes { order: 2; }
-        .emisor__acciones { order: 3; }
+        .emisor__acciones { order: 2; }
+        .emisor__fuentes { order: 3; }
         .emisor__destino { order: 4; }
         .emisor__video { order: 5; }
         .emisor__audio { order: 6; }
