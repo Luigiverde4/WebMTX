@@ -195,6 +195,7 @@ Acceder a las interfaces web:
 | **Emitir** | https://localhost/broadcaster.html | Emitir cámara y micrófono desde el navegador (WHIP) |
 | **Ver** | https://localhost/player.html | Monitor WebRTC (WHEP) con reconexión; `?stream=cam1` abre una cámara |
 | **Repeticiones** | https://localhost/playback.html | Repeticiones de lo grabado, momentos marcados y control de la salida OBS |
+| **Archivo** | https://localhost/archivo.html | Todas las tomas grabadas con miniatura, inicio y fin (o en directo): filtrar, ver, enviar a OBS, descargar en MP4 y borrar |
 | **Estadísticas** | https://localhost/stats.html | Tráfico y espectadores de cada cámara en tiempo real |
 | **API** | https://localhost/api.html | Paths, sesiones, configuración y grabaciones de MediaMTX (API v3) |
 | **Salida de cámara (OBS)** | https://localhost/neoplayer.html?stream=cam1 | Solo vídeo a pantalla completa, para fuente de navegador |
@@ -216,6 +217,7 @@ WebMTX/
 │       ├── broadcaster.html       # Emitir (WHIP)
 │       ├── player.html            # Ver (WHEP)
 │       ├── playback.html          # Repeticiones y control de la salida OBS
+│       ├── archivo.html           # Archivo de tomas grabadas (miniaturas, filtros, descarga, borrado)
 │       ├── stats.html             # Estadísticas (Chart.js servido desde /vendor)
 │       ├── api.html               # Panel de la API v3 de MediaMTX
 │       ├── neoplayer.html         # Salida OBS: una cámara a pantalla completa

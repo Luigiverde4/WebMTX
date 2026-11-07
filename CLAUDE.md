@@ -93,6 +93,9 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
   - En Emitir, el monitor y los botones quedan *sticky* bajo el tally.
 - **Cámaras:** cada una tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). Hay una paleta por tema (`--cam-oscuro-*`, `--cam-claro-*`), validadas con el validador de la skill dataviz. Si cambias alguna, vuelve a validarla.
 - Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
+  - Para empezar justo al inicio de una toma usa su `startISO` (microsegundos): un `Date` redondea a milisegundos, cae antes de la grabación y MediaMTX da 404 (`urlPlayback` en `js/utils/grabaciones.js`).
+- `/api/playback/list` ya une los segmentos de 10 min: cada elemento es una toma. Para borrar hay que ir segmento a segmento (`/v3/recordings/get` y `deletesegment`).
+- Código compartido entre Repeticiones y Archivo: `js/utils/grabaciones.js` (consulta y URLs) y `js/utils/salida-obs.js` (enviar, quitar, SSE y tally de la salida). Miniaturas en el navegador con caché en IndexedDB: `js/utils/miniaturas.js`.
 - El rojo y el verde se reservan para el estado tally: en directo / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 
@@ -106,6 +109,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 - `player` (WHEP).
 - `neoplayer?stream=` (salida OBS).
 - `playback` (repeticiones y control de OBS).
+- `archivo` (tomas grabadas con miniatura: filtrar, ver, enviar a OBS desde un instante, descargar MP4 y borrar).
 - `display` (salida OBS de repeticiones).
 - `stats` (Chart.js servido desde `/vendor`).
 - `api` (panel de la API v3).
