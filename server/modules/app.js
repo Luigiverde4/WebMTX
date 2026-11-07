@@ -102,7 +102,19 @@ app.all("/api/playback/*", (req, res) => {
     proxyRes.pipe(res);
   });
 
+  // Si el navegador abandona (cambia de vídeo, miniatura ya capturada, cierra
+  // la pestaña), se corta también la petición a MediaMTX: si no, seguiría
+  // leyendo la grabación para nadie.
+  let abandonada = false;
+  res.on('close', () => {
+    if (!res.writableFinished) {
+      abandonada = true;
+      proxyReq.destroy();
+    }
+  });
+
   proxyReq.on('error', (error) => {
+    if (abandonada) return;
     console.error("Error proxy Playback:", error.message);
     if (!res.headersSent) {
       res.status(500).json({ error: error.message });

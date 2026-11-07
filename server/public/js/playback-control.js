@@ -1,8 +1,8 @@
 /**
- * CONTROL DE SALIDA A OBS
- * Envía al display de OBS (display.html, vía servidor) la repetición que se
- * está previsualizando, o lo limpia. Reutiliza `ultimaSeleccion` de playback.js.
- * El tally de la página refleja lo que hay en la salida.
+ * CONTROL DE SALIDA A OBS (Repeticiones)
+ * Envía al display de OBS la repetición que se está previsualizando
+ * (`ultimaSeleccion` de playback.js) o lo limpia. El envío y la escucha están
+ * en js/utils/salida-obs.js; el tally de la página refleja lo que hay en la salida.
  */
 
 /**
@@ -10,19 +10,10 @@
  */
 async function enviarAlDisplay() {
     if (!ultimaSeleccion) return; // El botón está desactivado hasta reproducir algo
-
     try {
-        let response = await fetch('/api/replay/select', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ultimaSeleccion)
-        });
-        if (!response.ok) {
-            let detalle = await response.json().catch(() => ({}));
-            throw new Error(detalle.error || `HTTP ${response.status}`);
-        }
+        await enviarRepeticion(ultimaSeleccion);
     } catch (error) {
-        mostrarAviso(`No se pudo enviar a OBS: ${error.message}`, 'error');
+        avisarError(`No se pudo enviar a OBS: ${error.message}`);
     }
 }
 
@@ -31,49 +22,28 @@ async function enviarAlDisplay() {
  */
 async function quitarDelDisplay() {
     try {
-        let response = await fetch('/api/replay/stop', { method: 'POST' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await quitarRepeticion();
     } catch (error) {
         avisarError(`No se pudo vaciar la salida de OBS: ${error.message}`);
     }
 }
 
-/**
- * Refleja en el panel y en el tally qué hay actualmente en OBS, escuchando el
- * mismo canal SSE que usan los displays.
- */
-(function suscribirEstadoDisplay() {
+// Refleja en el panel y en el tally qué hay actualmente en OBS
+suscribirSalidaObs(estado => {
     let obsStatusEl = document.getElementById('obsStatus');
-    let quitarBtn = document.getElementById('quitarObsBtn');
-    if (!obsStatusEl || typeof EventSource === 'undefined') return;
-
-    let pintar = (estado) => {
-        // "Quitar" solo tiene sentido con algo en la salida
-        quitarBtn.disabled = !estado || estado.cmd !== 'play';
-        if (!estado || estado.cmd !== 'play') {
-            obsStatusEl.textContent = 'En OBS: nada';
-            obsStatusEl.classList.remove('activo');
-            ponerTally('inactivo', { estado: 'OBS vacío', detalle: 'Nada en la salida de repeticiones' });
-        } else {
-            let enviado = estado.ts ? formatTimeOnly(new Date(estado.ts)) : '';
-            obsStatusEl.textContent = `En OBS: ${estado.label || 'repetición'}${enviado ? `, enviada a las ${enviado}` : ''}`;
-            obsStatusEl.classList.add('activo');
-            // El cronómetro cuenta cuánto lleva en directo esta repetición
-            ponerTally('directo', { estado: 'En OBS', detalle: estado.label || 'Repetición', cronometro: true });
-        }
-    };
-
-    let source = new EventSource('/api/replay/events');
-    source.onmessage = (event) => {
-        try {
-            pintar(JSON.parse(event.data));
-        } catch (error) {
-            console.warn('Mensaje SSE no válido:', error);
-        }
-    };
-    source.onerror = () => {
-        // Sin conexión no se sabe qué hay en OBS: se deja Quitar disponible
-        quitarBtn.disabled = false;
-        obsStatusEl.textContent = 'Sin conexión con el servidor: reintentando…';
-    };
-})();
+    let hay = haySalidaObs(estado);
+    // "Quitar" solo tiene sentido con algo en la salida
+    document.getElementById('quitarObsBtn').disabled = !hay;
+    obsStatusEl.classList.toggle('activo', hay);
+    if (hay) {
+        let enviado = estado.ts ? formatTimeOnly(new Date(estado.ts)) : '';
+        obsStatusEl.textContent = `En OBS: ${estado.label || 'repetición'}${enviado ? `, enviada a las ${enviado}` : ''}`;
+    } else {
+        obsStatusEl.textContent = 'En OBS: nada';
+    }
+    pintarTallySalidaObs(estado);
+}, () => {
+    // Sin conexión no se sabe qué hay en OBS: se deja Quitar disponible
+    document.getElementById('quitarObsBtn').disabled = false;
+    document.getElementById('obsStatus').textContent = 'Sin conexión con el servidor: reintentando…';
+});

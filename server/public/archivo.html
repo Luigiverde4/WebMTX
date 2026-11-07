@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivo | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/archivo.css">
+</head>
+<body>
+    <header class="cabecera">
+        <a class="marca" href="index.html">WebMTX</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html">Inicio</a>
+            <a href="broadcaster.html">Emitir</a>
+            <a href="player.html">Ver</a>
+            <a href="playback.html">Repeticiones</a>
+            <a href="archivo.html" aria-current="page">Archivo</a>
+            <a href="stats.html">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
+
+    <!-- Como en Repeticiones: el tally refleja lo que hay en la salida de OBS (display.html) -->
+    <div class="tally" id="tally" data-estado="inactivo" role="status" aria-live="polite">
+        <span class="tally__lampara" aria-hidden="true"></span>
+        <span class="tally__estado" id="tallyEstado">OBS vacío</span>
+        <span class="tally__detalle" id="tallyDetalle">Nada en la salida de repeticiones</span>
+        <span class="tally__tiempo" id="tallyTiempo"></span>
+    </div>
+
+    <main class="pagina pagina--app archivo sin-seleccion" id="archivo">
+        <h1 class="visualmente-oculto">Archivo de grabaciones</h1>
+
+        <!-- Lista de tomas: una toma va de que la cámara empieza a emitir a que para -->
+        <section class="archivo__lista" aria-labelledby="tituloTomas">
+            <div class="filtros" role="group" aria-label="Filtrar y ordenar">
+                <div class="filtros__fila">
+                    <h2 id="tituloTomas">Tomas</h2>
+                    <span class="cifra texto-2 texto-peq" id="recuentoTomas">Cargando…</span>
+                </div>
+                <div class="chips" id="filtroCamaras" role="group" aria-label="Cámaras"></div>
+                <div class="filtros__fila">
+                    <div class="campo filtros__campo">
+                        <label for="filtroFecha">Cuándo</label>
+                        <select id="filtroFecha" onchange="cambiarFiltros()">
+                            <option value="todo">Todo</option>
+                            <option value="hoy">Hoy</option>
+                            <option value="ayer">Ayer</option>
+                            <option value="7d">Últimos 7 días</option>
+                        </select>
+                    </div>
+                    <div class="campo filtros__campo">
+                        <label for="ordenTomas">Ordenar</label>
+                        <select id="ordenTomas" onchange="cambiarFiltros()">
+                            <option value="recientes">Más recientes primero</option>
+                            <option value="antiguas">Más antiguas primero</option>
+                            <option value="largas">Más largas primero</option>
+                        </select>
+                    </div>
+                    <label class="opcion filtros__cortas"><input type="checkbox" id="filtroCortas" checked onchange="cambiarFiltros()"> Ocultar tomas de menos de 10 s</label>
+                </div>
+            </div>
+
+            <div class="tomas columna-scroll" id="tomas" aria-live="polite">
+                <p class="vacio">Cargando grabaciones…</p>
+            </div>
+        </section>
+
+        <!-- Visor de la toma elegida -->
+        <section class="archivo__visor panel columna-scroll" id="visor" aria-labelledby="tituloVisor">
+            <div class="panel__cabecera">
+                <h2 id="tituloVisor">Ninguna toma elegida</h2>
+                <span class="estado estado--directo" id="visorDirecto" hidden>En directo</span>
+            </div>
+
+            <div class="monitor">
+                <video id="visorVideo" playsinline aria-label="Toma elegida"></video>
+                <div class="monitor__vacio" id="visorVacio">Elige una toma de la lista para verla aquí</div>
+            </div>
+
+            <!-- Escala lineal de inicio a fin de la toma. Al soltar, se reproduce desde ese instante. -->
+            <div class="linea-toma">
+                <span class="cifra" id="visorInicio">--:--:--</span>
+                <div class="linea-toma__pista">
+                    <input type="range" id="visorPosicion" min="0" max="1" value="0" step="1" disabled aria-label="Ir a un momento de la toma">
+                    <div class="linea-toma__burbuja cifra" id="visorBurbuja" aria-hidden="true">--:--:--</div>
+                </div>
+                <span class="cifra" id="visorFin">--:--:--</span>
+            </div>
+
+            <dl class="datos" id="visorDatos">
+                <dt>Cámara</dt><dd id="visorCamara">—</dd>
+                <dt>Empieza</dt><dd id="visorEmpieza">—</dd>
+                <dt>Termina</dt><dd id="visorTermina">—</dd>
+                <dt>Duración</dt><dd id="visorDuracion">—</dd>
+            </dl>
+
+            <div class="visor__acciones">
+                <button type="button" class="boton boton--directo" id="enviarObsBtn" onclick="enviarTomaAObs()" disabled>
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
+                    <span id="enviarObsTexto">Enviar a OBS</span>
+                </button>
+                <button type="button" class="boton" id="quitarObsBtn" onclick="quitarTomaDeObs()" disabled>
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
+                    Quitar de OBS
+                </button>
+                <a class="boton" id="descargarBtn" href="#" download hidden>
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#descargar"/></svg>
+                    <span id="descargarTexto">Descargar MP4</span>
+                </a>
+                <button type="button" class="boton boton--peligro" id="borrarBtn" onclick="borrarToma()" disabled>
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#borrar"/></svg>
+                    Borrar
+                </button>
+            </div>
+            <p class="campo__ayuda" id="visorNota"></p>
+        </section>
+    </main>
+
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/utils/playback-utils.js"></script>
+    <script src="js/utils/grabaciones.js"></script>
+    <script src="js/utils/salida-obs.js"></script>
+    <script src="js/utils/miniaturas.js"></script>
+    <script src="js/ui/avisos.js"></script>
+    <script src="js/ui/tally.js"></script>
+    <script src="js/ui/archivo-ui.js"></script>
+    <script src="js/archivo.js"></script>
+</body>
+</html>

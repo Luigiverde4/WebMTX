@@ -1,0 +1,212 @@
+/*
+ * Archivo: tomas grabadas de cada cámara con miniatura, filtros y un visor.
+ * Escritorio: página de altura fija; la lista hace scroll y el visor queda fijo.
+ * Móvil: página normal; el visor aparece encima al elegir una toma.
+ */
+
+@layer paginas {
+    .archivo {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(380px, 38vw, 760px);
+        grid-template-rows: minmax(0, 1fr);
+        gap: var(--e-4);
+        padding-block: var(--e-4);
+    }
+
+    /* --- Lista ------------------------------------------------------------ */
+    .archivo__lista {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+        min-block-size: 0;
+        min-inline-size: 0;
+    }
+    .filtros {
+        container: filtros / inline-size;
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+        padding: var(--e-3) var(--e-4);
+        background: var(--superficie);
+        border: var(--borde-suave);
+        border-radius: var(--radio-panel);
+    }
+    .filtros__fila {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: var(--e-2) var(--e-4);
+    }
+    .filtros__fila h2 { font-size: var(--t-l); margin-inline-end: auto; }
+    .filtros__campo { flex: 0 1 220px; }
+    .filtros__cortas { min-block-size: var(--alto-control); }
+    @container filtros (max-width: 520px) {
+        .filtros__campo { flex: 1 1 100%; }
+    }
+
+    .tomas {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+        padding-inline-end: var(--e-1);
+    }
+    .tomas__dia {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 1;
+        padding-block: var(--e-2);
+        background: var(--fondo);
+        color: var(--texto-2);
+        font-size: var(--t-s);
+        font-weight: 600;
+    }
+    .tomas__rejilla {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: var(--e-3);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* Tarjeta de toma: el color de su cámara en el borde izquierdo */
+    .toma {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-1);
+        inline-size: 100%;
+        padding: 0 0 var(--e-2);
+        overflow: hidden;
+        background: var(--superficie);
+        border: var(--borde-suave);
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--cam-neutro));
+        border-radius: var(--radio-control);
+        color: var(--texto);
+        text-align: start;
+        cursor: pointer;
+    }
+    .toma:hover { background: var(--superficie-hover); border-color: var(--linea-hover); border-inline-start-color: var(--cam, var(--cam-neutro)); }
+    .toma[aria-pressed="true"] {
+        border-color: var(--cam, var(--cam-neutro));
+        box-shadow: inset 0 0 0 var(--grosor-borde) var(--cam, var(--cam-neutro));
+    }
+    .toma__imagen {
+        position: relative;
+        display: grid;
+        place-items: center;
+        aspect-ratio: 16 / 9;
+        background: var(--monitor);
+    }
+    /* Sin miniatura (aún, o el navegador no puede decodificarla) se ve el nombre */
+    .toma__marcador {
+        color: var(--cam, var(--cam-neutro));
+        font-size: var(--t-l);
+        font-weight: 700;
+        font-stretch: var(--ancho-condensado);
+    }
+    .toma__imagen img {
+        position: absolute;
+        inset: 0;
+        inline-size: 100%;
+        block-size: 100%;
+        object-fit: cover;
+    }
+    .toma__duracion {
+        position: absolute;
+        inset-block-end: var(--e-1);
+        inset-inline-end: var(--e-1);
+        padding: 0 var(--e-2);
+        border-radius: var(--radio-control);
+        background: var(--fondo-sobre-video);
+        color: var(--sobre-video);
+        font-size: var(--t-xs);
+        font-weight: 600;
+    }
+    .toma__camara,
+    .toma__horas {
+        padding-inline: var(--e-3);
+        min-inline-size: 0;
+    }
+    .toma__camara { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .toma__horas {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-1) var(--e-2);
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+
+    /* --- Visor ------------------------------------------------------------ */
+    .archivo__visor {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+        min-block-size: 0;
+    }
+    .archivo__visor > * { flex: none; }
+    .archivo__visor .panel__cabecera { margin-block-end: 0; }
+    .archivo__visor h2 { font-size: var(--t-l); }
+
+    .linea-toma {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--e-3);
+        padding-block-start: var(--e-4);
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+    .linea-toma__pista { position: relative; }
+    .linea-toma input[type="range"] { display: block; }
+    .linea-toma input[type="range"]:disabled { cursor: not-allowed; opacity: 0.5; }
+    .linea-toma__burbuja {
+        position: absolute;
+        inset-block-end: calc(100% + 2px);
+        inset-inline-start: var(--posicion, 50%);
+        transform: translateX(-50%);
+        padding: 1px var(--e-2);
+        border-radius: var(--radio-control);
+        background: var(--primario);
+        color: var(--sobre-primario);
+        font-size: var(--t-xs);
+        font-weight: 650;
+        white-space: nowrap;
+        pointer-events: none;
+        visibility: hidden;
+    }
+    .linea-toma__burbuja.visible { visibility: visible; }
+
+    .visor__acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--e-2);
+    }
+    .visor__acciones .boton { min-block-size: var(--alto-control-grande); }
+    .visor__acciones .boton--directo { flex: 1 1 100%; }
+
+    /* --- Responsive ------------------------------------------------------- */
+    @media (max-width: 1280px) {
+        .archivo { grid-template-columns: minmax(0, 1fr) 380px; }
+    }
+    /* Móvil: una columna con scroll de página; el visor solo con una toma elegida, arriba */
+    @media (max-width: 900px) {
+        .archivo.pagina--app { block-size: auto; overflow: visible; }
+        .archivo { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+        .archivo__visor { order: -1; scroll-margin-block-start: calc(var(--alto-cabecera) + var(--alto-tally)); }
+        .archivo.sin-seleccion .archivo__visor { display: none; }
+        .archivo .columna-scroll { overflow: visible; }
+        .tomas__dia { inset-block-start: calc(var(--alto-cabecera) + var(--alto-tally)); }
+    }
+    /* Teléfono: dos tarjetas por fila para recorrer más tomas de un vistazo */
+    @media (max-width: 600px) {
+        .tomas__rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-2); }
+        .toma__camara, .toma__horas { padding-inline: var(--e-2); }
+    }
+    @media (max-height: 600px) {
+        .archivo { grid-template-rows: none; align-items: start; }
+        .archivo .columna-scroll { overflow: visible; }
+    }
+}

@@ -39,57 +39,17 @@ let streamEnCurso = null;
 // Si al pedir el tramo siguiente aún no hay material nuevo, se reintenta.
 const REINTENTO_CONTINUACION_MS = 1000;
 
-/**
- * Convierte la URL absoluta que entrega MediaMTX en una URL del proxy local.
- * @param {string} segmentUrl - URL del segmento devuelta por /api/playback/list.
- * @returns {string|null}
- */
-function construirUrlProxyPlayback(segmentUrl) {
-    try {
-        let parsed = new URL(segmentUrl);
-        return `/api/playback${parsed.pathname}${parsed.search}`;
-    } catch {
-        return null;
-    }
-}
+// construirUrlProxyPlayback, consultarSegmentos, ordenarGrabaciones y
+// consultarTodasLasGrabaciones viven en js/utils/grabaciones.js.
 
 /**
- * Segmentos grabados de un stream.
- * @param {string} stream
- * @returns {Promise<Array>}
- */
-async function consultarSegmentos(stream) {
-    let response = await fetch(`/api/playback/list?path=${encodeURIComponent(stream)}`);
-    if (!response.ok) return [];
-    let segments = await response.json();
-    return (Array.isArray(segments) ? segments : []).map(segment => ({
-        stream,
-        start: new Date(segment.start),
-        duration: segment.duration,
-        startISO: segment.start,
-        url: segment.url
-    }));
-}
-
-function ordenarGrabaciones(grabaciones) {
-    return grabaciones.sort((a, b) => b.start - a.start);
-}
-
-/**
- * Descarga la lista de segmentos de todos los paths grabados.
- * @returns {Promise<Array>} Grabaciones ordenadas de más reciente a más antigua.
+ * Lista completa de grabaciones (todas las cámaras).
+ * @returns {Promise<Array>} De más reciente a más antigua.
  */
 async function consultarGrabaciones() {
-    let pathsResponse = await fetch('/api/mediamtx/v3/recordings/list');
-    if (!pathsResponse.ok) {
-        throw new Error(`HTTP ${pathsResponse.status}: ${pathsResponse.statusText}`);
-    }
-
-    let pathsData = await pathsResponse.json();
-    let nombres = (pathsData.items || []).map(item => item.name);
-    let listas = await Promise.all(nombres.map(consultarSegmentos));
+    let lista = await consultarTodasLasGrabaciones();
     ultimaListaCompleta = Date.now();
-    return ordenarGrabaciones(listas.flat());
+    return lista;
 }
 
 /**
