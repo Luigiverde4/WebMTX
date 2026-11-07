@@ -197,7 +197,7 @@ function soltarToma() {
     visorVideo.load();
     marcarTomaElegida(null);
     pintarVisor(null, false);
-    pintarBotonEnvio(null);
+    pintarBotonesInstante(null);
 }
 
 /** Segundos de la toma que se pueden pedir desde `segundo`. */
@@ -225,7 +225,7 @@ function cargarDesde(segundo, { reproducir = true } = {}) {
     visorVideo.preload = 'metadata'; // no descargar la toma entera solo por elegirla
     visorVideo.src = urlPlayback(toma.stream, inicioParaUrl(toma, inicioVideoVisor), Math.max(1, disponible));
     if (reproducir) visorVideo.play().catch(() => {});
-    pintarBotonEnvio(inicioVideoVisor);
+    pintarBotonesInstante(inicioVideoVisor);
 }
 
 /** Instante real que se está viendo (o el inicio del vídeo cargado). */
@@ -238,7 +238,7 @@ visorVideo.addEventListener('timeupdate', () => {
     if (!tomaElegida || arrastrandoPosicion) return;
     let instante = instanteVisor();
     visorPosicionEl.value = String(Math.round((instante - tomaElegida.start) / 1000));
-    pintarBotonEnvio(instante);
+    pintarBotonesInstante(instante);
 });
 
 // Una toma en directo sigue creciendo: al acabar el tramo se pide el siguiente
@@ -265,7 +265,7 @@ visorPosicionEl.addEventListener('input', () => {
     let instante = new Date(tomaElegida.start.getTime() + Number(visorPosicionEl.value) * 1000);
     visorBurbujaEl.classList.add('visible');
     pintarBurbujaPosicion(instante);
-    pintarBotonEnvio(instante);
+    pintarBotonesInstante(instante);
 });
 visorPosicionEl.addEventListener('change', () => {
     arrastrandoPosicion = false;
@@ -297,6 +297,22 @@ async function quitarTomaDeObs() {
         await quitarRepeticion();
     } catch (error) {
         mostrarAviso(`No se pudo vaciar la salida de OBS: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Guarda el instante que se está viendo en los momentos marcados de
+ * Repeticiones (mismo navegador). Allí se reproduce desde unos segundos
+ * antes, como cualquier otra marca.
+ */
+function marcarInstanteArchivo() {
+    let toma = tomaElegida;
+    let instante = instanteVisor();
+    if (!toma || !instante) return;
+    if (anadirMarcado(toma.stream, instante)) {
+        mostrarAviso(`Marcado ${toma.stream} a las ${formatTimeOnly(instante)}. Lo tienes en Momentos marcados de Repeticiones.`, 'ok');
+    } else {
+        mostrarAviso('No se pudo guardar la marca: este navegador no deja guardar datos (¿ventana privada?).', 'error');
     }
 }
 

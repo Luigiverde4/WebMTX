@@ -204,6 +204,9 @@
     }
     .visor__acciones .boton { min-block-size: var(--alto-control-grande); }
     .visor__acciones .boton--directo { flex: 1 1 100%; }
+    /* Mismo ámbar que el botón Marcar de Repeticiones */
+    .boton--marcar { border-color: var(--aviso); }
+    .boton--marcar .icono { color: var(--aviso); }
 
     /* --- Responsive ------------------------------------------------------- */
     @media (max-width: 1280px) {

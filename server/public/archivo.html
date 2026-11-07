@@ -102,6 +102,11 @@
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
                     <span id="enviarObsTexto">Enviar a OBS</span>
                 </button>
+                <!-- Guarda el instante en los momentos marcados de Repeticiones -->
+                <button type="button" class="boton boton--marcar" id="marcarBtn" onclick="marcarInstanteArchivo()" disabled>
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#marcar"/></svg>
+                    <span id="marcarTexto">Marcar</span>
+                </button>
                 <button type="button" class="boton" id="quitarObsBtn" onclick="quitarTomaDeObs()" disabled>
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
                     Quitar de OBS
@@ -125,6 +130,7 @@
     <script src="js/utils/grabaciones.js"></script>
     <script src="js/utils/salida-obs.js"></script>
     <script src="js/utils/miniaturas.js"></script>
+    <script src="js/utils/marcados.js"></script>
     <script src="js/ui/avisos.js"></script>
     <script src="js/ui/tally.js"></script>
     <script src="js/ui/archivo-ui.js"></script>

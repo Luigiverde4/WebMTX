@@ -3,15 +3,10 @@
  * Lista de instantes que el operador marca en directo ("acaba de pasar algo")
  * para pincharlos luego sin tener que buscarlos por la línea temporal.
  *
- * Se guardan en el navegador (localStorage), no en el servidor: son notas de
- * trabajo del operador. Cada momento es solo stream + instante; la URL de
- * reproducción se reconstruye al pincharlo, igual que en el resto del panel.
+ * Se guardan en el navegador (js/utils/marcados.js), no en el servidor: son
+ * notas de trabajo del operador. También se marcan desde Archivo. Cada momento
+ * es solo stream + instante; la URL de reproducción se reconstruye al pincharlo.
  */
-
-const CLAVE_MARCADOS = 'webmtx.playback.marcados';
-
-// Cuántos momentos se conservan (los más recientes).
-const MAX_MARCADOS = 50;
 
 // Al pinchar un momento se reproduce desde unos segundos antes del instante
 // marcado para no entrar justo encima.
@@ -25,23 +20,14 @@ let momentosMarcados = [];
  * @returns {Array}
  */
 function leerMomentos() {
-    try {
-        let guardado = JSON.parse(localStorage.getItem(CLAVE_MARCADOS));
-        return Array.isArray(guardado) ? guardado : [];
-    } catch {
-        return [];
-    }
+    return leerMarcadosGuardados();
 }
 
 /**
  * Persiste la lista actual.
  */
 function guardarMomentos() {
-    try {
-        localStorage.setItem(CLAVE_MARCADOS, JSON.stringify(momentosMarcados));
-    } catch (error) {
-        console.warn('No se pudieron guardar los momentos marcados:', error);
-    }
+    guardarMarcados(momentosMarcados);
 }
 
 /**
@@ -72,8 +58,6 @@ function marcarMomento() {
         iso: instante.toISOString(),
         nota: ''
     });
-
-    momentosMarcados = momentosMarcados.slice(0, MAX_MARCADOS);
 
     guardarMomentos();
     renderizarMomentos();
@@ -260,4 +244,11 @@ window.addEventListener('load', () => {
 
     // La hora del botón corre con el reloj: refrescarla cada segundo.
     setInterval(actualizarEtiquetaMarcar, 1000);
+});
+
+// Un momento marcado desde Archivo (u otra pestaña) aparece sin recargar
+window.addEventListener('storage', evento => {
+    if (evento.key !== CLAVE_MARCADOS) return;
+    momentosMarcados = leerMomentos();
+    renderizarMomentos();
 });

@@ -212,6 +212,7 @@ function pintarVisor(toma, enDirecto) {
     visorVideo.controls = Boolean(toma); // sin toma, los controles no llevan a nada
     document.getElementById('visorDirecto').hidden = !enDirecto;
     enviarObsBtn.disabled = !toma;
+    document.getElementById('marcarBtn').disabled = !toma;
     descargarBtn.hidden = !toma;
     borrarBtn.disabled = !toma || enDirecto;
 
@@ -256,9 +257,12 @@ function pintarBurbujaPosicion(instante) {
     visorBurbujaEl.textContent = formatTimeOnly(instante);
 }
 
-/** Texto del botón de envío: desde qué hora saldrá en OBS. */
-function pintarBotonEnvio(instante) {
+/** Los botones que actúan sobre el instante visto dicen qué hora usarán. */
+function pintarBotonesInstante(instante) {
     document.getElementById('enviarObsTexto').textContent = instante
         ? `Enviar a OBS desde las ${formatTimeOnly(instante)}`
         : 'Enviar a OBS';
+    document.getElementById('marcarTexto').textContent = instante
+        ? `Marcar las ${formatTimeOnly(instante)}`
+        : 'Marcar';
 }
