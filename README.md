@@ -1,9 +1,9 @@
-# TFG - Streaming WebRTC de Baja Latencia
+# WebMTX: streaming WebRTC de baja latencia
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
-Sistema de streaming de vídeo en tiempo real con latencia ultra-baja (~100-300ms) utilizando WebRTC, FFmpeg y MediaMTX.
+Sistema de streaming de vídeo en tiempo real con latencia ultra-baja (~100-300ms) utilizando WebRTC, FFmpeg y MediaMTX, con una interfaz web de sala de realización: emitir, ver, repetir, archivo de grabaciones y salidas para OBS.
 
 > **Trabajo Fin de Grado - Universidad Politécnica de Valencia**  
 > Diseño e implementación de un sistema de distribución de video de baja latencia basado en WebRTC y MediaMTX para realización en directo.
@@ -17,12 +17,15 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - **Ultra baja latencia**: ~100-300ms gracias a WebRTC
 - **Multi-protocolo**: Soporte para WHIP/WHEP, RTSP, RTMP, HLS y SRT
 - **Multiplataforma**: Scripts para Windows, Mac, Android, Linux y Raspberry Pi
-- **Interfaz web de sala de realización** (HTML/CSS/JS sin dependencias de build, responsive hasta móvil y dock de OBS):
-  - Emitir (broadcaster WHIP desde el navegador, con códec, resolución, fps y bitrate configurables)
+- **Interfaz web de sala de realización** (HTML/CSS/JS sin dependencias de build, tema oscuro y claro, responsive hasta móvil y dock de OBS):
+  - Emitir (broadcaster WHIP desde el navegador): cámara, formato y micro se cambian en directo sin cortar, con previo y programa al cambiar de cámara
   - Ver (player WHEP con reconexión automática)
   - Repeticiones (repetición "hace N segundos", línea temporal, momentos marcados y envío a OBS)
+  - Archivo (todas las tomas grabadas con miniatura: ver, enviar a OBS, descargar en MP4 y borrar)
+  - Momentos marcados compartidos entre todos los equipos conectados
   - Salidas para OBS: cámara a pantalla completa (`neoplayer.html`) y repeticiones (`display.html`)
   - Estadísticas en tiempo real y panel de la API de MediaMTX
+  - Reloj en la cabecera con la hora del servidor (la de las grabaciones)
 - **Containerizado**: Despliegue sencillo con Docker Compose
 - **API de control**: Gestión completa de streams mediante la API HTTP v3 de MediaMTX
 - **Arquitectura modular**: Componentes JS organizados por funcionalidad
@@ -64,11 +67,16 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 └───────────────┘    └─────────────────┘                    └─────────────────────────────────────┘                    └─────────────────┘
 ```
 
-> **Proxy API**: El servidor Node.js incluye un proxy en `/api/mediamtx/*` que redirige peticiones a la API REST de MediaMTX (puerto 9997), evitando problemas de CORS y exponiéndola por HTTPS.
->
-> **Playback proxy**: El servidor Node.js incluye un proxy en `/api/playback/*` para reenviar peticiones al servicio de grabaciones/reproducción (puerto 9996) sin exponer ese backend al navegador, también por HTTPS.
->
-> **HTTPS**: El servidor soporta HTTPS (puerto 443) con certificados mkcert, necesario para usar `getUserMedia()` desde cualquier dispositivo que acceda por IP (no localhost).
+El servidor Node.js (Express) es una capa fina delante de MediaMTX: el navegador hace todo el WebRTC directamente contra MediaMTX y Node sirve la web por HTTPS y estas rutas:
+
+| Ruta | Qué hace |
+|------|----------|
+| `/api/mediamtx/*` | Proxy a la API de control de MediaMTX (`:9997`, v3), sin problemas de CORS ni de certificados |
+| `/api/playback/*` | Proxy al servidor de grabaciones (`:9996`, que no se publica): el vídeo de repeticiones y archivo |
+| `/api/replay/*` | Control de la salida de repeticiones para OBS (`display.html`), con eventos SSE |
+| `/api/marcados/*` | Momentos marcados compartidos entre equipos (guardados en el volumen `datos_volume`, avisos por SSE) |
+
+> **HTTPS**: el servidor usa HTTPS (puerto 443) con certificados mkcert, necesario para `getUserMedia()` desde cualquier dispositivo que acceda por IP (no localhost).
 
 ### Flujo de datos
 
@@ -78,7 +86,8 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 4. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
 5. **Monitoreo**: Dashboard de estadísticas obtiene métricas en tiempo real via API REST
 6. **Control**: la API v3 de MediaMTX permite gestionar configuración, paths, grabaciones y sesiones
-7. **Repeticiones**: MediaMTX graba cada cámara en fMP4; la página de repeticiones las sirve por el proxy de playback y las envía a OBS (`display.html`) por SSE
+7. **Repeticiones y archivo**: MediaMTX graba cada cámara en fMP4; Repeticiones y Archivo lo reproducen por el proxy de playback y lo envían a OBS (`display.html`) por SSE
+8. **Marcados**: los momentos marcados se guardan en el servidor y llegan por SSE a todos los equipos abiertos
 
 ## Requisitos
 
@@ -90,25 +99,31 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - mkcert (certificados TLS locales)
 
 ### Para emisión desde Windows
-- FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_todo_junto.md`)
+- FFmpeg compilado con soporte WebRTC/WHIP (ver `docs/otros/compilacion_todo_junto.md`)
 - Cámara USB o capturadora compatible
 
 ### Para emisión desde Raspberry Pi
 - Raspberry Pi 4 (recomendado)
-- FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_ffmpeg_webrtc.md`)
+- FFmpeg compilado con soporte WebRTC/WHIP (ver `docs/otros/compilacion_ffmpeg_webrtc.md`)
 - Cámara USB o módulo de cámara Pi
+
+### Para emitir o ver desde el navegador
+- Chrome, Edge o Safari recientes. Para emitir por IP hace falta HTTPS (ver [paso 4](#4-configurar-https-con-mkcert)).
 
 ### Opcional
 - Python 3.8+ (para scripts PYWHIP)
-- Descargar el ffmpeg personalizado con openSSL y WHIP-  [(CLICK a wffmpeg)](https://1drv.ms/f/c/d02daa2df2a2a690/IgB3e318fCdvRr6S5Q1w_hRNAU3r8oo8cSc6gcB4LQObLE8?e=9UIHiV)
+- FFmpeg con OpenSSL y WHIP ya compilado para Windows: ver [paso 2](#2-descargar-el-wffmpeg-windows)
+
 ## Instalación
 
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/Luigiverde4/TFG.git
-cd TFG
+git clone https://github.com/Luigiverde4/WebMTX.git
+cd WebMTX
 ```
+
+> Docker Compose usa el nombre de la carpeta como prefijo de los volúmenes: con `WebMTX` son `webmtx_recordings_volume`, `webmtx_datos_volume` y `webmtx_node_modules_volume`, los nombres que usan los comandos de este README.
 
 
 ### 2. Descargar el wffmpeg (Windows)
@@ -119,7 +134,7 @@ Para emitir streams con WebRTC/WHIP desde Windows, necesitas una versión de FFm
 
 Descomprime el archivo y añade la carpeta `bin` al PATH del sistema, o colócala en la raíz del proyecto.
 
-> **Nota**: Si prefieres compilar FFmpeg tú mismo, consulta `/docs/compilacion_todo_junto.md`
+> **Nota**: Si prefieres compilar FFmpeg tú mismo, consulta `docs/otros/compilacion_todo_junto.md`
 
 ### 3. Configurar este equipo (`.env`)
 
@@ -224,15 +239,18 @@ WebMTX/
 │       ├── api.html               # Panel de la API v3 de MediaMTX
 │       ├── neoplayer.html         # Salida OBS: una cámara a pantalla completa
 │       ├── display.html           # Salida OBS: repeticiones
-│       ├── css/                   # base.css (sistema de diseño) + una hoja por página; obs.css para las salidas
+│       ├── css/                   # tokens.css (valores) + base.css (componentes) + una hoja por página; obs.css para las salidas
 │       ├── fonts/                 # Archivo variable (OFL), autoalojada: funciona sin internet
 │       ├── img/iconos.svg         # Iconos
 │       └── js/
 │           ├── <página>.js        # Lógica WebRTC / de cada página
+│           ├── broadcaster-captura.js  # Cambios de cámara, formato y micro en directo (previo y programa)
 │           ├── playback-marcados.js, playback-control.js, playback-display.js
 │           ├── api/               # api.js (GET/POST/PATCH/DELETE) + secciones del panel
-│           ├── ui/                # DOM y render: avisos.js, tally.js, <página>-ui.js
-│           └── utils/             # utils.js, camaras.js, watchdog.js, *-utils.js, stats-charts.js
+│           ├── ui/                # DOM y render: avisos.js, tally.js, reloj.js, <página>-ui.js
+│           └── utils/             # Helpers puros y código compartido entre páginas:
+│                                  #   grabaciones.js, salida-obs.js, marcados.js, miniaturas.js (Repeticiones y Archivo)
+│                                  #   estado-emision.js (máquina de estados de Emitir), camaras.js, watchdog.js…
 ├── mediamtx/
 │   ├── mediamtx.yml               # Configuración común (grabación, playback…); lo del equipo va en .env
 │   └── logs/                      # mediamtx.log (montado como /logs)
@@ -248,13 +266,13 @@ WebMTX/
 ├── docs/                          # Material del TFG
 │   ├── CAMS/                      # Emisores FFmpeg (WHIP, RTSP, SRT) y PYWHIP
 │   ├── rpi/                       # Scripts para Raspberry Pi
-│   ├── otros/                     # Notas técnicas y checklist-front.md (pruebas del front)
+│   ├── otros/                     # Notas técnicas, checklist-front.md y estudio-ajustes-emisor.md
 │   └── diagramas/
 ├── CLAUDE.md
 └── README.md
 ```
 
-Las grabaciones viven en el volumen Docker `recordings_volume` (no en una carpeta del repo): ver [Grabaciones](#grabaciones).
+Las grabaciones viven en el volumen Docker `recordings_volume` y los momentos marcados en `datos_volume` (no en carpetas del repo): ver [Grabaciones](#grabaciones).
 
 ## Uso
 
@@ -262,13 +280,25 @@ Las grabaciones viven en el volumen Docker `recordings_volume` (no en una carpet
 
 `https://<IP_SERVIDOR>/broadcaster.html` convierte cualquier dispositivo con navegador (portátil, móvil, tablet) en una cámara.
 
-1. **Destino**: escribe el nombre de la cámara o pulsa uno de los habituales (`cam1`, `cam2`, `movil`, `extra`). Los que ya están emitiendo se marcan con un punto rojo; si eliges uno ocupado, pide confirmación antes de reemplazarlo.
-2. **Fuentes**: cámara y micrófono (o "Sin micrófono").
-3. **Vídeo**: códec (H264 recomendado: es el que mejor se repite después), resolución y fps (solo los que admite la cámara), bitrate, prioridad del encoder, qué hacer si falta red o CPU y resolución enviada.
-4. **Audio**: bitrate Opus y procesado del micrófono (eco, ruido, ganancia).
-5. **Emitir**: la barra superior se pone en rojo con el cronómetro. Bitrate, prioridad, degradación, resolución enviada y bitrate de audio se pueden cambiar en directo sin cortar.
+1. **Fuentes**: cámara y micrófono (o "Sin micrófono"). "Buscar dispositivos" vuelve a listarlos si conectas uno nuevo.
+2. **Destino**: escribe el nombre de la cámara o pulsa uno de los habituales (`cam1`, `cam2`, `movil`, `extra`). Los que ya están emitiendo se marcan con un punto rojo; si eliges uno ocupado, pide confirmación antes de reemplazarlo.
+3. **Captura**: códec, resolución pedida, fps pedidos y procesado del micrófono (eco, ruido, ganancia).
+   - El códec por defecto es **H264**, el que mejor se graba y se repite. VP8 no se ofrece porque MediaMTX no lo graba; VP9, AV1 y H265 avisan de sus limitaciones.
+4. **Calidad del envío**: bitrate máximo de vídeo, qué sacrificar si no da para todo (fluidez, nitidez o un poco de cada), reducir la imagen al enviar y calidad del audio (sale en mono: MediaMTX no negocia Opus estéreo).
+5. **Emitir**: la barra superior (tally) se pone en rojo con el cronómetro. Es el único sitio donde se lee el estado de la emisión, también los errores.
 
-"Lo que se está enviando" muestra lo que entrega la cámara y lo que se codifica de verdad (resolución, fps, Mbps y si la CPU o la red están limitando). Los ajustes se recuerdan en el navegador.
+**Ajustes objetivo.** Resolución, fps y bitrate llevan la etiqueta *objetivo*: los pide la página, pero el resultado lo deciden la cámara, la CPU y la red. Debajo se ve el valor real; si no coincide, sale en ámbar con el motivo ("la cámara no da más", "falta CPU", "falta red"…). El panel "Tráfico por pista" muestra lo que se envía de verdad. Los ajustes se recuerdan en el navegador.
+
+**Cambios en directo, sin cortar.** Emitiendo, se puede cambiar casi todo sobre la misma conexión:
+
+- **Otra cámara** se abre primero en el **previo** (monitor pequeño con borde verde) mientras el monitor grande, el **programa** (rojo), sigue mostrando lo que sale. "Pasar a directo" la saca sin cortar y "Descartar" cierra el previo.
+- Resolución, fps, micrófono, procesado y toda la calidad del envío se aplican al momento.
+- Solo el códec, el nombre de la cámara y pasar de "Sin micrófono" a un micrófono cambian la propia conexión. En esos casos el botón pasa a "Volver a emitir", con "Deshacer cambios" al lado.
+- Si la cámara nueva no abre (ocupada, desconectada o sin ese formato), se vuelve a la anterior y se avisa del motivo.
+
+**Desde el móvil.** En vertical, tally, monitor y botones se quedan arriba mientras los ajustes pasan por debajo. Con el móvil tumbado entra en *modo cámara*: el monitor ocupa todo el alto a la izquierda y los ajustes van a la derecha. El botón sobre el monitor lo pone a pantalla completa.
+
+> Por qué cada ajuste está donde está (medido con Chrome contra MediaMTX): `docs/otros/estudio-ajustes-emisor.md`.
 
 ### Emitir con FFmpeg u otros emisores
 
@@ -295,11 +325,29 @@ Acceso WHEP directo sin la interfaz: `https://<IP_SERVIDOR>:8889/<cámara>`.
 - **Repetir al momento**: "Últimos 15 s / 30 s / 60 s" o "Desde hace N segundos". Se calcula contra el reloj, así que siempre sigue al directo, y la repetición no se detiene al alcanzarlo.
 - **Línea temporal**: logarítmica (los últimos 5 minutos ocupan la mitad derecha). Arrastrarla elige el momento; la burbuja muestra la hora real.
 - **Otros modos**: desde el inicio de una grabación (en segundos) o a una hora concreta.
-- **Marcar**: guarda el instante de "hace N segundos" para pincharlo luego; cada momento se puede previsualizar, anotar o enviar a OBS.
-- **Enviar a OBS / Quitar**: manda a `display.html` lo que se está previsualizando. La barra superior se pone en rojo mientras hay una repetición en directo.
-- Velocidad de 0,25× a 4×.
+- **Salida a OBS**: es el último paso de la columna "Qué repetir" (elegir, reproducir y enviar). "Enviar a OBS" se activa cuando hay algo previsualizado y manda a `display.html` lo que se ve; "Quitar" se activa cuando hay algo en la salida. La barra superior se pone en rojo mientras hay una repetición en directo.
+- **Momentos marcados**: "Marcar" guarda lo que acaba de pasar (el botón dice qué cámara e instante); cada momento se puede previsualizar, anotar o enviar a OBS. Se guardan en el servidor, así que **todos los equipos ven las mismas marcas** al momento, también las hechas desde Archivo.
+- Velocidad de 0,25× a 4× (se mantiene al encadenar tramos).
 
 > Playback no usa WebRTC: el navegador recibe fMP4 por HTTPS a través del proxy `/api/playback`.
+
+### Archivo
+
+`https://<IP_SERVIDOR>/archivo.html` enseña todo lo grabado como **tomas**: una toma va desde que una cámara empieza a emitir hasta que para, aunque MediaMTX la guarde en segmentos de 10 minutos.
+
+- **Lista**: tarjetas con miniatura, cámara, inicio, fin (o "En directo") y duración, agrupadas por día. Se filtra por cámara y fecha (hoy, ayer, últimos 7 días), se pueden ocultar las tomas de menos de 10 s y se ordena por fecha o duración. Los filtros se recuerdan.
+- **Visor**: la barra va del inicio al fin de la toma y, al soltarla, reproduce desde ese instante.
+- **Acciones**:
+  - "Enviar a OBS" manda la toma desde ese instante y el display sigue hasta el final.
+  - "Marcar" guarda el instante en los momentos marcados de Repeticiones.
+  - También se puede quitar de OBS, descargar en MP4 o borrar la toma (pide confirmación y no se puede mientras sigue grabando).
+- La toma que está en la salida de OBS lleva el borde rojo, la haya enviado Archivo o Repeticiones.
+
+Las miniaturas las genera el navegador (un fotograma del primer segundo) y se guardan en caché en IndexedDB, así que solo se calculan la primera vez.
+
+### Reloj
+
+Todas las páginas de operador muestran la hora arriba a la derecha. Si el reloj del equipo va desfasado más de 1,5 s respecto al servidor, muestra la hora del servidor, que es la que llevan las grabaciones: así "repetir desde las 18:42:10" cuadra en todos los equipos. Las salidas de OBS no lo muestran.
 
 ### Salidas para OBS
 
@@ -325,6 +373,8 @@ La página de Inicio copia estas URLs con un clic. Sin `?stream=`, `neoplayer.ht
 MediaMTX graba todas las cámaras en fMP4 (segmentos de 10 minutos, se borran a los 7 días; ver `pathDefaults` en `mediamtx/mediamtx.yml`). Para no grabar una cámara, declárala en `paths:` con `record: no`.
 
 Las grabaciones están en el volumen Docker `webmtx_recordings_volume`: el acceso aleatorio es mucho más rápido que en una carpeta compartida de Windows (medido: una repetición a 15 s del directo empieza a llegar en 0,12 s frente a 40 s).
+
+Para ver, descargar en MP4 o borrar tomas sueltas, usa la página [Archivo](#archivo). Para sacar muchas a disco de una vez:
 
 ```powershell
 .\scripts\exportar-grabaciones.ps1 -Path cam1            # a mediamtx\grabaciones_exportadas
@@ -418,11 +468,11 @@ curl https://localhost:9997/v3/hlsmuxers/list
 1. Verificar que MediaMTX está corriendo: `docker compose ps`
 2. Comprobar logs: `docker compose logs mediamtx` o `mediamtx\logs\mediamtx.log`
 3. Verificar que FFmpeg está enviando correctamente: buscar "WHIP session established" en los logs
-4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe ser la `IP_EQUIPO` del `.env` (`.env`, aplicado con `docker compose up -d`) y en el certificado (`scripts\gen-certs.ps1`)
+4. Si la cámara se ve en local pero no desde otro equipo: `IP_EQUIPO` en el `.env` debe ser la IP actual de este equipo en la red (aplícala con `docker compose up -d`) y esa IP debe estar en el certificado (`.\scripts\gen-certs.ps1 -IPsLocales -Force`)
 
 ### Las repeticiones no se reproducen
 
-- Emite en **H264**: el navegador no decodifica todos los códecs que WebRTC puede enviar (H265, VP9, AV1 dependen del equipo).
+- Emite en **H264**: el navegador no decodifica todos los códecs que WebRTC puede enviar (H265, VP9, AV1 dependen del equipo) y MediaMTX no graba VP8.
 - Lo grabado hace menos de ~4 s todavía no está en disco; la página deja ese margen automáticamente.
 
 ### No arranca el servidor web
@@ -438,9 +488,10 @@ Faltan `server/cert.pem` y `server/key.pem`: genera los certificados con `.\scri
 
 ### Error de conexión ICE
 
-1. Verificar que el puerto UDP 8189 está abierto
-2. Comprobar configuración de firewall
-3. En redes NAT, puede ser necesario configurar STUN/TURN
+1. Comprobar que `IP_EQUIPO` es la IP actual del equipo: si has cambiado de red, cámbiala en el `.env` y aplica con `docker compose up -d`
+2. Verificar que el puerto UDP 8189 está abierto
+3. Comprobar configuración de firewall
+4. En redes NAT, puede ser necesario configurar STUN/TURN
 
 ### FFmpeg no encuentra la cámara
 
@@ -464,13 +515,22 @@ El front no tiene build ni módulos ES: cada página carga `<script>` clásicos 
 ```
 js/
 ├── api/              # api.js (GET/POST/PATCH/DELETE contra /api/mediamtx/v3) + secciones del panel
-├── ui/               # DOM y render: avisos.js (avisos y confirmaciones), tally.js, <página>-ui.js
-├── utils/            # utils.js, camaras.js (color por cámara), watchdog.js, *-utils.js, stats-charts.js
+├── ui/               # DOM y render: avisos.js (avisos y confirmaciones), tally.js, reloj.js, <página>-ui.js
+├── utils/            # Helpers puros y código compartido (grabaciones, salida-obs, marcados, miniaturas, estado-emision…)
 └── <página>.js       # Lógica de cada página (WebRTC, repeticiones…)
 ```
 
-- `css/base.css` contiene el sistema de diseño: tokens de color (incluida la paleta de cámaras, validada para daltonismo sobre el fondo oscuro), tipografía, componentes y la barra de tally. Rojo = en directo, verde = recibiendo, ámbar = conectando.
-- Las funciones llamadas desde `onclick`/`data-load` y los ids que usa el JS son contrato. Antes de dar un cambio por bueno:
+Nunca repitas un `let`/`const` de nivel superior entre scripts de la misma página: al compartir ámbito da `SyntaxError` (`check-dom.mjs` lo detecta).
+
+**CSS** (sistema de diseño "sala de realización"):
+
+- **Valores solo en `css/tokens.css`**, en dos niveles: paleta base (`--gris-900`, `--rojo-500`…) y tokens de uso (`--fondo`, `--texto`, `--programa`…). El resto de hojas solo usa los tokens de uso. La paleta de cámaras (azul, naranja, cian, magenta y violeta) está validada para daltonismo en los dos temas.
+- **Capas** `@layer reset, base, componentes, paginas, utilidades`: `base.css` define los componentes y cada hoja de página va entera en `paginas`. `[hidden]` está en `utilidades` y siempre gana.
+- **Breakpoints** solo en 600, 900 y 1280 px; lo que puede acabar en un hueco estrecho (dock de OBS) usa *container queries*.
+- **Tema** oscuro por defecto y claro automático (`prefers-color-scheme`); las salidas de OBS siempre son oscuras.
+- Rojo = en directo / programa, verde = recibiendo / previo, ámbar = conectando o aviso. El rojo y el verde se reservan para el tally.
+
+Las funciones llamadas desde `onclick`/`data-load` y los ids que usa el JS son contrato. `check-dom.mjs` también falla si hay un color literal fuera de `tokens.css`, un `!important` sin justificar o un `.style.x` en el JS. Antes de dar un cambio por bueno:
 
 ```powershell
 node scripts/check-dom.mjs                                # ids, handlers, globales duplicados, node --check
@@ -512,7 +572,8 @@ La imagen de MediaMTX no incluye shell; para ver sus ficheros usa `docker cp` o 
 | **[FFmpeg](https://ffmpeg.org/)** | Codificación y transmisión de vídeo |
 | **[WebRTC](https://webrtc.org/)** | Comunicación en tiempo real (WHIP/WHEP) |
 | **[Node.js](https://nodejs.org/)** | Runtime JavaScript para el servidor web |
-| **[Express](https://expressjs.com/)** | Framework web (proxy API, archivos estáticos) |
+| **[Express](https://expressjs.com/)** | Framework web (proxies, archivos estáticos, SSE) |
+| **[Chart.js](https://www.chartjs.org/)** | Gráficas de la página de estadísticas (servido desde `/vendor`) |
 | **[Docker](https://www.docker.com/)** | Contenedorización de servicios |
 | **JavaScript vanilla** | Frontend interactivo sin dependencias framework |
 
