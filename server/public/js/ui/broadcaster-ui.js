@@ -213,6 +213,13 @@ let envioReal = null;     // { ancho, alto, fps, kbps, motivo }
 
 const QUIEN_LIMITA = { cpu: 'falta CPU', bandwidth: 'falta red', other: 'lo limita el navegador' };
 
+// Qué recorta cada opción de "Si no da para todo, sacrificar…"
+const SACRIFICIO = {
+    'maintain-resolution': 'baja los fps para mantener la nitidez',
+    'maintain-framerate': 'baja la resolución para mantener la fluidez',
+    balanced: 'baja un poco de cada'
+};
+
 /**
  * Guarda lo que entrega la cámara de verdad (getSettings) frente a lo pedido.
  * @param {MediaStream|null} stream
@@ -300,7 +307,17 @@ function pintarObjetivos() {
     // La regla de degradación solo se enseña mientras actúa
     let degradacionEl = document.getElementById('realDegradacion');
     degradacionEl.hidden = !limita;
-    if (limita) degradacionEl.textContent = `Actuando ahora: ${limita}`;
+    if (limita) degradacionEl.textContent = `Actuando ahora (${limita}): ${SACRIFICIO[degradacionSelect.value] || 'recortando'}`;
+
+    // Reducir la imagen: es fijo, pero se dice en qué resolución acaba saliendo
+    let escala = Number(escalaEnvioSelect.value) || 1;
+    if (!c || !c.ancho) {
+        ponerReal('realEscala', 'Se calcula con la cámara abierta');
+    } else {
+        let ancho = Math.round(c.ancho / escala);
+        let alto = Math.round(c.alto / escala);
+        ponerReal('realEscala', escala === 1 ? `Se envía a ${c.ancho}×${c.alto}, la de la cámara` : `Se envía a ${ancho}×${alto}`);
+    }
 }
 
 // STATS RTP
@@ -798,7 +815,7 @@ endpointInput.addEventListener('input', revisarCambiosPendientes);
 bitrateInput.addEventListener('input', actualizarEtiquetaBitrate);
 bitrateInput.addEventListener('change', () => { actualizarEtiquetaBitrate(); guardarAjustesDesdeUi(); aplicarAjustesEnDirecto(); });
 [degradacionSelect, escalaEnvioSelect, audioBitrateSelect].forEach(control => {
-    control.addEventListener('change', () => { guardarAjustesDesdeUi(); aplicarAjustesEnDirecto(); });
+    control.addEventListener('change', () => { guardarAjustesDesdeUi(); aplicarAjustesEnDirecto(); pintarObjetivos(); });
 });
 
 navigator.mediaDevices.addEventListener('devicechange', actualizarDispositivos);

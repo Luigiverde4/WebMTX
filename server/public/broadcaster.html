@@ -205,36 +205,40 @@
                     </div>
 
                     <div class="campos">
+                        <!-- degradationPreference: qué recorta el navegador cuando no da para todo -->
                         <div class="campo">
-                            <label for="degradacion">Si falta red o CPU</label>
-                            <select id="degradacion">
-                                <option value="maintain-resolution">Bajar fotogramas, mantener resolución</option>
-                                <option value="maintain-framerate">Bajar resolución, mantener fluidez</option>
+                            <label for="degradacion">Si no da para todo, sacrificar…</label>
+                            <select id="degradacion" aria-describedby="ayudaDegradacion">
+                                <option value="maintain-resolution">Fluidez (imagen nítida, a saltos)</option>
+                                <option value="maintain-framerate">Nitidez (movimiento fluido, más borroso)</option>
                                 <option value="balanced">Un poco de cada</option>
                             </select>
+                            <span class="campo__ayuda" id="ayudaDegradacion">Solo actúa cuando faltan red o CPU.</span>
                             <!-- Solo aparece mientras la regla está actuando -->
                             <span class="campo__real campo__real--difiere" id="realDegradacion" hidden></span>
                         </div>
+                        <!-- scaleResolutionDownBy: siempre, aunque sobre red -->
                         <div class="campo">
-                            <label for="escalaEnvio">Resolución enviada</label>
-                            <select id="escalaEnvio">
-                                <option value="1">Completa</option>
-                                <option value="1.5">2/3</option>
-                                <option value="2">Mitad</option>
-                                <option value="4">Un cuarto</option>
+                            <label for="escalaEnvio">Reducir la imagen al enviar</label>
+                            <select id="escalaEnvio" aria-describedby="realEscala">
+                                <option value="1">No reducir</option>
+                                <option value="1.5">A 2/3</option>
+                                <option value="2">A la mitad</option>
+                                <option value="4">A un cuarto</option>
                             </select>
+                            <span class="campo__real cifra" id="realEscala">Se calcula con la cámara abierta</span>
                         </div>
                         <div class="campo">
-                            <label for="audioBitrate">Bitrate de audio</label>
-                            <select id="audioBitrate">
-                                <option value="32000">32 kbps</option>
-                                <option value="64000">64 kbps</option>
-                                <option value="96000">96 kbps</option>
-                                <option value="128000" selected>128 kbps</option>
+                            <label for="audioBitrate">Calidad del audio</label>
+                            <select id="audioBitrate" aria-describedby="ayudaAudio">
+                                <option value="32000">32 kbps (voz)</option>
+                                <option value="64000">64 kbps (voz clara)</option>
+                                <option value="96000">96 kbps (música)</option>
+                                <option value="128000" selected>128 kbps (música, recomendado)</option>
                             </select>
+                            <span class="campo__ayuda" id="ayudaAudio">Sale en mono (MediaMTX no negocia Opus estéreo). Gasta muy poco al lado del vídeo.</span>
                         </div>
                     </div>
-                    <span class="campo__ayuda">El audio sale en mono: MediaMTX no negocia Opus estéreo.</span>
                 </div>
             </section>
 
