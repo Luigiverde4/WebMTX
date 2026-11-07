@@ -10,8 +10,8 @@
     raiz del repo (o, si no hay .env, las de webrtcAdditionalHosts en
     mediamtx\mediamtx.yml). Se pueden anadir IPs/hosts extra con -IP.
 
-    Recuerda: una IP LAN nueva debe ir tambien en WEBRTC_HOSTS del .env para que
-    los clientes WebRTC de esa red reciban candidatos ICE validos.
+    En una red nueva basta con -IPsLocales: WEBRTC_HOSTS es opcional (las paginas
+    de WebMTX anuncian ellas mismas la IP con la que se abrieron).
 
 .PARAMETER IP
     Una o varias IPs o hosts adicionales que cubrira el certificado.
@@ -146,5 +146,5 @@ Write-Host "Certificados generados:" -ForegroundColor Green
 Write-Host "  $certFile"
 Write-Host "  $keyFile"
 Write-Host ""
-Write-Host "Si has anadido una IP LAN nueva, ponla tambien en WEBRTC_HOSTS del .env" -ForegroundColor DarkGray
+Write-Host "En una red nueva, vuelve a generarlos con -IPsLocales para que cubran la IP nueva" -ForegroundColor DarkGray
 Write-Host "y reinicia los servicios: docker compose up -d" -ForegroundColor DarkGray

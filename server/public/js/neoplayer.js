@@ -142,7 +142,7 @@ async function playWebRTC(server, streamName) {
 
         await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
-            sdp: await response.text()
+            sdp: anadirCandidatoDelServidor(await response.text(), url)
         }));
     } catch (error) {
         console.warn('WHEP no disponible, se reintentará:', error.message);
@@ -194,7 +194,7 @@ window.addEventListener('pagehide', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    server = window.location.host;
+    server = window.location.hostname; // sin el puerto de la página: WebRTC va a MediaMTX (:8889)
     streamName = (parametros.get('stream') || '').trim();
 
     if (!streamName) {
