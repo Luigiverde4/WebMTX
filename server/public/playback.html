@@ -123,15 +123,16 @@
             <div class="salida-obs" aria-labelledby="tituloSalidaObs">
                 <div class="salida-obs__texto">
                     <h2 id="tituloSalidaObs">Salida a OBS</h2>
-                    <p class="salida-obs__pendiente texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
-                    <p class="salida-obs__estado texto-peq" id="obsStatus">OBS: vacío</p>
+                    <p class="salida-obs__pendiente texto-peq" id="obsPending" hidden></p>
+                    <p class="salida-obs__estado texto-peq" id="obsStatus">En OBS: nada</p>
                 </div>
+                <!-- Cada botón solo está activo cuando su acción tiene sentido -->
                 <div class="salida-obs__botones">
-                    <button type="button" class="boton" onclick="quitarDelDisplay()">
+                    <button type="button" class="boton" id="quitarObsBtn" onclick="quitarDelDisplay()" disabled>
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
                         Quitar
                     </button>
-                    <button type="button" class="boton boton--directo" onclick="enviarAlDisplay()">
+                    <button type="button" class="boton boton--directo" id="enviarObsBtn" onclick="enviarAlDisplay()" disabled>
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
                         Enviar a OBS
                     </button>

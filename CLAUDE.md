@@ -85,7 +85,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
   - No hay estilos sin capa: ganarían a todo.
 - **`[hidden]`** está en la capa `utilidades`, así que siempre gana a los `display` de las clases. Usa `hidden` para mostrar y ocultar, no `style.display`.
 - **Breakpoints:** solo 600, 900 y 1280 px. Lo que pueda acabar en un hueco estrecho (escenario de repeticiones en un dock de OBS, lista de directo, secciones de stats, configuración de la API) usa *container queries*.
-- **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--directo`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `listo`, `ocupado`, `visible`).
+- **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--directo`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `ocupado`, `visible`).
 - **Temas:** oscuro por defecto y claro automático (`prefers-color-scheme`), redefiniendo solo los tokens de uso. Las salidas de OBS llevan `<html class="salida-obs">` y siempre son oscuras.
 - Usa propiedades lógicas (`margin-inline`, `padding-block`, `inset-inline-start`…). Los títulos son fluidos (`--t-titulo`).
 - **Páginas "de aplicación"** (repeticiones, emitir): son `.pagina--app`, a altura fija de pantalla, a todo el ancho y sin scroll de página. El vídeo usa `.monitor--llenar`, que crece hasta el hueco disponible, y lo que no cabe va en `.columna-scroll`.

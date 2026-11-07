@@ -9,10 +9,7 @@
  * Envía a OBS la última repetición reproducida en la previsualización.
  */
 async function enviarAlDisplay() {
-    if (!ultimaSeleccion) {
-        setEstado('Reproduce algo primero: se envía lo que estés previsualizando', 'error');
-        return;
-    }
+    if (!ultimaSeleccion) return; // El botón está desactivado hasta reproducir algo
 
     try {
         let response = await fetch('/api/replay/select', {
@@ -50,9 +47,12 @@ async function quitarDelDisplay() {
  */
 (function suscribirEstadoDisplay() {
     let obsStatusEl = document.getElementById('obsStatus');
+    let quitarBtn = document.getElementById('quitarObsBtn');
     if (!obsStatusEl || typeof EventSource === 'undefined') return;
 
     let pintar = (estado) => {
+        // "Quitar" solo tiene sentido con algo en la salida
+        quitarBtn.disabled = !estado || estado.cmd !== 'play';
         if (!estado || estado.cmd !== 'play') {
             obsStatusEl.textContent = 'En OBS: nada';
             obsStatusEl.classList.remove('activo');
@@ -75,6 +75,8 @@ async function quitarDelDisplay() {
         }
     };
     source.onerror = () => {
+        // Sin conexión no se sabe qué hay en OBS: se deja Quitar disponible
+        quitarBtn.disabled = false;
         obsStatusEl.textContent = 'Sin conexión con el servidor: reintentando…';
     };
 })();
