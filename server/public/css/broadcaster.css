@@ -28,7 +28,30 @@
         gap: var(--e-4);
         padding-inline-end: var(--e-1);   /* aire para la barra de scroll */
     }
-    .resumen-envio:empty { display: none; }
+    .resumen-envio:empty,
+    .emisor .mensaje-linea:empty { display: none; }
+
+    /* Ajustes "objetivo": lo pides tú, otro decide. Etiqueta discreta en el
+       rótulo y, debajo del control, lo que se consigue de verdad. */
+    .objetivo {
+        display: inline-block;
+        margin-inline-start: var(--e-1);
+        padding: 0 var(--e-1);
+        border: var(--borde-suave);
+        border-radius: var(--radio-control);
+        color: var(--texto-2);
+        font-size: var(--t-xs);
+        font-weight: 500;
+        line-height: 1.5;
+        vertical-align: 0.1em;
+        cursor: help;
+    }
+    .campo__real {
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+    /* No coincide con lo pedido: ámbar (no es un error, es información) */
+    .campo__real--difiere { color: var(--texto-aviso); }
     .emisor__subtitulo {
         margin-block: var(--e-4) var(--e-2);
         color: var(--texto-2);
