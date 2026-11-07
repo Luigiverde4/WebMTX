@@ -115,7 +115,7 @@ async function loadRecordings({ silencioso = false, completa = true } = {}) {
     refrescoEnCurso = true;
 
     try {
-        if (!silencioso) setEstado('Cargando grabaciones…', 'info');
+        if (!silencioso) recordingCountEl.textContent = 'Cargando…';
 
         let grabaciones = completa ? await consultarGrabaciones() : await consultarStreamSeleccionado();
 
@@ -128,18 +128,16 @@ async function loadRecordings({ silencioso = false, completa = true } = {}) {
         allRecordings = grabaciones;
         poblarStreams({ preservarSeleccion: silencioso });
 
+        // Sin grabaciones, el recuento lo dice; aparecerán solas con el refresco automático
         let total = allRecordings.length;
-        recordingCountEl.textContent = `${total} ${total === 1 ? 'grabación' : 'grabaciones'}`;
-
-        if (total === 0) {
-            if (!silencioso) setEstado('Todavía no hay grabaciones. Aparecerán en cuanto una cámara empiece a emitir.', 'info');
-            return;
-        }
-        if (!silencioso) setEstado('', 'info');
+        recordingCountEl.textContent = total === 0
+            ? 'Ninguna grabación todavía'
+            : `${total} ${total === 1 ? 'grabación' : 'grabaciones'}`;
     } catch (error) {
         console.error('Error al cargar grabaciones:', error);
         if (!silencioso) {
-            setEstado(`No se pudieron cargar las grabaciones (${error.message}). Comprueba que MediaMTX está en marcha.`, 'error');
+            recordingCountEl.textContent = 'Sin datos';
+            avisarError(`No se pudieron cargar las grabaciones (${error.message}). Comprueba que MediaMTX está en marcha.`);
         }
     } finally {
         refrescoEnCurso = false;
@@ -176,9 +174,8 @@ function iniciarRefrescoAutomatico() {
  * @param {number} seekOffset - Segundos a los que saltar dentro del vídeo cargado.
  * @param {string} stream - Path del stream reproducido.
  * @param {Date} momento - Instante real del contenido que empieza a verse.
- * @param {string} detalle - Descripción para el estado (p. ej. "últimos 30 s").
  */
-function lanzarReproduccion(playURL, seekOffset, stream, momento, detalle) {
+function lanzarReproduccion(playURL, seekOffset, stream, momento) {
     // Nueva repetición: invalida los tramos pendientes de la anterior.
     sesionReproduccion++;
     streamEnCurso = stream;
@@ -208,12 +205,11 @@ function lanzarReproduccion(playURL, seekOffset, stream, momento, detalle) {
     video.play().catch(err => {
         if (err && err.name === 'AbortError') return;
         console.error('Error al reproducir:', err);
-        setEstado('No se pudo iniciar la reproducción. El tramo puede no estar grabado todavía.', 'error');
+        avisarError('No se pudo iniciar la reproducción. El tramo puede no estar grabado todavía.');
     });
 
     // Rótulo y etiqueta: el instante REAL reproducido, no el inicio del fichero.
     pintarRotuloActual(stream, momento);
-    setEstado(`Reproduciendo ${detalle}`.trim(), 'ok');
 
     ultimaSeleccion = {
         url: playURL,
@@ -277,7 +273,7 @@ video.addEventListener('ended', () => {
 function reproducirHaciaAtras(segundos) {
     let stream = streamSelectEl.value;
     if (!stream) {
-        setEstado('No hay ninguna cámara grabada todavía', 'error');
+        avisarError('No hay ninguna cámara grabada todavía');
         return;
     }
 
@@ -286,7 +282,7 @@ function reproducirHaciaAtras(segundos) {
     let duracion = segundos - MARGEN_FIN_VIVO_S;
 
     if (duracion <= 0) {
-        setEstado(`La repetición debe ser de más de ${MARGEN_FIN_VIVO_S} segundos`, 'error');
+        avisarError(`La repetición debe ser de más de ${MARGEN_FIN_VIVO_S} segundos`);
         return;
     }
 
@@ -295,7 +291,7 @@ function reproducirHaciaAtras(segundos) {
         + `&start=${encodeURIComponent(inicio.toISOString())}`;
 
     // La URL ya empieza en el momento pedido: no hay que saltar dentro del vídeo.
-    lanzarReproduccion(playURL, 0, stream, inicio, `los últimos ${segundos} s`);
+    lanzarReproduccion(playURL, 0, stream, inicio);
 }
 
 /**
@@ -321,7 +317,7 @@ function playFromOffset() {
     }
 
     if (!selectedRecording) {
-        setEstado('Elige una grabación primero', 'error');
+        avisarError('Elige una grabación primero');
         return;
     }
 
@@ -333,14 +329,14 @@ function playFromOffset() {
         newDuration = selectedRecording.duration - offset;
 
         if (offset > selectedRecording.duration) {
-            setEstado(`El segundo ${offset} queda fuera: la grabación dura ${formatDuration(selectedRecording.duration)}`, 'error');
+            avisarError(`El segundo ${offset} queda fuera: la grabación dura ${formatDuration(selectedRecording.duration)}`);
             return;
         }
     } else if (mode === 'specific') {
         let timeValue = specificTimeInput.value.trim();
         let match = timeValue.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
         if (!match) {
-            setEstado('Escribe la hora como HH:MM o HH:MM:SS', 'error');
+            avisarError('Escribe la hora como HH:MM o HH:MM:SS');
             return;
         }
 
@@ -349,7 +345,7 @@ function playFromOffset() {
         let ss = match[3] ? parseInt(match[3], 10) : 0;
 
         if (hh > 23 || mm > 59 || ss > 59) {
-            setEstado('Hora inválida', 'error');
+            avisarError('Esa hora no existe: usa HH:MM o HH:MM:SS, con horas de 0 a 23 y minutos y segundos de 0 a 59');
             return;
         }
 
@@ -361,7 +357,7 @@ function playFromOffset() {
         specificDate.setHours(hh, mm, ss, 0);
 
         if (specificDate < recordingStart || specificDate > recordingEnd) {
-            setEstado(`Esa hora no está en la grabación elegida (de ${formatTimeOnly(recordingStart)} a ${formatTimeOnly(recordingEnd)})`, 'error');
+            avisarError(`Esa hora no está en la grabación elegida (de ${formatTimeOnly(recordingStart)} a ${formatTimeOnly(recordingEnd)})`);
             return;
         }
 
@@ -370,7 +366,7 @@ function playFromOffset() {
     }
 
     if (newDuration <= 0) {
-        setEstado('No queda contenido desde ese punto', 'error');
+        avisarError('No queda contenido desde ese punto');
         return;
     }
 
@@ -389,14 +385,7 @@ function playFromOffset() {
             + `&start=${encodeURIComponent(newStartDate.toISOString())}`;
     }
 
-    let detalle = '';
-    if (mode === 'offset' && offset > 0) {
-        detalle = `desde el segundo ${offset.toFixed(0)}`;
-    } else if (mode === 'specific') {
-        detalle = `desde las ${specificTimeInput.value}`;
-    }
-
     // El vídeo servido ya empieza en newStartDate (su t=0): NO se vuelve a
     // saltar el offset dentro de él (antes se aplicaba dos veces).
-    lanzarReproduccion(playURL, 0, selectedRecording.stream, newStartDate, detalle);
+    lanzarReproduccion(playURL, 0, selectedRecording.stream, newStartDate);
 }

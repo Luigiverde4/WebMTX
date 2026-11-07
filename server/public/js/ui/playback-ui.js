@@ -11,7 +11,6 @@
 let video = document.getElementById('video');
 let currentRecordingEl = document.getElementById('currentRecording');
 let recordingCountEl = document.getElementById('recordingCount');
-let statusMsgEl = document.getElementById('statusMsg');
 let streamSelectEl = document.getElementById('streamSelect');
 let recordingSelectEl = document.getElementById('recordingSelect');
 let playbackModeEl = document.getElementById('playbackMode');
@@ -118,14 +117,13 @@ function restaurarControles() {
 // FUNCIONES DE UI
 
 /**
- * Muestra un mensaje de estado en el panel (sustituye a los alert bloqueantes,
- * inservibles dentro de OBS). Los errores además salen como aviso.
- * @param {string} texto - Mensaje a mostrar.
- * @param {'info'|'ok'|'error'} [tipo] - Estilo del mensaje.
+ * Avisa de un problema con un aviso flotante (no ocupa sitio en el panel).
+ * Los éxitos no se anuncian: ya se ven en el rótulo bajo el vídeo, en
+ * "En OBS" y el tally, o en la lista de marcados.
+ * @param {string} texto - Qué ha fallado y qué hacer.
  */
-function setEstado(texto, tipo = 'info') {
-    statusMsgEl.textContent = texto || '';
-    statusMsgEl.className = `mensaje-linea mensaje-linea--${tipo}`;
+function avisarError(texto) {
+    mostrarAviso(texto, 'error');
 }
 
 /**
@@ -552,7 +550,7 @@ video.addEventListener('error', () => {
         }
     }
 
-    setEstado(`${mensaje}. Si la grabación es muy reciente, espera unos segundos.`, 'error');
+    avisarError(`${mensaje}. Si la grabación es muy reciente, espera unos segundos.`);
 });
 
 // Mientras se manipula la línea temporal (ratón o teclado) se congela el

@@ -60,7 +60,7 @@ function instanteAMarcar() {
 function marcarMomento() {
     let stream = streamSelectEl.value;
     if (!stream) {
-        setEstado('No hay ninguna cámara que marcar', 'error');
+        avisarError('No hay ninguna cámara que marcar');
         return;
     }
 
@@ -77,7 +77,6 @@ function marcarMomento() {
 
     guardarMomentos();
     renderizarMomentos();
-    setEstado(`Marcado ${stream} a las ${formatTimeOnly(instante)}`, 'ok');
 }
 
 /**
@@ -102,7 +101,7 @@ function reproducirMomento(id) {
         pintarColorStream();
     }
 
-    lanzarReproduccion(playURL, 0, momento.stream, inicio, 'un momento marcado');
+    lanzarReproduccion(playURL, 0, momento.stream, inicio);
     renderizarMomentos();
 }
 
@@ -139,7 +138,6 @@ async function borrarTodosLosMomentos() {
     momentosMarcados = [];
     guardarMomentos();
     renderizarMomentos();
-    setEstado('Momentos marcados borrados', 'info');
 }
 
 /**
