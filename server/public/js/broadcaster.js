@@ -190,6 +190,7 @@ async function startBroadcast(opciones = {}) {
             return;
         }
         localStream = stream;
+        capturaAbiertaCon = leerAjustesDeReconexion(); // lo que sale: base de los cambios en directo
         preview.srcObject = localStream;
         actualizarVacioPreview();
 

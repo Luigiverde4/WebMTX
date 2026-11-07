@@ -113,33 +113,76 @@ async function actualizarDispositivos() {
  * @param {boolean} exacta - true pide resolución exacta; false, la más cercana (ideal).
  */
 function construirConstraints(exacta) {
+    return { video: constraintsVideo(exacta), audio: constraintsAudio() };
+}
+
+/**
+ * Formato de vídeo pedido (sin dispositivo): sirve también para
+ * applyConstraints sobre una pista ya abierta.
+ * @param {boolean} exacta - true pide resolución exacta; false, la más cercana.
+ */
+function constraintsFormatoVideo(exacta) {
     let [width, height] = resolution.value.split('x').map(Number);
     let fps = Number(frameRateSelect.value) || 30;
     let modo = exacta ? 'exact' : 'ideal';
-
-    let constraints = {
-        video: {
-            deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
-            width: { [modo]: width },
-            height: { [modo]: height },
-            frameRate: { ideal: fps, max: fps }
-        }
+    return {
+        width: { [modo]: width },
+        height: { [modo]: height },
+        frameRate: { ideal: fps, max: fps }
     };
+}
 
-    if (audioSource.value !== 'none') {
-        constraints.audio = {
-            deviceId: audioSource.value ? { exact: audioSource.value } : undefined,
-            echoCancellation: echoCancellationCheck.checked,
-            noiseSuppression: noiseSuppressionCheck.checked,
-            autoGainControl: autoGainControlCheck.checked,
-            // Sin channelCount: MediaMTX no negocia Opus estéreo (stereo=1),
-            // así que Chrome codifica en mono aunque el micro dé dos canales.
-            sampleRate: { ideal: 48000 }
-        };
-    } else {
-        constraints.audio = false;
+function constraintsVideo(exacta) {
+    return {
+        deviceId: videoSource.value ? { exact: videoSource.value } : undefined,
+        ...constraintsFormatoVideo(exacta)
+    };
+}
+
+/** Micro con su procesado, o false si se eligió "Sin micrófono". */
+function constraintsAudio() {
+    if (audioSource.value === 'none') return false;
+    return {
+        deviceId: audioSource.value ? { exact: audioSource.value } : undefined,
+        echoCancellation: echoCancellationCheck.checked,
+        noiseSuppression: noiseSuppressionCheck.checked,
+        autoGainControl: autoGainControlCheck.checked,
+        // Sin channelCount: MediaMTX no negocia Opus estéreo (stereo=1),
+        // así que Chrome codifica en mono aunque el micro dé dos canales.
+        sampleRate: { ideal: 48000 }
+    };
+}
+
+/** ¿Es un fallo por pedir una resolución o fps que la cámara no tiene? */
+function esFalloDeFormato(error) {
+    return Boolean(error && (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError'));
+}
+
+/**
+ * Abre solo la cámara elegida, con el formato pedido (exacto y, si no lo
+ * admite, el más cercano).
+ * @returns {Promise<MediaStreamTrack>}
+ */
+async function abrirPistaVideo() {
+    let stream;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: constraintsVideo(true) });
+    } catch (error) {
+        if (!esFalloDeFormato(error)) throw error;
+        stream = await navigator.mediaDevices.getUserMedia({ video: constraintsVideo(false) });
     }
-    return constraints;
+    return stream.getVideoTracks()[0];
+}
+
+/**
+ * Abre solo el micro elegido con su procesado.
+ * @returns {Promise<MediaStreamTrack|null>} null con "Sin micrófono".
+ */
+async function abrirPistaAudio() {
+    let audio = constraintsAudio();
+    if (!audio) return null;
+    let stream = await navigator.mediaDevices.getUserMedia({ audio });
+    return stream.getAudioTracks()[0];
 }
 
 /**
@@ -151,7 +194,7 @@ async function cogerStreamVideoAudioLocal() {
     try {
         stream = await navigator.mediaDevices.getUserMedia(construirConstraints(true));
     } catch (error) {
-        if (error && (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError')) {
+        if (esFalloDeFormato(error)) {
             console.warn('La cámara no admite la resolución exacta; se pide la más cercana');
             stream = await navigator.mediaDevices.getUserMedia(construirConstraints(false));
         } else {
@@ -206,12 +249,17 @@ function cambioDispositivo() {
 let capturaAbiertaCon = null;
 let colaCambioCaptura = Promise.resolve();
 
-/** Motivo legible de un fallo de getUserMedia. */
-function motivoFalloCamara(error) {
+/**
+ * Motivo legible de un fallo de getUserMedia.
+ * @param {Error} error
+ * @param {boolean} [femenino] - true para "la cámara", false para "el micrófono".
+ */
+function motivoFalloCamara(error, femenino = true) {
+    let o = femenino ? 'a' : 'o';
     let motivos = {
-        NotReadableError: 'está ocupada por otra aplicación o no responde',
-        AbortError: 'está ocupada por otra aplicación o no responde',
-        NotFoundError: 'ya no está conectada',
+        NotReadableError: `está ocupad${o} por otra aplicación o no responde`,
+        AbortError: `está ocupad${o} por otra aplicación o no responde`,
+        NotFoundError: `ya no está conectad${o}`,
         OverconstrainedError: 'no admite esa configuración',
         NotAllowedError: 'el navegador no tiene permiso'
     };
@@ -219,10 +267,15 @@ function motivoFalloCamara(error) {
 }
 
 /**
- * Reabre cámara y micro con los ajustes de la UI (solo en previsualización;
- * emitiendo se aplica al volver a emitir). Si falla, vuelve a la anterior.
+ * Aplica los ajustes de captura de la UI. Emitiendo, sin cortar la emisión
+ * (js/broadcaster-captura.js); previsualizando, reabre cámara y micro y, si
+ * la nueva configuración falla, vuelve a la anterior.
  */
 async function reabrirCaptura() {
+    if (ESTADOS_EN_DIRECTO.has(estadoEmision) && localStream) {
+        await cambiarCapturaEnDirecto();
+        return;
+    }
     if (estadoEmision !== ESTADOS_EMISION.PREVISUALIZANDO || !localStream) return;
     let anteriores = capturaAbiertaCon;
     localStream.getTracks().forEach(track => track.stop());

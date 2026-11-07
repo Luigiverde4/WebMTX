@@ -639,10 +639,17 @@ function olvidarAjustesEmitidos() {
 }
 
 /** ¿Hay ajustes distintos de los que se están emitiendo? */
+/**
+ * ¿Hay cambios que solo se aplican volviendo a emitir? Cámara, formato, micro
+ * y procesado se aplican en directo (js/broadcaster-captura.js); el códec, el
+ * nombre y pasar de "Sin micrófono" a un micro cambian la propia conexión.
+ */
 function hayCambiosPendientes() {
     if (!ajustesEmitidos || !ESTADOS_EN_DIRECTO.has(estadoEmision)) return false;
     let actuales = leerAjustesDeReconexion();
-    return Object.keys(ajustesEmitidos).some(clave => ajustesEmitidos[clave] !== actuales[clave]);
+    return actuales.endpoint !== ajustesEmitidos.endpoint
+        || actuales.codec !== ajustesEmitidos.codec
+        || cambiaPresenciaMicro(ajustesEmitidos, actuales);
 }
 
 /** Repinta los botones tras un cambio de ajustes y avisa la primera vez. */
@@ -671,7 +678,11 @@ function revertirAjustes() {
     let a = ajustesEmitidos;
     endpointInput.value = a.endpoint;
     seleccionarSiExiste(videoCodecPreference, a.codec);
-    ponerAjustesDeCaptura(a);
+    // La captura sigue lo que sale ahora (pudo cambiar en directo); solo se
+    // deshace lo que pedía volver a emitir: pasar de "Sin micrófono" a un micro
+    if (capturaAbiertaCon && cambiaPresenciaMicro(a, leerAjustesDeReconexion())) {
+        seleccionarSiExiste(audioSource, capturaAbiertaCon.micro);
+    }
 
     marcarEndpointElegido();
     avisarSiCodecNoRecomendado();
