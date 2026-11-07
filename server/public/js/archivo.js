@@ -121,15 +121,16 @@ function repintarLista(forzar = false) {
     let firma = lista.map(t => `${idToma(t)}${idsEnDirecto.has(idToma(t)) ? '*' : ''}`).join(',') + filtrosArchivo.orden;
     if (!forzar && firma === firmaListaPintada) {
         actualizarTomasEnSitio(lista, idsEnDirecto);
-        return;
+    } else {
+        firmaListaPintada = firma;
+        pintarTomas(lista, {
+            agrupar: filtrosArchivo.orden !== 'largas',
+            enDirecto: idsEnDirecto,
+            elegida: tomaElegida ? idToma(tomaElegida) : null,
+            total: todasLasTomas.length
+        });
     }
-    firmaListaPintada = firma;
-    pintarTomas(lista, {
-        agrupar: filtrosArchivo.orden !== 'largas',
-        enDirecto: idsEnDirecto,
-        elegida: tomaElegida ? idToma(tomaElegida) : null,
-        total: todasLasTomas.length
-    });
+    marcarTomaEnObs(idTomaEnObs());
 }
 
 // DATOS
@@ -340,10 +341,33 @@ async function borrarToma() {
     }
 }
 
-// SALIDA DE OBS: tally y "Quitar de OBS"
+// SALIDA DE OBS: tally, "Quitar de OBS" y qué toma está en antena
+let estadoSalidaObs = null;
+
+/**
+ * Toma a la que pertenece lo que hay en OBS (enviado desde aquí o desde
+ * Repeticiones): misma cámara y el instante de inicio cae dentro de la toma.
+ * @returns {string|null} id de la toma
+ */
+function idTomaEnObs() {
+    if (!haySalidaObs(estadoSalidaObs)) return null;
+    let parametros;
+    try {
+        parametros = new URL(estadoSalidaObs.url, window.location.origin).searchParams;
+    } catch {
+        return null;
+    }
+    let instante = new Date(parametros.get('start')).getTime();
+    let toma = todasLasTomas.find(t => t.stream === parametros.get('path')
+        && instante >= t.start.getTime() - 1000 && instante <= finToma(t).getTime() + 1000);
+    return toma ? idToma(toma) : null;
+}
+
 suscribirSalidaObs(estado => {
+    estadoSalidaObs = estado;
     quitarObsBtn.disabled = !haySalidaObs(estado);
     pintarTallySalidaObs(estado);
+    marcarTomaEnObs(idTomaEnObs());
 }, () => {
     quitarObsBtn.disabled = false; // Sin conexión no se sabe qué hay en OBS
 });
