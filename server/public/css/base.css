@@ -320,6 +320,12 @@
   }
   .panel__cabecera h2,
   .panel__cabecera h3 { margin-inline-end: auto; }
+  /* Una línea bajo el título que dice cómo se comporta el panel */
+  .panel__nota {
+    flex-basis: 100%;
+    color: var(--texto-2);
+    font-size: var(--t-s);
+  }
 
   .separador {
     block-size: var(--grosor-borde);
