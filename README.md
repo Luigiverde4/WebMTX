@@ -243,9 +243,10 @@ WebMTX/
 │       ├── fonts/                 # Archivo variable (OFL), autoalojada: funciona sin internet
 │       ├── img/iconos.svg         # Iconos
 │       └── js/
-│           ├── <página>.js        # Lógica WebRTC / de cada página
-│           ├── broadcaster-captura.js  # Cambios de cámara, formato y micro en directo (previo y programa)
-│           ├── playback-marcados.js, playback-control.js, playback-display.js
+│           ├── <página>.js        # Lógica WebRTC / de cada página (el principal; display.js es el de display.html)
+│           ├── <página>-<parte>.js  # Partes de la lógica de esa página, cargadas tras su principal:
+│           │                      #   broadcaster-captura.js (cámara, formato y micro en directo; previo y programa)
+│           │                      #   playback-marcados.js (momentos marcados)
 │           ├── api/               # api.js (GET/POST/PATCH/DELETE) + secciones del panel
 │           ├── ui/                # DOM y render: avisos.js, tally.js, reloj.js, <página>-ui.js
 │           └── utils/             # Helpers puros y código compartido entre páginas:
