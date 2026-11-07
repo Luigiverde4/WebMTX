@@ -6,12 +6,12 @@
 .DESCRIPTION
     Crea server\cert.pem y server\key.pem (los ficheros que cargan tanto el
     servidor Node como MediaMTX) usando mkcert. Siempre incluye localhost,
-    127.0.0.1 y ::1, ademas de las IPs de webrtcAdditionalHosts en
-    mediamtx\mediamtx.yml. Se pueden anadir IPs/hosts extra con -IP.
+    127.0.0.1 y ::1, ademas de las IPs de WEBRTC_HOSTS en el fichero .env de la
+    raiz del repo (o, si no hay .env, las de webrtcAdditionalHosts en
+    mediamtx\mediamtx.yml). Se pueden anadir IPs/hosts extra con -IP.
 
-    Recuerda: tras anadir una IP LAN nueva, normalmente tambien hay que
-    reflejarla en mediamtx\mediamtx.yml -> webrtcAdditionalHosts para que los
-    clientes WebRTC en esa red reciban candidatos ICE validos.
+    Recuerda: una IP LAN nueva debe ir tambien en WEBRTC_HOSTS del .env para que
+    los clientes WebRTC de esa red reciban candidatos ICE validos.
 
 .PARAMETER IP
     Una o varias IPs o hosts adicionales que cubrira el certificado.
@@ -22,7 +22,10 @@
     Anade tambien las IPv4 actuales de este equipo (sin loopback).
 
 .PARAMETER SinConfig
-    No leer webrtcAdditionalHosts de mediamtx\mediamtx.yml.
+    No leer las IPs del .env ni de mediamtx\mediamtx.yml.
+
+.PARAMETER SoloListar
+    Muestra los hosts que cubriria el certificado y termina, sin generar nada.
 
 .PARAMETER Install
     Ejecuta antes 'mkcert -install' para instalar la CA local en el almacen de
@@ -32,26 +35,20 @@
     Sobrescribe cert.pem / key.pem si ya existen sin preguntar.
 
 .EXAMPLE
-    .\scripts\gen-certs.ps1
-    .\scripts\gen-certs.ps1 -IP 192.168.1.46 -IPsLocales
-    .\scripts\gen-certs.ps1 -IP 192.168.1.46,192.168.1.47 -Install -Force
+    .\scripts\gen-certs.ps1 -SoloListar -IPsLocales
+    .\scripts\gen-certs.ps1 -IPsLocales -Install
+    .\scripts\gen-certs.ps1 -IP 192.168.1.46,192.168.1.47 -Force
 #>
 param(
     [string[]]$IP = @(),
     [switch]$IPsLocales,
     [switch]$SinConfig,
+    [switch]$SoloListar,
     [switch]$Install,
     [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
-
-# mkcert en el PATH
-$mkcert = (Get-Command mkcert -ErrorAction SilentlyContinue).Source
-if (-not $mkcert) {
-    Write-Error "No se encontro mkcert en el PATH. Instalalo desde https://github.com/FiloSottile/mkcert/releases y anadelo al PATH."
-    exit 1
-}
 
 # Raiz del repo = carpeta padre de scripts\ (independiente del directorio actual)
 $repoRoot  = Split-Path -Parent $PSScriptRoot
@@ -60,9 +57,63 @@ if (-not (Test-Path $serverDir)) {
     Write-Error "No existe la carpeta '$serverDir'. El script debe estar en <repo>\scripts\."
     exit 1
 }
-
 $certFile = Join-Path $serverDir "cert.pem"
 $keyFile  = Join-Path $serverDir "key.pem"
+
+# --- Hosts que cubrira el certificado --------------------------------------
+
+# 1. WEBRTC_HOSTS del .env (fuente principal); si no hay .env, el yml (versiones antiguas)
+$ipsConfig = @()
+$origenConfig = "ninguno"
+if (-not $SinConfig) {
+    $envFile = Join-Path $repoRoot ".env"
+    $ymlFile = Join-Path $repoRoot "mediamtx\mediamtx.yml"
+    if (Test-Path $envFile) {
+        $linea = Get-Content $envFile | Where-Object { $_ -match '^\s*WEBRTC_HOSTS\s*=' } | Select-Object -First 1
+        if ($linea) {
+            $valor = ($linea -replace '^\s*WEBRTC_HOSTS\s*=\s*', '').Trim().Trim('"').Trim("'")
+            $ipsConfig = $valor -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            $origenConfig = ".env (WEBRTC_HOSTS)"
+        }
+    }
+    if (-not $ipsConfig -and (Test-Path $ymlFile)) {
+        $linea = Get-Content $ymlFile | Where-Object { $_ -match '^\s*webrtcAdditionalHosts\s*:' } | Select-Object -First 1
+        if ($linea) {
+            $ipsConfig = [regex]::Matches($linea, "'([^']+)'|""([^""]+)""") | ForEach-Object {
+                if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value }
+            }
+            if ($ipsConfig) { $origenConfig = "mediamtx.yml (webrtcAdditionalHosts)" }
+        }
+    }
+}
+
+# 2. IPv4 actuales del equipo
+$ipsEquipo = @()
+if ($IPsLocales) {
+    $ipsEquipo = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
+        Select-Object -ExpandProperty IPAddress
+}
+
+# Lista final: loopback siempre + config + equipo + parametros (sin duplicados, sin vacios)
+$hosts = @('localhost', '127.0.0.1', '::1') + $ipsConfig + $ipsEquipo + ($IP | Where-Object { $_ -and $_.Trim() })
+$hosts = $hosts | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
+
+if ($SoloListar) {
+    Write-Host "IPs de configuracion leidas de: $origenConfig" -ForegroundColor DarkGray
+    Write-Host "El certificado cubriria:" -ForegroundColor Cyan
+    $hosts | ForEach-Object { Write-Host "  $_" }
+    exit 0
+}
+
+# --- Generacion ---------------------------------------------------------------
+
+# mkcert en el PATH
+$mkcert = (Get-Command mkcert -ErrorAction SilentlyContinue).Source
+if (-not $mkcert) {
+    Write-Error "No se encontro mkcert en el PATH. Instalalo desde https://github.com/FiloSottile/mkcert/releases y anadelo al PATH."
+    exit 1
+}
 
 # Evitar pisar certificados existentes salvo -Force
 if ((Test-Path $certFile) -or (Test-Path $keyFile)) {
@@ -79,30 +130,7 @@ if ($Install) {
     & $mkcert -install
 }
 
-# IPs de webrtcAdditionalHosts (linea activa, no comentada) en mediamtx.yml
-$ipsConfig = @()
-$ymlFile = Join-Path $repoRoot "mediamtx\mediamtx.yml"
-if (-not $SinConfig -and (Test-Path $ymlFile)) {
-    $linea = Get-Content $ymlFile | Where-Object { $_ -match '^\s*webrtcAdditionalHosts\s*:' } | Select-Object -First 1
-    if ($linea) {
-        $ipsConfig = [regex]::Matches($linea, "'([^']+)'|""([^""]+)""") | ForEach-Object {
-            if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value }
-        }
-    }
-}
-
-# IPv4 actuales del equipo
-$ipsEquipo = @()
-if ($IPsLocales) {
-    $ipsEquipo = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-        Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
-        Select-Object -ExpandProperty IPAddress
-}
-
-# Lista de hosts: loopback siempre + config + equipo + parametros (sin duplicados, sin vacios)
-$hosts = @('localhost', '127.0.0.1', '::1') + $ipsConfig + $ipsEquipo + ($IP | Where-Object { $_ -and $_.Trim() })
-$hosts = $hosts | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
-
+Write-Host "IPs de configuracion leidas de: $origenConfig" -ForegroundColor DarkGray
 Write-Host "Generando certificado para: $($hosts -join ', ')" -ForegroundColor Cyan
 
 # mkcert escribe directamente a cert.pem / key.pem (sin renombrados manuales)
@@ -118,5 +146,5 @@ Write-Host "Certificados generados:" -ForegroundColor Green
 Write-Host "  $certFile"
 Write-Host "  $keyFile"
 Write-Host ""
-Write-Host "Si has anadido una IP LAN nueva, actualiza tambien webrtcAdditionalHosts en mediamtx\mediamtx.yml" -ForegroundColor DarkGray
-Write-Host "y reinicia los servicios: docker compose restart" -ForegroundColor DarkGray
+Write-Host "Si has anadido una IP LAN nueva, ponla tambien en WEBRTC_HOSTS del .env" -ForegroundColor DarkGray
+Write-Host "y reinicia los servicios: docker compose up -d" -ForegroundColor DarkGray

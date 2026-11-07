@@ -10,13 +10,44 @@ const app = require("./modules/app");
 const { cerrarClientesReplay } = require("./modules/app");
 
 
-// PUERTOS
+// CONFIGURACIÓN (variables de entorno; en Docker vienen de .env vía docker-compose)
+
+/** Lee un booleano de entorno; un valor no reconocido avisa y usa el por defecto. */
+function leerBooleano(nombre, porDefecto) {
+  const valor = process.env[nombre];
+  if (valor === undefined || valor === "") return porDefecto;
+  if (/^(true|1|si|sí|yes|on)$/i.test(valor)) return true;
+  if (/^(false|0|no|off)$/i.test(valor)) return false;
+  console.warn(`[config] ${nombre}="${valor}" no es un booleano válido; se usa ${porDefecto}`);
+  return porDefecto;
+}
+
+/** Lee un puerto de entorno; fuera de 1-65535 avisa y usa el por defecto. */
+function leerPuerto(nombre, porDefecto) {
+  const valor = process.env[nombre];
+  if (valor === undefined || valor === "") return porDefecto;
+  const numero = Number(valor);
+  if (Number.isInteger(numero) && numero >= 1 && numero <= 65535) return numero;
+  console.warn(`[config] ${nombre}="${valor}" no es un puerto válido; se usa ${porDefecto}`);
+  return porDefecto;
+}
+
+// Puertos dentro del contenedor (fijos; los del equipo se eligen en docker-compose)
 const PORT_HTTP = 80;
 const PORT_HTTPS = 443;
+// Puerto HTTPS que ve el navegador: el Location de la redirección debe usarlo
+const PUERTO_HTTPS_PUBLICO = leerPuerto("PUERTO_HTTPS_PUBLICO", PORT_HTTPS);
 
 // Redirección HTTP -> HTTPS en el puerto 80 (activa salvo HTTP_REDIRECT=false).
 // Desactívala si el puerto 80 lo necesita otro servicio del mismo equipo.
-const HTTP_REDIRECT = !/^(false|0|no|off)$/i.test(process.env.HTTP_REDIRECT || "true");
+const HTTP_REDIRECT = leerBooleano("HTTP_REDIRECT", true);
+
+console.log("[config]", JSON.stringify({
+  NODE_ENV: process.env.NODE_ENV || "(sin definir)",
+  HTTP_REDIRECT,
+  PUERTO_HTTPS_PUBLICO,
+  MEDIAMTX_HOST: process.env.MEDIAMTX_HOST || "localhost"
+}));
 
 
 // Certificados TLS (generados con scripts/gen-certs.ps1 / mkcert).
@@ -43,15 +74,16 @@ httpsServer.listen(PORT_HTTPS, () => {
 let httpServer = null;
 if (HTTP_REDIRECT) {
   httpServer = http.createServer((req, res) => {
-    const host = (req.headers.host || `localhost:${PORT_HTTP}`).replace(/:\d+$/, "");
+    const host = (req.headers.host || "localhost").replace(/:\d+$/, "");
+    const puerto = PUERTO_HTTPS_PUBLICO === 443 ? "" : `:${PUERTO_HTTPS_PUBLICO}`;
     res.writeHead(301, {
-      Location: `https://${host}:${PORT_HTTPS}${req.url}`
+      Location: `https://${host}${puerto}${req.url}`
     });
     res.end();
   });
   httpServer.listen(PORT_HTTP, () => {
     console.log("Servidor HTTP disponible (redirige a HTTPS):");
-    console.log(`  Puerto ${PORT_HTTP} -> HTTPS ${PORT_HTTPS}`);
+    console.log(`  Puerto ${PORT_HTTP} -> HTTPS ${PUERTO_HTTPS_PUBLICO}`);
   });
 } else {
   console.log("Redirección HTTP desactivada (HTTP_REDIRECT=false): el puerto 80 queda libre.");

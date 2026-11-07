@@ -37,6 +37,7 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - [Uso](#uso)
 - [Grabaciones](#grabaciones)
 - [Puertos y Protocolos](#puertos-y-protocolos)
+- [Configuración con .env](#configuración-con-env)
 - [API MediaMTX](#api-mediamtx)
 - [Configuración avanzada](#configuración-avanzada)
 - [Solución de problemas](#solución-de-problemas)
@@ -120,25 +121,18 @@ Descomprime el archivo y añade la carpeta `bin` al PATH del sistema, o colócal
 
 > **Nota**: Si prefieres compilar FFmpeg tú mismo, consulta `/docs/compilacion_todo_junto.md`
 
-### 3. Configurar MediaMTX (IMPORTANTE)
+### 3. Configurar este equipo (`.env`)
 
-Editar `mediamtx/mediamtx.yml` y configurar la IP de tu máquina para que los clientes WebRTC puedan conectarse:
+Todo lo que cambia de un equipo a otro (IPs, puertos, retención de grabaciones…) va en un fichero `.env` en la raíz, que **no se sube a git**. La plantilla documentada es `.env.example`:
 
-```yaml
-# Buscar la línea webrtcAdditionalHosts y agregar tu IP local
-webrtcAdditionalHosts: ['192.168.X.X']  # Cambiar por tu IP
+```powershell
+Copy-Item .env.example .env
+notepad .env        # pon tus IPs LAN en WEBRTC_HOSTS
 ```
 
-Para obtener tu IP:
-```bash
-# Windows
-ipconfig
+`WEBRTC_HOSTS` es **obligatoria**: son las IPs de este equipo en la red local, separadas por comas, que MediaMTX anuncia a los navegadores para la conexión WebRTC. Sin ella `docker compose` se niega a arrancar y lo dice. Para ver tus IPs: `Get-NetIPAddress -AddressFamily IPv4` (o `ipconfig`).
 
-# Linux/macOS
-ip addr show | grep inet
-```
-
-> **Nota**: Esta configuración es necesaria para que los navegadores de otros dispositivos en la red local puedan reproducir el stream.
+Ver la sección [Configuración con .env](#configuración-con-env) para el resto de variables.
 
 ### 4. Configurar HTTPS con mkcert
 
@@ -174,7 +168,7 @@ Desde la raíz del repositorio, en PowerShell:
 .\scripts\gen-certs.ps1 -IP 192.168.1.46 -IPsLocales -Force
 ```
 
-El script incluye siempre `localhost`, `127.0.0.1` y `::1`, las IPs de `webrtcAdditionalHosts` de `mediamtx/mediamtx.yml` y, con `-IPsLocales`, las IPv4 actuales del equipo.
+El script incluye siempre `localhost`, `127.0.0.1` y `::1`, las IPs de `WEBRTC_HOSTS` del `.env` y, con `-IPsLocales`, las IPv4 actuales del equipo. Con `-SoloListar` muestra qué cubriría sin generar nada.
 
 > **Nota**: los certificados deben estar en `server/` como `cert.pem` y `key.pem` (están en `.gitignore`). Sin ellos el servidor Node no arranca y lo indica en el log; MediaMTX tampoco, porque usa los mismos ficheros.
 >
@@ -236,7 +230,7 @@ WebMTX/
 │           ├── ui/                # DOM y render: avisos.js, tally.js, <página>-ui.js
 │           └── utils/             # utils.js, camaras.js, watchdog.js, *-utils.js, stats-charts.js
 ├── mediamtx/
-│   ├── mediamtx.yml               # Configuración (webrtcAdditionalHosts, grabación, playback…)
+│   ├── mediamtx.yml               # Configuración común (grabación, playback…); lo del equipo va en .env
 │   └── logs/                      # mediamtx.log (montado como /logs)
 ├── scripts/                       # Utilidades (PowerShell / Node)
 │   ├── gen-certs.ps1              # Certificados TLS con mkcert
@@ -339,8 +333,8 @@ Las grabaciones están en el volumen Docker `webmtx_recordings_volume`: el acces
 
 | Puerto | Protocolo | Descripción | Latencia |
 |--------|-----------|-------------|----------|
-| **80** | HTTP | Redirige a HTTPS (desactivable con `HTTP_REDIRECT=false`) | - |
-| **443** | HTTPS | Servidor web (necesario para getUserMedia por IP) | - |
+| **80** | HTTP | Redirige a HTTPS (`PUERTO_HTTP`; desactivable con `HTTP_REDIRECT=false`) | - |
+| **443** | HTTPS | Servidor web, necesario para getUserMedia por IP (`PUERTO_HTTPS`) | - |
 | **1935** | RTMP | Streaming RTMP | ~2-5s |
 | **8554** | RTSP | Streaming RTSP | ~1-2s |
 | **8888** | HTTPS | HLS (HTTP Live Streaming) | ~6-30s |
@@ -350,13 +344,24 @@ Las grabaciones están en el volumen Docker `webmtx_recordings_volume`: el acces
 
 No se publican al host (solo dentro de la red de Docker): **9996** (playback, se usa por el proxy `/api/playback`), **8890/UDP** (SRT) y **9998** (métricas). Si necesitas SRT desde fuera, añade `"8890:8890/udp"` en `docker-compose.yml`.
 
-### Variables de entorno (servicio `server`)
+## Configuración con .env
 
-| Variable | Por defecto | Uso |
-|----------|-------------|-----|
-| `HTTP_REDIRECT` | `true` | `false` deja libre el puerto 80 (comenta también `"80:80"` en `docker-compose.yml`) |
-| `MEDIAMTX_HOST` | `mediamtx` (en compose) | Host de la API de MediaMTX |
-| `PLAYBACK_HOST` / `PLAYBACK_PORT` | `MEDIAMTX_HOST` / `9996` | Servidor de playback |
+`docker-compose.yml` lee el `.env` de la raíz (plantilla: `.env.example`) y pasa a cada contenedor **solo** lo que necesita. Lo que depende del equipo nunca se escribe en `mediamtx.yml` ni en el compose: MediaMTX lo recibe como variables `MTX_*`, que sobrescriben su yml.
+
+| Variable | Por defecto | Qué hace |
+|----------|-------------|----------|
+| `WEBRTC_HOSTS` | *obligatoria* | IPs LAN de este equipo, separadas por comas. Se anuncian a los navegadores para WebRTC (`MTX_WEBRTCADDITIONALHOSTS`). `gen-certs.ps1` también las mete en el certificado |
+| `PUERTO_HTTPS` | `443` | Puerto HTTPS publicado en el equipo; la redirección del 80 apunta a él |
+| `PUERTO_HTTP` | `80` | Puerto publicado para la redirección a HTTPS; cámbialo si el 80 lo usa otro servicio |
+| `HTTP_REDIRECT` | `true` | `false` no escucha en el puerto HTTP |
+| `RETENCION_GRABACIONES` | `7d` | Cuánto se conservan las grabaciones (`MTX_PATHDEFAULTS_RECORDDELETEAFTER`); `0s` = siempre |
+| `NIVEL_LOG_MEDIAMTX` | `info` | `error`, `warn`, `info` o `debug` (`MTX_LOGLEVEL`) |
+| `NODE_ENV` | `production` | `production` no muestra detalles internos en las respuestas de error |
+
+- **Aplicar cambios:** `docker compose up -d`. `restart` no vuelve a leer el `.env`.
+- **Comprobar qué valores se usan:** `docker compose config`. El servidor Node también escribe su configuración efectiva al arrancar (`docker compose logs server`).
+- **Sin Docker:** `cd server; npm run start:local` usa el mismo `.env` (Node 22 o superior).
+- Las variables internas (`MEDIAMTX_HOST`, `PLAYBACK_HOST`, `PLAYBACK_PORT`) están fijas en el compose porque dependen de la red de Docker.
 
 ## API MediaMTX
 
@@ -407,7 +412,7 @@ curl https://localhost:9997/v3/hlsmuxers/list
 1. Verificar que MediaMTX está corriendo: `docker compose ps`
 2. Comprobar logs: `docker compose logs mediamtx` o `mediamtx\logs\mediamtx.log`
 3. Verificar que FFmpeg está enviando correctamente: buscar "WHIP session established" en los logs
-4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe estar en `webrtcAdditionalHosts` (`mediamtx.yml`) y en el certificado (`scripts\gen-certs.ps1`)
+4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe estar en `WEBRTC_HOSTS` (`.env`, aplicado con `docker compose up -d`) y en el certificado (`scripts\gen-certs.ps1`)
 
 ### Las repeticiones no se reproducen
 

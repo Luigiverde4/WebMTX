@@ -1,5 +1,6 @@
 # No meter certificados, dependencias del host ni datos en la imagen
 server/*.pem
+.env
 **/node_modules
 mediamtx/recordings
 mediamtx/logs
