@@ -170,6 +170,7 @@
 
   --alto-cabecera: 52px;
   --alto-tally: 40px;
+  --alto-tally-compacto: 32px;         /* Emitir con el móvil tumbado (modo cámara) */
   --ancho-max: 1440px;
   /* Margen lateral que alinea cabecera y tally con el contenido centrado */
   --margen-lateral: max(var(--e-5), calc((100vw - var(--ancho-max)) / 2 + var(--e-5)));

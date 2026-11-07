@@ -141,9 +141,10 @@
         font-weight: 650;
     }
     .previo__botones { display: flex; gap: var(--e-1); }
-    /* Móvil: el monitor es pequeño; el previo va en horizontal (vídeo a la
-       izquierda, botones apilados a la derecha) para no tapar el programa */
-    @media (max-width: 600px) {
+    /* Móvil (vertical, o tumbado en modo cámara): el monitor es pequeño; el
+       previo va en horizontal (vídeo a la izquierda, botones apilados a la
+       derecha) para no tapar el programa */
+    @media (max-width: 600px), (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
         .previo {
             display: grid;
             grid-template-columns: 48% 1fr;
@@ -235,5 +236,49 @@
     @media (max-width: 600px) {
         .acciones__principales { inline-size: 100%; margin-inline-start: 0; }
         .acciones__principales .boton { flex: 1; min-inline-size: 0; }
+    }
+
+    /* MODO CÁMARA: móvil tumbado para grabar (poca altura). Como la app de
+       cámara: sin cabecera (para navegar se gira a vertical), tally
+       compacto, el monitor a la izquierda con todo el alto y los botones
+       debajo, y los ajustes a la derecha con su propio scroll. Va al final
+       para ganar a las reglas de móvil vertical y de ventana baja. Solo en
+       pantallas táctiles: una ventana de escritorio baja no pierde la
+       navegación. */
+    @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+        .cabecera { display: none; }
+        .tally {
+            inset-block-start: 0;
+            min-block-size: var(--alto-tally-compacto);
+            padding-block: 0;
+        }
+        .emisor.pagina--app {
+            block-size: calc(100dvh - var(--alto-tally-compacto));
+            overflow: hidden;
+        }
+        .emisor {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) min(40%, 320px);
+            grid-template-rows: minmax(0, 1fr);
+            align-items: stretch; /* la regla de ventana baja pone start */
+            gap: var(--e-2);
+            padding: var(--e-2) max(var(--e-2), env(safe-area-inset-right)) var(--e-2) max(var(--e-2), env(safe-area-inset-left));
+        }
+        .emisor__monitor {
+            position: static;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            gap: var(--e-2);
+            min-block-size: 0;
+        }
+        .emisor .monitor--llenar { aspect-ratio: auto; flex: 1 1 auto; min-block-size: 0; }
+        /* Botones en una fila compacta; el resumen de envío cabe al lado */
+        .emisor__acciones { flex-wrap: nowrap; gap: var(--e-2); }
+        .emisor__acciones .boton { min-block-size: var(--alto-control); padding-block: var(--e-1); }
+        .acciones__principales { inline-size: auto; margin-inline-start: auto; }
+        .acciones__principales .boton { flex: none; min-inline-size: 0; min-block-size: var(--alto-control); }
+        .resumen-envio { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-inline-size: 0; }
+        .emisor__ajustes.columna-scroll { overflow-y: auto; padding-inline-end: var(--e-1); }
     }
 }
