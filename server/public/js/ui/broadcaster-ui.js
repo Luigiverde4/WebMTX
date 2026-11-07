@@ -655,18 +655,23 @@ function revisarCambiosPendientes() {
 }
 
 /** Devuelve los controles a lo que se está emitiendo ahora. */
-function revertirAjustes() {
-    if (!ajustesEmitidos) return;
-    let a = ajustesEmitidos;
-    endpointInput.value = a.endpoint;
+/** Devuelve a la UI los ajustes de captura (cámara, micro, resolución, fps, procesado). */
+function ponerAjustesDeCaptura(a) {
     seleccionarSiExiste(videoSource, a.camara);
     seleccionarSiExiste(audioSource, a.micro);
-    seleccionarSiExiste(videoCodecPreference, a.codec);
     seleccionarSiExiste(resolution, a.resolucion);
     seleccionarSiExiste(frameRateSelect, a.fps);
     echoCancellationCheck.checked = a.eco;
     noiseSuppressionCheck.checked = a.ruido;
     autoGainControlCheck.checked = a.ganancia;
+}
+
+function revertirAjustes() {
+    if (!ajustesEmitidos) return;
+    let a = ajustesEmitidos;
+    endpointInput.value = a.endpoint;
+    seleccionarSiExiste(videoCodecPreference, a.codec);
+    ponerAjustesDeCaptura(a);
 
     marcarEndpointElegido();
     avisarSiCodecNoRecomendado();
@@ -738,6 +743,7 @@ async function visualizarPreview() {
             return;
         }
         preview.srcObject = localStream;
+        capturaAbiertaCon = leerAjustesDeReconexion(); // para volver aquí si un cambio falla
         actualizarVacioPreview();
         cambiarEstadoEmision(ESTADOS_EMISION.PREVISUALIZANDO);
     } catch (error) {
