@@ -127,10 +127,10 @@ Todo lo que cambia de un equipo a otro (IPs, puertos, retención de grabaciones�
 
 ```powershell
 Copy-Item .env.example .env
-notepad .env        # opcional: todo tiene valor por defecto
+notepad .env        # pon tu IP de la red local en IP_EQUIPO
 ```
 
-No hace falta configurar IPs para WebRTC: MediaMTX corre en Docker y no ve las IPs del equipo, pero las páginas de WebMTX (Emitir, Ver, salida de OBS) le dicen al navegador que use la misma IP con la que abriste la página. Funciona igual en casa, en la universidad o con el móvil de punto de acceso. `WEBRTC_HOSTS` es opcional y solo serviría para clientes WebRTC que no son nuestras páginas (la salida WHIP de OBS, ffmpeg), que no se soportan: para meter señal desde fuera, usa RTMP o RTSP.
+`IP_EQUIPO` es **obligatoria**: es la IP de este equipo en la red local (una sola), que MediaMTX anuncia a los navegadores para la conexión WebRTC. Si cambias de red, cámbiala y aplica con `docker compose up -d`. Sin ella `docker compose` se niega a arrancar y lo dice. Para ver tus IPs: `Get-NetIPAddress -AddressFamily IPv4` (o `ipconfig`).
 
 Ver la sección [Configuración con .env](#configuración-con-env) para el resto de variables.
 
@@ -168,7 +168,7 @@ Desde la raíz del repositorio, en PowerShell:
 .\scripts\gen-certs.ps1 -IP 192.168.1.46 -IPsLocales -Force
 ```
 
-El script incluye siempre `localhost`, `127.0.0.1` y `::1`, las IPs de `WEBRTC_HOSTS` del `.env` si la hay y, con `-IPsLocales`, las IPv4 actuales del equipo (lo normal: en una red nueva, vuelve a generarlo con `-IPsLocales`). Con `-SoloListar` muestra qué cubriría sin generar nada.
+El script incluye siempre `localhost`, `127.0.0.1` y `::1`, la `IP_EQUIPO` del `.env` y, con `-IPsLocales`, las IPv4 actuales del equipo. Con `-SoloListar` muestra qué cubriría sin generar nada.
 
 > **Nota**: los certificados deben estar en `server/` como `cert.pem` y `key.pem` (están en `.gitignore`). Sin ellos el servidor Node no arranca y lo indica en el log; MediaMTX tampoco, porque usa los mismos ficheros.
 >
@@ -356,7 +356,7 @@ No se publican al host (solo dentro de la red de Docker): **9996** (playback, se
 
 | Variable | Por defecto | Qué hace |
 |----------|-------------|----------|
-| `WEBRTC_HOSTS` | `127.0.0.1` | Opcional. IPs que MediaMTX anuncia para WebRTC (`MTX_WEBRTCADDITIONALHOSTS`). Nuestras páginas no la necesitan (anuncian la IP con la que se abrieron); solo para clientes WebRTC externos |
+| `IP_EQUIPO` | *obligatoria* | IP de este equipo en la red local. Se anuncia a los navegadores para WebRTC (`MTX_WEBRTCADDITIONALHOSTS`). `gen-certs.ps1` también la mete en el certificado |
 | `PUERTO_HTTPS` | `443` | Puerto HTTPS publicado en el equipo; la redirección del 80 apunta a él |
 | `PUERTO_HTTP` | `80` | Puerto publicado para la redirección a HTTPS; cámbialo si el 80 lo usa otro servicio |
 | `HTTP_REDIRECT` | `true` | `false` no escucha en el puerto HTTP |
@@ -418,7 +418,7 @@ curl https://localhost:9997/v3/hlsmuxers/list
 1. Verificar que MediaMTX está corriendo: `docker compose ps`
 2. Comprobar logs: `docker compose logs mediamtx` o `mediamtx\logs\mediamtx.log`
 3. Verificar que FFmpeg está enviando correctamente: buscar "WHIP session established" en los logs
-4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe estar en el certificado (`scripts\gen-certs.ps1 -IPsLocales`) y el puerto 8189/UDP no debe estar bloqueado por el firewall de Windows ni por la red (algunas wifi de universidad bloquean UDP)
+4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe ser la `IP_EQUIPO` del `.env` (`.env`, aplicado con `docker compose up -d`) y en el certificado (`scripts\gen-certs.ps1`)
 
 ### Las repeticiones no se reproducen
 
