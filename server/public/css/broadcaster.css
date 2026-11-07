@@ -66,7 +66,9 @@
     .monitor:fullscreen .en-directo { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
     .monitor:fullscreen .boton-monitor { inset-block-end: var(--e-5); inset-inline-end: var(--e-5); }
 
-    /* Rótulo sobre el monitor mientras se emite */
+    /* Rótulo sobre el monitor mientras se emite. Solo a pantalla completa:
+       fuera de ella el tally ya dice que estás en directo. */
+    .monitor:not(:fullscreen) .en-directo { display: none; }
     .en-directo {
         position: absolute;
         inset-block-start: var(--e-3);

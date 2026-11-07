@@ -4,7 +4,6 @@
  */
 
 // Información de pantalla
-let statusEl = document.getElementById('status');
 let activePathsList = document.getElementById('activePathsList');
 let codecStatsEl = document.getElementById('codecStats');
 let codecAvisoEl = document.getElementById('codecAviso');
@@ -465,23 +464,25 @@ function marcarEndpointElegido() {
 
 // UI
 // Cómo se ve cada estado de la emisión (js/utils/estado-emision.js).
-// pildora: clase de .estado · tally: estado de la barra · texto: lo que se lee.
+// El tally es el único indicador de estado de la página.
+// tally: estado de la barra · texto: lo que se lee.
 const VISTA_ESTADO_EMISION = {
-    inactivo: { pildora: 'inactivo', tally: 'inactivo', texto: 'Sin emitir' },
-    previsualizando: { pildora: 'inactivo', tally: 'inactivo', texto: 'Previsualizando' },
-    abriendo: { pildora: 'conectando', tally: 'conectando', texto: 'Abriendo la cámara' },
-    negociando: { pildora: 'conectando', tally: 'conectando', texto: 'Conectando' },
-    esperando_trafico: { pildora: 'conectando', tally: 'conectando', texto: 'Comprobando el envío' },
+    inactivo: { tally: 'inactivo', texto: 'Sin emitir' },
+    previsualizando: { tally: 'inactivo', texto: 'Previsualizando' },
+    abriendo: { tally: 'conectando', texto: 'Abriendo la cámara' },
+    negociando: { tally: 'conectando', texto: 'Conectando' },
+    esperando_trafico: { tally: 'conectando', texto: 'Comprobando el envío' },
     // En 'inestable' el tally sigue en rojo para no reiniciar el cronómetro por un microcorte
-    en_directo: { pildora: 'directo', tally: 'directo', texto: 'En directo' },
-    inestable: { pildora: 'conectando', tally: 'directo', texto: 'Conexión inestable' },
-    deteniendo: { pildora: 'conectando', tally: 'conectando', texto: 'Deteniendo' },
-    error: { pildora: 'error', tally: 'error', texto: 'Error' }
+    en_directo: { tally: 'directo', texto: 'En directo' },
+    inestable: { tally: 'directo', texto: 'Conexión inestable' },
+    deteniendo: { tally: 'conectando', texto: 'Deteniendo' },
+    error: { tally: 'error', texto: 'Error' }
 };
 
 /**
- * Pinta TODA la UI que depende del estado de la emisión: píldora, tally,
- * botones y rótulo "En directo". Es el único sitio que la toca.
+ * Pinta TODA la UI que depende del estado de la emisión: tally, botones y
+ * rótulo "En directo" (este solo se ve a pantalla completa). Es el único
+ * sitio que la toca.
  * @param {string} estado - Uno de ESTADOS_EMISION.
  * @param {{mensaje?: string}} [contexto]
  */
@@ -489,9 +490,6 @@ function pintarEstadoEmision(estado, contexto = {}) {
     let vista = VISTA_ESTADO_EMISION[estado] || VISTA_ESTADO_EMISION.inactivo;
     let texto = estado === 'error' && contexto.mensaje ? contexto.mensaje : vista.texto;
     let endpoint = endpointInput.value;
-
-    statusEl.className = `estado estado--${vista.pildora}`;
-    statusEl.textContent = texto;
 
     if (vista.tally === 'directo') {
         ponerTally('directo', { estado: texto, detalle: endpoint, cronometro: true });

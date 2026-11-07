@@ -36,6 +36,7 @@
             <div class="monitor monitor--llenar emisor__pantalla" id="monitorEmisor">
                 <video id="preview" muted autoplay playsinline aria-label="Previsualización de la cámara local"></video>
                 <div class="monitor__vacio" id="previewVacio">Pulsa Previsualizar o toca aquí para ver la cámara</div>
+                <!-- Solo se ve a pantalla completa: fuera de ella ya lo dice el tally -->
                 <div class="en-directo" id="liveIndicator" hidden>
                     <span aria-hidden="true"></span>En directo
                 </div>
@@ -49,7 +50,6 @@
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#ojo"/></svg>
                     Previsualizar
                 </button>
-                <span class="estado" id="status">Sin emitir</span>
                 <span class="resumen-envio cifra texto-2 texto-peq" id="resumenEnvio"></span>
                 <div class="acciones__principales">
                     <button type="button" class="boton" id="stopBtn" onclick="stopBroadcast()" disabled>
