@@ -29,12 +29,12 @@
         <span class="tally__tiempo" id="tallyTiempo"></span>
     </div>
 
-    <main class="pagina repeticiones">
+    <main class="pagina pagina--app repeticiones">
         <h1 class="visualmente-oculto">Repeticiones</h1>
 
         <!-- Vídeo, línea temporal y salida a OBS -->
         <section class="rep__escenario" aria-label="Previsualización">
-            <div class="monitor">
+            <div class="monitor monitor--llenar">
                 <video id="video" controls playsinline aria-label="Previsualización de la repetición"></video>
             </div>
 
@@ -83,7 +83,7 @@
         </section>
 
         <!-- Qué reproducir -->
-        <section class="rep__fuente panel" aria-labelledby="tituloFuente">
+        <section class="rep__fuente panel columna-scroll" aria-labelledby="tituloFuente">
             <div class="panel__cabecera">
                 <h2 id="tituloFuente">Qué repetir</h2>
                 <span class="texto-2 texto-peq cifra" id="recordingCount">0 grabaciones</span>
@@ -138,7 +138,7 @@
         </section>
 
         <!-- Momentos marcados: se guardan en este navegador (localStorage) -->
-        <aside class="rep__marcados panel" aria-labelledby="tituloMarcados">
+        <aside class="rep__marcados panel columna-scroll" aria-labelledby="tituloMarcados">
             <div class="panel__cabecera">
                 <h2 id="tituloMarcados">Momentos marcados</h2>
                 <button type="button" class="boton boton--fantasma boton--peq" id="limpiarMarcados" onclick="borrarTodosLosMomentos()">Borrar todos</button>
