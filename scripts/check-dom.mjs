@@ -237,9 +237,55 @@ function listarJs(dir) {
     return res;
 }
 
+// --- Reglas de CSS ---
+// - Colores literales (#hex, rgb(), hsl()) solo en css/tokens.css: el resto usa var(--...).
+// - !important solo en líneas marcadas con /* permitido */ (p. ej. prefers-reduced-motion).
+// - Desde JS, solo custom properties: elemento.style.setProperty('--x', ...).
+function comprobarCss() {
+  const cssDir = join(publicDir, "css");
+  for (const nombre of readdirSync(cssDir).filter((f) => f.endsWith(".css"))) {
+    const lineas = leer(join(cssDir, nombre)).split(/\r?\n/);
+    let enComentario = false;
+    lineas.forEach((lineaOriginal, i) => {
+      // Quitar comentarios para no contar lo que se menciona en ellos
+      let linea = "";
+      let resto = lineaOriginal;
+      while (resto.length) {
+        if (enComentario) {
+          const fin = resto.indexOf("*/");
+          if (fin < 0) { resto = ""; break; }
+          resto = resto.slice(fin + 2);
+          enComentario = false;
+        } else {
+          const ini = resto.indexOf("/*");
+          if (ini < 0) { linea += resto; break; }
+          linea += resto.slice(0, ini);
+          resto = resto.slice(ini + 2);
+          enComentario = true;
+        }
+      }
+      const donde = `css/${nombre}:${i + 1}`;
+      if (nombre !== "tokens.css" && /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/.test(linea)) {
+        errores.push(`${donde}: color literal; usa un token de css/tokens.css → ${lineaOriginal.trim()}`);
+      }
+      if (/!important/.test(linea) && !/\/\*\s*permitido\s*\*\//.test(lineaOriginal)) {
+        errores.push(`${donde}: !important no permitido (usa @layer) → ${lineaOriginal.trim()}`);
+      }
+    });
+  }
+  for (const ruta of listarJs(join(publicDir, "js"))) {
+    leer(ruta).split(/\r?\n/).forEach((linea, i) => {
+      if (/\.style\.(?!setProperty\(\s*['"`]--)[a-zA-Z]+/.test(linea)) {
+        errores.push(`${rel(ruta)}:${i + 1}: estilo puesto desde JS; usa clases, hidden o una custom property → ${linea.trim()}`);
+      }
+    });
+  }
+}
+
 // --- main ---
 const paginas = readdirSync(publicDir).filter((f) => f.endsWith(".html"));
 const resumen = paginas.map((p) => comprobarPagina(join(publicDir, p)));
+comprobarCss();
 
 for (const ruta of listarJs(join(publicDir, "js"))) {
     const r = spawnSync(process.execPath, ["--check", ruta], { encoding: "utf8" });

@@ -73,9 +73,18 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 
 **Nombres de funciones.** Las que se llaman desde `onclick`, `onchange` o `data-load` son contrato: si cambias un nombre, actualiza el HTML.
 
-**Sistema de diseño.** Está en `css/base.css`: tokens en `:root`, componentes y la barra de tally.
-- Cada cámara tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). La paleta está validada con el validador de la skill dataviz contra el fondo oscuro; si la cambias, vuelve a validarla.
-- `[hidden]` siempre gana a los `display` de las clases (regla global en base.css): usa `hidden` para mostrar y ocultar, no `style.display`.
+**CSS.**
+- **Valores:** solo en `css/tokens.css`, que tiene dos niveles: paleta base (`--gris-900`, `--rojo-500`…) y tokens de uso (`--fondo`, `--texto`, `--programa`, `--alto-control`, `--borde`…). Las demás hojas solo usan `var(--…)` de uso, nunca la paleta base. `check-dom.mjs` falla si aparece un color literal fuera de `tokens.css`, un `!important` sin `/* permitido */` o un `.style.x` en JS (solo se permite `style.setProperty('--…')`).
+- **Cascada:** capas `@layer reset, base, componentes, paginas, utilidades`.
+  - `base.css` define reset, base, componentes y utilidades.
+  - Cada hoja de página va entera en `@layer paginas { … }`.
+  - No hay estilos sin capa: ganarían a todo.
+- **`[hidden]`** está en la capa `utilidades`, así que siempre gana a los `display` de las clases. Usa `hidden` para mostrar y ocultar, no `style.display`.
+- **Breakpoints:** solo 600, 900 y 1280 px. Lo que pueda acabar en un hueco estrecho (escenario de repeticiones en un dock de OBS, lista de directo, secciones de stats, configuración de la API) usa *container queries*.
+- **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--antena`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `listo`, `ocupado`, `visible`).
+- **Temas:** oscuro por defecto y claro automático (`prefers-color-scheme`), redefiniendo solo los tokens de uso. Las salidas de OBS llevan `<html class="salida-obs">` y siempre son oscuras.
+- Usa propiedades lógicas (`margin-inline`, `padding-block`, `inset-inline-start`…). Los títulos son fluidos (`--t-titulo`).
+- **Cámaras:** cada una tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). Hay una paleta por tema (`--cam-oscuro-*`, `--cam-claro-*`), validadas con el validador de la skill dataviz. Si cambias alguna, vuelve a validarla.
 - Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
 - El rojo y el verde se reservan para el estado tally: en antena / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.

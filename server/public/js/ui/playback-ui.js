@@ -125,7 +125,7 @@ function restaurarControles() {
  */
 function setEstado(texto, tipo = 'info') {
     statusMsgEl.textContent = texto || '';
-    statusMsgEl.className = `mensaje-linea ${tipo}`;
+    statusMsgEl.className = `mensaje-linea mensaje-linea--${tipo}`;
 }
 
 /**
@@ -391,7 +391,7 @@ function actualizarBurbujaTimeline() {
     let fraccion = (parseFloat(timelineSlider.value) || 0) / TIMELINE_PASOS;
     const anchoThumb = 16;
     let x = fraccion * (timelineSlider.offsetWidth - anchoThumb) + anchoThumb / 2;
-    timelineBubble.style.left = `${x}px`;
+    timelineBubble.style.setProperty('--posicion', `${x}px`);
     timelineBubble.classList.add('visible');
 }
 

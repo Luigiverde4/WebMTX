@@ -25,7 +25,7 @@ async function cargarConfig() {
         marcarAcordeonCargado('configAccordion');
     } catch (error) {
         console.error('Error al cargar config:', error);
-        display.innerHTML = `<p class="vacio error">No se pudo cargar la configuración: ${escapeHtml(error.message)}</p>`;
+        display.innerHTML = `<p class="vacio vacio--error">No se pudo cargar la configuración: ${escapeHtml(error.message)}</p>`;
     }
 }
 

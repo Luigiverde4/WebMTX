@@ -42,7 +42,7 @@ function crearItemDirecto(path) {
         <span class="directo__color" aria-hidden="true"></span>
         <div class="directo__nombre">
             <strong>${escapeHtml(nombre)}</strong>
-            <span class="directo__pistas">${pistas.map((p) => `<span>${escapeHtml(p)}</span>`).join('')}</span>
+            <span class="pistas">${pistas.map((p) => `<span class="pista">${escapeHtml(p)}</span>`).join('')}</span>
         </div>
         <dl class="directo__datos">
             <div><dt>Desde</dt><dd class="cifra">${escapeHtml(desde || '—')}</dd></div>

@@ -45,7 +45,7 @@ async function cargarPaths() {
         marcarAcordeonCargado('pathsAccordion');
     } catch (error) {
         console.error('Error al cargar paths:', error);
-        grid.innerHTML = `<p class="vacio error">No se pudieron cargar los paths: ${escapeHtml(error.message)}</p>`;
+        grid.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar los paths: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -66,7 +66,7 @@ function crearTarjetaPath(path) {
     card.innerHTML = `
         <header class="tarjeta__cabecera">
             <h3>${escapeHtml(path.name)}</h3>
-            <span class="estado ${path.ready ? 'ok' : 'aviso'}">${path.ready ? 'Listo' : 'Sin señal'}</span>
+            <span class="estado estado--${path.ready ? 'ok' : 'aviso'}">${path.ready ? 'Listo' : 'Sin señal'}</span>
         </header>
         <dl class="datos">
             <dt>Configuración</dt><dd>${escapeHtml(path.confName ?? '—')}</dd>

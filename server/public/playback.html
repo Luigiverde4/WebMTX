@@ -66,8 +66,8 @@
             <div class="salida-obs panel">
                 <div class="salida-obs__texto">
                     <h2>Salida a OBS</h2>
-                    <p class="texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
-                    <p class="texto-peq" id="obsStatus">OBS: vacío</p>
+                    <p class="salida-obs__pendiente texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
+                    <p class="salida-obs__estado texto-peq" id="obsStatus">OBS: vacío</p>
                 </div>
                 <div class="salida-obs__botones">
                     <button type="button" class="boton" onclick="quitarDelDisplay()">
@@ -91,7 +91,7 @@
             <div class="pila">
                 <div class="campo">
                     <label for="streamSelect">Cámara</label>
-                    <select id="streamSelect" onchange="cambiarStream()"></select>
+                    <select id="streamSelect" class="selector-camara" onchange="cambiarStream()"></select>
                 </div>
                 <div class="campo">
                     <label for="recordingSelect">Grabación</label>

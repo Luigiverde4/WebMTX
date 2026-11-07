@@ -55,7 +55,7 @@ async function cargarGrabaciones() {
         marcarAcordeonCargado('recordingsAccordion');
     } catch (error) {
         console.error('Error loading recordings:', error);
-        container.innerHTML = `<p class="vacio error">No se pudieron cargar las grabaciones: ${escapeHtml(error.message)}</p>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las grabaciones: ${escapeHtml(error.message)}</p>`;
     }
 }
 

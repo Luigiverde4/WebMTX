@@ -4,188 +4,205 @@
  * 1920 px o un dock de OBS estrecho (~400 px).
  */
 
-.repeticiones {
-    display: grid;
-    grid-template-columns: 320px minmax(0, 1fr) 300px;
-    grid-template-areas: "fuente escenario marcados";
-    gap: var(--e-4);
-    align-items: start;
-}
-.rep__escenario { grid-area: escenario; display: flex; flex-direction: column; gap: var(--e-3); min-width: 0; }
-.rep__fuente { grid-area: fuente; }
-.rep__marcados { grid-area: marcados; }
-
-/* --- Rótulo y velocidad -------------------------------------------------- */
-.rep__info {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--e-2) var(--e-4);
-}
-.rep__actual {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--e-1) var(--e-2);
-    margin-right: auto;
-    min-width: 0;
-}
-.rep__actual strong { font-stretch: 85%; font-size: var(--t-l); }
-.rep__velocidad {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--e-1);
-}
-.rep__velocidad-valor {
-    min-width: 4ch;
-    text-align: right;
-    font-weight: 600;
-}
-
-/* --- Línea temporal ------------------------------------------------------ */
-.linea-tiempo {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--e-3);
-    padding: var(--e-5) var(--e-3) var(--e-2);
-    background: var(--superficie);
-    border: 1px solid var(--linea-suave);
-    border-radius: var(--radio-panel);
-    color: var(--texto-2);
-    font-size: var(--t-s);
-}
-.linea-tiempo__pista { position: relative; }
-.linea-tiempo input[type="range"] { display: block; }
-.linea-tiempo input[type="range"]:disabled { cursor: not-allowed; opacity: 0.5; }
-.linea-tiempo__burbuja {
-    position: absolute;
-    bottom: calc(100% + 2px);
-    transform: translateX(-50%);
-    padding: 1px var(--e-2);
-    border-radius: var(--radio-control);
-    background: var(--texto);
-    color: #10151b;
-    font-size: var(--t-xs);
-    font-weight: 650;
-    white-space: nowrap;
-    pointer-events: none;
-    visibility: hidden;
-}
-.linea-tiempo__burbuja.visible { visibility: visible; }
-
-/* --- Salida a OBS -------------------------------------------------------- */
-.salida-obs {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--e-3) var(--e-4);
-}
-.salida-obs__texto { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.salida-obs__texto h2 { font-size: var(--t-m); }
-#obsPending.listo { color: var(--texto); }
-#obsStatus { color: var(--texto-2); }
-#obsStatus.activo { color: #ff8a84; font-weight: 600; }
-.salida-obs__botones { display: flex; gap: var(--e-2); }
-.salida-obs__botones .boton { min-height: 44px; }
-
-/* --- Qué repetir --------------------------------------------------------- */
-#streamSelect.con-camara {
-    border-left: 4px solid var(--cam, var(--linea));
-}
-.rep__numero { width: 5.5em; }
-.atajos { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-top: var(--e-2); }
-
-/* --- Momentos marcados --------------------------------------------------- */
-.boton-marcar {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-        "icono titulo"
-        "icono destino";
-    align-items: center;
-    column-gap: var(--e-3);
-    width: 100%;
-    margin-bottom: var(--e-3);
-    padding: var(--e-3) var(--e-4);
-    border: 1px solid var(--aviso);
-    border-radius: var(--radio-control);
-    background: var(--aviso-tenue);
-    color: var(--texto);
-    text-align: left;
-    cursor: pointer;
-}
-.boton-marcar:hover { background: rgba(233, 162, 59, 0.24); }
-.boton-marcar:active { transform: translateY(1px); }
-.boton-marcar .icono { grid-area: icono; width: 24px; height: 24px; color: var(--aviso); }
-.boton-marcar__titulo { grid-area: titulo; font-size: var(--t-xl); font-weight: 700; font-stretch: 75%; line-height: 1.1; }
-.boton-marcar__destino { grid-area: destino; font-size: var(--t-s); color: var(--texto-2); }
-
-.marcados {
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-2);
-    max-height: 60vh;
-    overflow-y: auto;
-}
-.marcado {
-    --cam: var(--cam-neutro);
-    display: flex;
-    flex-direction: column;
-    gap: var(--e-2);
-    padding: var(--e-2) var(--e-2) var(--e-2) var(--e-3);
-    border: 1px solid var(--linea-suave);
-    border-left: 4px solid var(--cam);
-    border-radius: var(--radio-control);
-    background: var(--superficie-2);
-}
-.marcado__cabecera {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-        "hora acciones"
-        "stream acciones";
-    align-items: center;
-    column-gap: var(--e-2);
-    min-width: 0;
-}
-.marcado__hora { grid-area: hora; font-weight: 650; font-size: var(--t-l); line-height: 1.2; }
-.marcado__stream {
-    grid-area: stream;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--texto-2);
-    font-size: var(--t-s);
-}
-.marcado__acciones { grid-area: acciones; display: flex; gap: var(--e-1); }
-.marcado__acciones .boton--antena { padding: 0 var(--e-2); }
-.marcado__nota { min-height: 32px; font-size: var(--t-s); }
-.marcados__vacio { padding: var(--e-2) 0; }
-
-/* --- Responsive ---------------------------------------------------------- */
-@media (max-width: 1279px) {
+@layer paginas {
     .repeticiones {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 300px;
+        grid-template-areas: "fuente escenario marcados";
+        gap: var(--e-4);
+        align-items: start;
+    }
+    .rep__escenario {
+        grid-area: escenario;
+        container: escenario / inline-size;
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+        min-inline-size: 0;
+    }
+    .rep__fuente { grid-area: fuente; }
+    .rep__marcados { grid-area: marcados; }
+
+    /* --- Rótulo y velocidad ---------------------------------------------- */
+    .rep__info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-2) var(--e-4);
+    }
+    .rep__actual {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-1) var(--e-2);
+        margin-inline-end: auto;
+        min-inline-size: 0;
+    }
+    .rep__actual strong { font-stretch: var(--ancho-cifras); font-size: var(--t-l); }
+    .rep__velocidad {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-1);
+    }
+    .rep__velocidad-valor {
+        min-inline-size: 4ch;
+        text-align: end;
+        font-weight: 600;
+    }
+
+    /* --- Línea temporal -------------------------------------------------- */
+    .linea-tiempo {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--e-3);
+        padding: var(--e-5) var(--e-3) var(--e-2);
+        background: var(--superficie);
+        border: var(--borde-suave);
+        border-radius: var(--radio-panel);
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+    .linea-tiempo__pista { position: relative; }
+    .linea-tiempo input[type="range"] { display: block; }
+    .linea-tiempo input[type="range"]:disabled { cursor: not-allowed; opacity: 0.5; }
+    /* La posición la fija el JS en --posicion (px desde el inicio de la pista) */
+    .linea-tiempo__burbuja {
+        position: absolute;
+        inset-block-end: calc(100% + 2px);
+        inset-inline-start: var(--posicion, 50%);
+        transform: translateX(-50%);
+        padding: 1px var(--e-2);
+        border-radius: var(--radio-control);
+        background: var(--primario);
+        color: var(--sobre-primario);
+        font-size: var(--t-xs);
+        font-weight: 650;
+        white-space: nowrap;
+        pointer-events: none;
+        visibility: hidden;
+    }
+    .linea-tiempo__burbuja.visible { visibility: visible; }
+
+    /* --- Salida a OBS ---------------------------------------------------- */
+    .salida-obs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-3) var(--e-4);
+    }
+    .salida-obs__texto { flex: 1 1 260px; min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
+    .salida-obs__texto h2 { font-size: var(--t-m); }
+    .salida-obs__pendiente.listo { color: var(--texto); }
+    .salida-obs__estado { color: var(--texto-2); }
+    .salida-obs__estado.activo { color: var(--texto-peligro); font-weight: 600; }
+    .salida-obs__botones { display: flex; gap: var(--e-2); }
+    .salida-obs__botones .boton { min-block-size: var(--alto-control-grande); }
+
+    /* --- Qué repetir ----------------------------------------------------- */
+    .selector-camara.con-camara {
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--linea));
+    }
+    .rep__numero { inline-size: 5.5em; }
+    .atajos { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-block-start: var(--e-2); }
+
+    /* --- Momentos marcados ----------------------------------------------- */
+    .boton-marcar {
+        display: grid;
+        grid-template-columns: auto 1fr;
         grid-template-areas:
-            "escenario escenario"
-            "fuente marcados";
+            "icono titulo"
+            "icono destino";
+        align-items: center;
+        column-gap: var(--e-3);
+        inline-size: 100%;
+        margin-block-end: var(--e-3);
+        padding: var(--e-3) var(--e-4);
+        border: var(--grosor-borde) solid var(--aviso);
+        border-radius: var(--radio-control);
+        background: var(--aviso-tenue);
+        color: var(--texto);
+        text-align: start;
+        cursor: pointer;
     }
-}
-@media (max-width: 760px) {
-    .repeticiones {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "escenario" "fuente" "marcados";
+    .boton-marcar:hover { background: var(--aviso-tenue-hover); }
+    .boton-marcar:active { transform: translateY(1px); }
+    .boton-marcar .icono { grid-area: icono; inline-size: 24px; block-size: 24px; color: var(--aviso); }
+    .boton-marcar__titulo {
+        grid-area: titulo;
+        font-size: var(--t-xl);
+        font-weight: 700;
+        font-stretch: 75%;
+        line-height: 1.1;
     }
-    .marcados { max-height: none; }
-}
-/* Dock de OBS o móvil */
-@media (max-width: 480px) {
-    .rep__velocidad .boton:not(.boton--icono) { display: none; }
-    .salida-obs__botones { width: 100%; }
-    .salida-obs__botones .boton { flex: 1; }
-    .linea-tiempo { grid-template-columns: minmax(0, 1fr); padding-top: var(--e-6); }
-    .linea-tiempo > span { display: none; }
+    .boton-marcar__destino { grid-area: destino; font-size: var(--t-s); color: var(--texto-2); }
+
+    .marcados {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-2);
+        max-block-size: 60vh;
+        overflow-y: auto;
+    }
+    .marcado {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-2);
+        padding: var(--e-2) var(--e-2) var(--e-2) var(--e-3);
+        border: var(--borde-suave);
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--cam-neutro));
+        border-radius: var(--radio-control);
+        background: var(--superficie-2);
+    }
+    .marcado__cabecera {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "hora acciones"
+            "stream acciones";
+        align-items: center;
+        column-gap: var(--e-2);
+        min-inline-size: 0;
+    }
+    .marcado__hora { grid-area: hora; font-weight: 650; font-size: var(--t-l); line-height: 1.2; }
+    .marcado__stream {
+        grid-area: stream;
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+    .marcado__acciones { grid-area: acciones; display: flex; gap: var(--e-1); }
+    .marcado__acciones .boton--antena { padding-inline: var(--e-2); }
+    .marcado__nota { min-block-size: var(--alto-control-peq); font-size: var(--t-s); }
+    .marcados__vacio { padding-block: var(--e-2); }
+
+    /* --- Responsive: la página -------------------------------------------- */
+    @media (max-width: 1280px) {
+        .repeticiones {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "escenario escenario"
+                "fuente marcados";
+        }
+    }
+    @media (max-width: 900px) {
+        .repeticiones {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas: "escenario" "fuente" "marcados";
+        }
+        .marcados { max-block-size: none; }
+    }
+
+    /* --- Responsive: el escenario según su propio ancho (dock de OBS) ------ */
+    @container escenario (max-width: 480px) {
+        .rep__velocidad .boton:not(.boton--icono) { display: none; }
+        .salida-obs__botones { inline-size: 100%; }
+        .salida-obs__botones .boton { flex: 1; }
+        .linea-tiempo { grid-template-columns: minmax(0, 1fr); padding-block-start: var(--e-6); }
+        .linea-tiempo > span { display: none; }
+    }
 }

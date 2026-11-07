@@ -211,14 +211,14 @@ function updateStreamBlocks(items, labels) {
     let hayGraficas = typeof Chart !== 'undefined';
 
     if (!items || items.length === 0) {
-        streamSectionsContainerEl.innerHTML = '<div class="empty-state vacio"><strong>No hay ningún path en MediaMTX.</strong> Las cámaras aparecen aquí en cuanto empiezan a emitir.</div>';
+        streamSectionsContainerEl.innerHTML = '<div class="vacio"><strong>No hay ningún path en MediaMTX.</strong> Las cámaras aparecen aquí en cuanto empiezan a emitir.</div>';
         perStreamChartInstances.forEach(chart => chart.destroy());
         perStreamChartInstances.clear();
         return;
     }
 
     // Limpia el placeholder inicial de carga o de error para que no conviva con las secciones reales.
-    streamSectionsContainerEl.querySelectorAll('.empty-state, .vacio').forEach(node => node.remove());
+    streamSectionsContainerEl.querySelectorAll('.vacio').forEach(node => node.remove());
 
     let itemsByName = new Map(items.map(path => [path.name || 'sin nombre', path]));
     let streamNames = [...itemsByName.keys()];
@@ -232,7 +232,7 @@ function updateStreamBlocks(items, labels) {
         }
     });
 
-    streamSectionsContainerEl.querySelectorAll('.stream-section').forEach(card => {
+    streamSectionsContainerEl.querySelectorAll('.seccion-camara').forEach(card => {
         if (!wantedBlockIds.has(card.id)) {
             card.remove();
         }
@@ -251,17 +251,17 @@ function updateStreamBlocks(items, labels) {
 
         if (!cardEl) {
             cardEl = document.createElement('section');
-            cardEl.className = 'stream-section panel';
+            cardEl.className = 'seccion-camara panel';
             cardEl.id = blockId;
             aplicarColorCamara(cardEl, streamName);
             cardEl.innerHTML = `
-                <header class="stream-section__cabecera">
+                <header class="seccion-camara__cabecera">
                     <span class="punto-camara" aria-hidden="true"></span>
                     <h3>${escapeHtml(streamName)}</h3>
                     <span id="status-${canvasId}" class="estado"></span>
                 </header>
 
-                <dl class="datos stream-section__datos">
+                <dl class="datos seccion-camara__datos">
                     <dt>Online</dt><dd id="online-${canvasId}"></dd>
                     <dt>Espectadores</dt><dd id="readers-${canvasId}"></dd>
                     <dt>Recibido</dt><dd id="rx-${canvasId}"></dd>
@@ -273,7 +273,7 @@ function updateStreamBlocks(items, labels) {
 
                 ${hayGraficas ? `<div class="grafica__lienzo grafica__lienzo--peq"><canvas id="${canvasId}" role="img" aria-label="Tráfico de ${escapeHtml(streamName)} en Mbps"></canvas></div>` : ''}
 
-                <dl class="stream-section__metricas">
+                <dl class="seccion-camara__metricas">
                     <div><dt>Mínimo</dt><dd id="min-${canvasId}" class="cifra">—</dd></div>
                     <div><dt>Media</dt><dd id="avg-${canvasId}" class="cifra">—</dd></div>
                     <div><dt>Máximo</dt><dd id="max-${canvasId}" class="cifra">—</dd></div>
@@ -285,7 +285,7 @@ function updateStreamBlocks(items, labels) {
         let statusEl = document.getElementById(`status-${canvasId}`);
         if (statusEl) {
             statusEl.textContent = path.ready ? 'Listo' : 'No listo';
-            statusEl.className = `estado ${path.ready ? 'ok' : 'aviso'}`;
+            statusEl.className = `estado estado--${path.ready ? 'ok' : 'aviso'}`;
         }
 
         ponerTextoPorId(`online-${canvasId}`, path.online ? 'Sí' : 'No');

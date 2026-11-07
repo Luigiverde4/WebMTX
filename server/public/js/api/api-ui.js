@@ -99,10 +99,10 @@ async function comprobarEstadoApi() {
     try {
         await GET('/paths/list');
         let ms = Math.round(performance.now() - inicio);
-        estadoApiEl.className = 'estado ok';
+        estadoApiEl.className = 'estado estado--ok';
         estadoApiEl.textContent = `API conectada (${ms} ms)`;
     } catch (error) {
-        estadoApiEl.className = 'estado error';
+        estadoApiEl.className = 'estado estado--error';
         estadoApiEl.textContent = `API sin respuesta: ${error.message}`;
     }
 }

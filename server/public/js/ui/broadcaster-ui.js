@@ -179,7 +179,7 @@ function avisarSiCodecNoRecomendado() {
     codecAvisoEl.textContent = noRecomendado
         ? 'Con este códec las repeticiones pueden no reproducirse en el navegador. Usa H264 si vas a repetir jugadas.'
         : '';
-    codecAvisoEl.classList.toggle('error', noRecomendado);
+    codecAvisoEl.classList.toggle('mensaje-linea--error', noRecomendado);
 }
 
 /**
@@ -240,7 +240,7 @@ const MOTIVOS_LIMITACION = {
  */
 function ponerMensajeStatsCodec(message, tipo = '') {
     if (!codecStatsEl) return;
-    codecStatsEl.innerHTML = `<p class="vacio ${tipo}">${escapeHtml(message)}</p>`;
+    codecStatsEl.innerHTML = `<p class="vacio${tipo ? ` vacio--${tipo}` : ''}">${escapeHtml(message)}</p>`;
 }
 
 /**
@@ -260,11 +260,11 @@ function renderizarStatsCodec(rows) {
             <tr>
                 <td>${row.kind === 'video' ? 'Vídeo' : 'Audio'}</td>
                 <td>${escapeHtml(row.mimeType)}</td>
-                <td class="num">${escapeHtml(row.payloadType)}</td>
-                <td class="num">${escapeHtml(row.clockRate)}</td>
-                <td class="num">${escapeHtml(row.channels)}</td>
-                <td class="num">${formatBytes(row.bytesSent)}</td>
-                <td class="num">${row.kbps === null ? '—' : `${row.kbps.toLocaleString('es-ES')} kbps`}</td>
+                <td class="numero">${escapeHtml(row.payloadType)}</td>
+                <td class="numero">${escapeHtml(row.clockRate)}</td>
+                <td class="numero">${escapeHtml(row.channels)}</td>
+                <td class="numero">${formatBytes(row.bytesSent)}</td>
+                <td class="numero">${row.kbps === null ? '—' : `${row.kbps.toLocaleString('es-ES')} kbps`}</td>
             </tr>
         `)
         .join('');
@@ -275,11 +275,11 @@ function renderizarStatsCodec(rows) {
                 <tr>
                     <th>Pista</th>
                     <th>Códec</th>
-                    <th class="num">PT</th>
-                    <th class="num">Reloj</th>
-                    <th class="num">Canales</th>
-                    <th class="num">Enviado</th>
-                    <th class="num">Bitrate</th>
+                    <th class="numero">PT</th>
+                    <th class="numero">Reloj</th>
+                    <th class="numero">Canales</th>
+                    <th class="numero">Enviado</th>
+                    <th class="numero">Bitrate</th>
                 </tr>
             </thead>
             <tbody>${body}</tbody>
@@ -430,7 +430,7 @@ async function actualizarPathsActivos(silencioso = false) {
 
         ponerPathsActivos();
     } catch (error) {
-        activePathsList.innerHTML = '<span class="mensaje-linea error">No se pudo consultar MediaMTX</span>';
+        activePathsList.innerHTML = '<span class="mensaje-linea mensaje-linea--error">No se pudo consultar MediaMTX</span>';
         if (!silencioso) mostrarAviso(`No se pudo consultar MediaMTX: ${error.message}`, 'error');
     }
 }
@@ -464,15 +464,15 @@ function marcarEndpointElegido() {
 // Cómo se ve cada estado de la emisión (js/utils/estado-emision.js).
 // pildora: clase de .estado · tally: estado de la barra · texto: lo que se lee.
 const VISTA_ESTADO_EMISION = {
-    inactivo: { pildora: 'disconnected', tally: 'inactivo', texto: 'Sin emitir' },
-    previsualizando: { pildora: 'disconnected', tally: 'inactivo', texto: 'Previsualizando' },
-    abriendo: { pildora: 'connecting', tally: 'conectando', texto: 'Abriendo la cámara' },
-    negociando: { pildora: 'connecting', tally: 'conectando', texto: 'Conectando' },
-    esperando_trafico: { pildora: 'connecting', tally: 'conectando', texto: 'Comprobando el envío' },
+    inactivo: { pildora: 'inactivo', tally: 'inactivo', texto: 'Sin emitir' },
+    previsualizando: { pildora: 'inactivo', tally: 'inactivo', texto: 'Previsualizando' },
+    abriendo: { pildora: 'conectando', tally: 'conectando', texto: 'Abriendo la cámara' },
+    negociando: { pildora: 'conectando', tally: 'conectando', texto: 'Conectando' },
+    esperando_trafico: { pildora: 'conectando', tally: 'conectando', texto: 'Comprobando el envío' },
     // En 'inestable' el tally sigue en rojo para no reiniciar el cronómetro por un microcorte
-    en_antena: { pildora: 'live', tally: 'antena', texto: 'En antena' },
-    inestable: { pildora: 'connecting', tally: 'antena', texto: 'Conexión inestable' },
-    deteniendo: { pildora: 'connecting', tally: 'conectando', texto: 'Deteniendo' },
+    en_antena: { pildora: 'antena', tally: 'antena', texto: 'En antena' },
+    inestable: { pildora: 'conectando', tally: 'antena', texto: 'Conexión inestable' },
+    deteniendo: { pildora: 'conectando', tally: 'conectando', texto: 'Deteniendo' },
     error: { pildora: 'error', tally: 'error', texto: 'Error' }
 };
 
@@ -487,7 +487,7 @@ function pintarEstadoEmision(estado, contexto = {}) {
     let texto = estado === 'error' && contexto.mensaje ? contexto.mensaje : vista.texto;
     let endpoint = endpointInput.value;
 
-    statusEl.className = `estado ${vista.pildora}`;
+    statusEl.className = `estado estado--${vista.pildora}`;
     statusEl.textContent = texto;
 
     if (vista.tally === 'antena') {

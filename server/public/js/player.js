@@ -44,23 +44,23 @@ const POLL_PATHS_INTERVAL_MS = 4000;
 // UI
 /**
  * Actualiza el estado visual del reproductor (píldora y tally).
- * @param {'disconnected'|'connecting'|'connected'|'error'} status
+ * @param {'inactivo'|'conectando'|'recibiendo'|'error'} status
  * @param {string} text - Texto descriptivo del estado.
  */
 function actualizarEstado(status, text) {
-    statusEl.className = `estado ${status}`;
+    statusEl.className = `estado estado--${status}`;
     statusEl.textContent = text;
 
-    if (status === 'connected') {
+    if (status === 'recibiendo') {
         ponerTally('recibiendo', { estado: 'Recibiendo', detalle: currentStream, cronometro: true });
-    } else if (status === 'connecting') {
+    } else if (status === 'conectando') {
         ponerTally('conectando', { estado: text, detalle: currentStream });
     } else if (status === 'error') {
         ponerTally('error', { estado: text, detalle: currentStream });
     } else {
         ponerTally('inactivo', { estado: 'Sin señal', detalle: 'Elige una cámara' });
     }
-    videoVacio.hidden = status === 'connected';
+    videoVacio.hidden = status === 'recibiendo';
 }
 
 
@@ -100,7 +100,7 @@ function stopPlay() {
     video.srcObject = null;
     video.removeAttribute('src');
 
-    actualizarEstado('disconnected', 'Desconectado');
+    actualizarEstado('inactivo', 'Desconectado');
     stopBtn.disabled = true;
     ponerBotonesEndpoint(); // Quitar el resaltado del endpoint
     isStoppingPlay = false;
@@ -150,7 +150,7 @@ function limpiarReconexion() {
  */
 function programarReconexion() {
     if (!playerActivo || reconnectTimer) return;
-    actualizarEstado('connecting', 'Reconectando');
+    actualizarEstado('conectando', 'Reconectando');
     stopBtn.disabled = false; // Permitir cancelar los reintentos
     reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
@@ -169,7 +169,7 @@ function manejarCaidaConexion() {
     if (playerActivo) {
         programarReconexion();
     } else {
-        actualizarEstado('disconnected', 'Desconectado');
+        actualizarEstado('inactivo', 'Desconectado');
         stopBtn.disabled = true;
     }
 }
@@ -181,7 +181,7 @@ function manejarCaidaConexion() {
  */
 function programarComprobacionDesconexion(conexion) {
     if (disconnectTimer) return; // Ya hay una comprobación en marcha
-    actualizarEstado('connecting', 'Conexión inestable');
+    actualizarEstado('conectando', 'Conexión inestable');
 
     disconnectTimer = setTimeout(() => {
         disconnectTimer = null;
@@ -287,7 +287,7 @@ async function playWebRTC(server, streamName) {
 
     currentServer = server;
     currentStream = streamName;
-    actualizarEstado('connecting', 'Conectando');
+    actualizarEstado('conectando', 'Conectando');
     ponerBotonesEndpoint();
 
     // Cerrar cualquier conexión previa antes de crear una nueva.
@@ -301,7 +301,7 @@ async function playWebRTC(server, streamName) {
         conexion.ontrack = (event) => {
             console.log('Track recibido:', event.track.kind);
             video.srcObject = event.streams[0];
-            actualizarEstado('connected', 'Recibiendo');
+            actualizarEstado('recibiendo', 'Recibiendo');
             stopBtn.disabled = false;
             ponerBotonesEndpoint(); // Resaltar el endpoint en reproducción
             if (!inboundWatchdog) empezarPollingStatsEntrantes();
@@ -317,7 +317,7 @@ async function playWebRTC(server, streamName) {
             if (estadoICE === 'connected' || estadoICE === 'completed') {
                 // Conectividad (re)establecida: cancelar un posible margen de gracia.
                 cancelarDesconexionTransitoria();
-                if (video.srcObject) actualizarEstado('connected', 'Recibiendo');
+                if (video.srcObject) actualizarEstado('recibiendo', 'Recibiendo');
                 return;
             }
 
@@ -377,7 +377,7 @@ async function playWebRTC(server, streamName) {
 
         if (playerActivo) {
             // Probablemente el emisor aún no está disponible: reintentar.
-            actualizarEstado('connecting', `Esperando a ${streamName}`);
+            actualizarEstado('conectando', `Esperando a ${streamName}`);
             programarReconexion();
         } else {
             actualizarEstado('error', 'No se pudo conectar');
@@ -453,7 +453,7 @@ async function actualizarPathsActivosPlayer(mostrarCarga = false) {
         console.error('Error al cargar paths activos:', error);
         // En el sondeo silencioso no machacamos la lista por un fallo puntual de red.
         if (mostrarCarga) {
-            endpointButtons.innerHTML = '<p class="mensaje-linea error">No se pudo consultar MediaMTX.</p>';
+            endpointButtons.innerHTML = '<p class="mensaje-linea mensaje-linea--error">No se pudo consultar MediaMTX.</p>';
         }
     }
 }
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let streamUrl = new URLSearchParams(window.location.search).get('stream');
     let savedStream = localStorage.getItem('player_streamName');
     if (streamUrl || savedStream) streamName.value = streamUrl || savedStream;
-    actualizarEstado('disconnected', 'Desconectado');
+    actualizarEstado('inactivo', 'Desconectado');
 
     // Primera carga visible y, a partir de ahí, sondeo automático silencioso.
     await actualizarPathsActivosPlayer(true);

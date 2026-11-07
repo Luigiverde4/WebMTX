@@ -26,11 +26,11 @@ async function cargarSesiones() {
 }
 
 /**
- * Tarjeta de sesión (la clase session-card la usa el contador).
+ * Tarjeta de sesión (la clase tarjeta-sesion la usa el contador).
  */
 function crearTarjetaSesion({ titulo, path, filas, accion }) {
     let card = document.createElement('article');
-    card.className = 'tarjeta session-card';
+    card.className = 'tarjeta tarjeta-sesion';
     if (path) aplicarColorCamara(card, path);
     card.innerHTML = `
         <header class="tarjeta__cabecera">
@@ -73,7 +73,7 @@ async function cargarSesionesRtsp() {
         });
     } catch (error) {
         console.error('Error RTSP:', error);
-        container.innerHTML = `<p class="vacio error">No se pudieron cargar las sesiones RTSP: ${escapeHtml(error.message)}</p>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las sesiones RTSP: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -107,7 +107,7 @@ async function cargarSesionesWebrtc() {
         });
     } catch (error) {
         console.error('Error WebRTC:', error);
-        container.innerHTML = `<p class="vacio error">No se pudieron cargar las sesiones WebRTC: ${escapeHtml(error.message)}</p>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las sesiones WebRTC: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -115,9 +115,9 @@ async function cargarSesionesWebrtc() {
  * Calcula el total de conexiones activas detectadas en el DOM.
  */
 function actualizarConteoSesiones() {
-    let rtsp = rtspSessionsEl.querySelectorAll('.session-card').length;
-    let webrtc = webrtcSessionsEl.querySelectorAll('.session-card').length;
-    let hls = hlsMuxersEl.querySelectorAll('.session-card').length;
+    let rtsp = rtspSessionsEl.querySelectorAll('.tarjeta-sesion').length;
+    let webrtc = webrtcSessionsEl.querySelectorAll('.tarjeta-sesion').length;
+    let hls = hlsMuxersEl.querySelectorAll('.tarjeta-sesion').length;
     let total = rtsp + webrtc + hls;
 
     sessionsCountEl.textContent = `${total} ${total === 1 ? 'sesión' : 'sesiones'}`;
@@ -185,7 +185,7 @@ async function cargarMuxersHls() {
         });
     } catch (error) {
         console.error('Error HLS:', error);
-        container.innerHTML = `<p class="vacio error">No se pudieron cargar los muxers HLS: ${escapeHtml(error.message)}</p>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar los muxers HLS: ${escapeHtml(error.message)}</p>`;
     }
 }
 

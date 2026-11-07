@@ -1,140 +1,145 @@
 /* Inicio: lo que está en directo arriba, herramientas y salidas OBS debajo */
 
-.inicio {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-        "directo directo"
-        "herramientas obs";
-    gap: var(--e-7) var(--e-6);
-}
-.inicio__directo { grid-area: directo; }
-.inicio__herramientas { grid-area: herramientas; }
-.inicio__obs { grid-area: obs; }
-.inicio__herramientas h2,
-.inicio__obs h2 { margin-bottom: var(--e-3); }
-.inicio__obs > p { margin-bottom: var(--e-4); max-width: 60ch; }
-
-/* --- Lista de cámaras en directo ---------------------------------------- */
-.directo {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--linea-suave);
-    border-radius: var(--radio-panel);
-    background: var(--superficie);
-    overflow: hidden;
-}
-.directo > .vacio { border: 0; border-radius: 0; }
-.directo__item {
-    --cam: var(--cam-neutro);
-    display: grid;
-    grid-template-columns: 6px minmax(140px, 1.2fr) minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--e-4);
-    padding: var(--e-3) var(--e-4) var(--e-3) 0;
-    border-bottom: 1px solid var(--linea-suave);
-}
-.directo__item:last-child { border-bottom: 0; }
-.directo__color {
-    align-self: stretch;
-    background: var(--cam);
-}
-.directo__nombre {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-.directo__nombre strong {
-    font-size: var(--t-xl);
-    font-stretch: 75%;
-    font-weight: 700;
-    line-height: 1.1;
-    overflow-wrap: anywhere;
-}
-.directo__pistas { display: flex; flex-wrap: wrap; gap: var(--e-1); }
-.directo__pistas span {
-    font-size: var(--t-xs);
-    color: var(--texto-2);
-    border: 1px solid var(--linea);
-    border-radius: var(--radio-control);
-    padding: 0 var(--e-1);
-}
-.directo__datos {
-    display: flex;
-    gap: var(--e-5);
-    font-size: var(--t-s);
-}
-.directo__datos dt { color: var(--texto-3); font-size: var(--t-xs); }
-.directo__datos dd { font-size: var(--t-l); font-weight: 600; }
-.directo__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--e-2); }
-
-/* --- Herramientas -------------------------------------------------------- */
-.herramientas { display: flex; flex-direction: column; }
-.herramientas li { border-bottom: 1px solid var(--linea-suave); }
-.herramientas li:first-child { border-top: 1px solid var(--linea-suave); }
-.herramienta {
-    display: grid;
-    grid-template-columns: auto 8rem 1fr;
-    gap: var(--e-4);
-    align-items: center;
-    padding: var(--e-3) var(--e-2);
-    text-decoration: none;
-    border-radius: var(--radio-control);
-}
-.herramienta:hover { background: var(--superficie); }
-.herramienta:hover .herramienta__icono { color: var(--texto); border-color: var(--linea); }
-.herramienta__icono {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--linea-suave);
-    border-radius: var(--radio-panel);
-    background: var(--superficie);
-    color: var(--texto-2);
-    flex: none;
-}
-.herramienta__icono .icono { width: 20px; height: 20px; }
-.herramienta__nombre { font-weight: 650; font-stretch: 80%; font-size: var(--t-l); }
-.herramienta__texto { color: var(--texto-2); }
-
-/* --- Salidas OBS --------------------------------------------------------- */
-.salidas { display: flex; flex-direction: column; gap: var(--e-4); }
-.salida {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--e-2);
-}
-.salida__texto {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    column-gap: var(--e-3);
-    align-items: center;
-}
-.salida__texto .herramienta__icono { grid-row: span 2; }
-.salida__url { font-size: var(--t-s); }
-
-/* --- Responsive ---------------------------------------------------------- */
-@media (max-width: 900px) {
+@layer paginas {
     .inicio {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "directo" "herramientas" "obs";
-        gap: var(--e-6);
-    }
-    .directo__item {
-        grid-template-columns: 6px minmax(0, 1fr) auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
-            "color nombre datos"
-            "color acciones acciones";
-        row-gap: var(--e-2);
+            "directo directo"
+            "herramientas obs";
+        gap: var(--e-7) var(--e-6);
     }
-    .directo__color { grid-area: color; }
-    .directo__nombre { grid-area: nombre; }
-    .directo__datos { grid-area: datos; gap: var(--e-4); }
-    .directo__acciones { grid-area: acciones; justify-content: flex-start; }
-}
-@media (max-width: 600px) {
-    .herramienta { grid-template-columns: auto 1fr; row-gap: 2px; } .herramienta__icono { grid-row: span 2; }
+    .inicio__directo { grid-area: directo; container: directo / inline-size; }
+    .inicio__herramientas { grid-area: herramientas; }
+    .inicio__obs { grid-area: obs; }
+    .inicio__herramientas h2,
+    .inicio__obs h2 { margin-block-end: var(--e-3); }
+    .inicio__obs > p { margin-block-end: var(--e-4); max-inline-size: 60ch; }
+
+    /* --- Lista de cámaras en directo ------------------------------------ */
+    .directo {
+        display: flex;
+        flex-direction: column;
+        border: var(--borde-suave);
+        border-radius: var(--radio-panel);
+        background: var(--superficie);
+        overflow: hidden;
+    }
+    .directo > .vacio { border: 0; border-radius: 0; }
+    .directo__item {
+        display: grid;
+        grid-template-columns: 6px minmax(140px, 1.2fr) minmax(0, 1fr) auto;
+        grid-template-areas: "color nombre datos acciones";
+        align-items: center;
+        gap: var(--e-4);
+        padding-block: var(--e-3);
+        padding-inline: 0 var(--e-4);
+        border-block-end: var(--borde-suave);
+    }
+    .directo__item:last-child { border-block-end: 0; }
+    .directo__color { grid-area: color; align-self: stretch; background: var(--cam, var(--cam-neutro)); }
+    .directo__nombre {
+        grid-area: nombre;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-inline-size: 0;
+    }
+    .directo__nombre strong {
+        font-size: var(--t-titulo-grande);
+        font-stretch: 75%;
+        font-weight: 700;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+    }
+    .directo__datos {
+        grid-area: datos;
+        display: flex;
+        gap: var(--e-5);
+        font-size: var(--t-s);
+    }
+    .directo__datos dt { color: var(--texto-3); font-size: var(--t-xs); }
+    .directo__datos dd { font-size: var(--t-l); font-weight: 600; }
+    .directo__acciones {
+        grid-area: acciones;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--e-2);
+    }
+
+    /* La fila se reorganiza según el ancho de la lista, no de la ventana */
+    @container directo (max-width: 760px) {
+        .directo__item {
+            grid-template-columns: 6px minmax(0, 1fr) auto;
+            grid-template-areas:
+                "color nombre datos"
+                "color acciones acciones";
+            row-gap: var(--e-2);
+        }
+        .directo__datos { gap: var(--e-4); }
+        .directo__acciones { justify-content: flex-start; }
+    }
+
+    /* --- Herramientas ---------------------------------------------------- */
+    .herramientas { display: flex; flex-direction: column; }
+    .herramientas li { border-block-end: var(--borde-suave); }
+    .herramientas li:first-child { border-block-start: var(--borde-suave); }
+    .herramienta {
+        display: grid;
+        grid-template-columns: auto 8rem 1fr;
+        gap: var(--e-4);
+        align-items: center;
+        padding: var(--e-3) var(--e-2);
+        text-decoration: none;
+        border-radius: var(--radio-control);
+    }
+    .herramienta:hover { background: var(--superficie); }
+    .herramienta:hover .azulejo { color: var(--texto); border-color: var(--linea); }
+    .herramienta__nombre { font-weight: 650; font-stretch: 80%; font-size: var(--t-l); }
+    .herramienta__texto { color: var(--texto-2); }
+
+    /* Recuadro con icono */
+    .azulejo {
+        display: grid;
+        place-items: center;
+        inline-size: var(--tam-azulejo);
+        block-size: var(--tam-azulejo);
+        border: var(--borde-suave);
+        border-radius: var(--radio-panel);
+        background: var(--superficie);
+        color: var(--texto-2);
+        flex: none;
+    }
+    .azulejo .icono { inline-size: var(--tam-icono-grande); block-size: var(--tam-icono-grande); }
+
+    /* --- Salidas OBS ----------------------------------------------------- */
+    .salidas { display: flex; flex-direction: column; gap: var(--e-4); }
+    .salida {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--e-2);
+    }
+    .salida__texto {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: var(--e-3);
+        align-items: center;
+    }
+    .salida__texto .azulejo { grid-row: span 2; }
+    .salida__url { font-size: var(--t-s); }
+
+    /* --- Responsive ------------------------------------------------------ */
+    @media (max-width: 900px) {
+        .inicio {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas: "directo" "herramientas" "obs";
+            gap: var(--e-6);
+        }
+    }
+    @media (max-width: 600px) {
+        .herramienta { grid-template-columns: auto 1fr; row-gap: 2px; }
+        .herramienta .azulejo { grid-row: span 2; }
+    }
 }

@@ -66,7 +66,7 @@ function renderizarResumen(items) {
  */
 function renderizarErrorStats(error) {
     if (streamSectionsContainerEl) {
-        streamSectionsContainerEl.innerHTML = `<div class="vacio error"><strong>No se pudieron cargar las estadísticas.</strong> Comprueba que MediaMTX está en marcha. Detalle: ${escapeHtml(error.message)}</div>`;
+        streamSectionsContainerEl.innerHTML = `<div class="vacio vacio--error"><strong>No se pudieron cargar las estadísticas.</strong> Comprueba que MediaMTX está en marcha. Detalle: ${escapeHtml(error.message)}</div>`;
     }
     lastUpdateEl.textContent = 'Error al actualizar';
 }

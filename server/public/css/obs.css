@@ -1,9 +1,12 @@
 /*
  * Salidas para OBS (neoplayer.html y display.html): solo vídeo sobre negro.
- * Nada se superpone al vídeo dentro de OBS; los avisos de depuración solo
- * aparecen fuera de OBS o con ?debug=1 (clase .depuracion en <html>).
- * ?fondo=transparente deja el fondo transparente (clase .transparente).
+ * - Siempre en tema oscuro: el <html> lleva class="salida-obs" (ver tokens.css).
+ * - Nada se superpone al vídeo dentro de OBS; los avisos de depuración solo
+ *   aparecen fuera de OBS o con ?debug=1 (clase .depuracion en <html>).
+ * - ?fondo=transparente deja el fondo transparente (clase .transparente).
  */
+
+@import url("tokens.css");
 
 @font-face {
     font-family: "Archivo";
@@ -14,103 +17,115 @@
     src: url("../fonts/archivo-latin-wdth-normal.woff2") format("woff2-variations");
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+@layer reset {
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+        inline-size: 100%;
+        block-size: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--monitor);
+        color: var(--texto);
+        font-family: var(--fuente);
+    }
+    html.transparente, html.transparente body { background: transparent; }
+}
 
-html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    background: #000;
-    color: #e6ebf0;
-    font-family: "Archivo", "Segoe UI", system-ui, sans-serif;
-}
-html.transparente, html.transparente body { background: transparent; }
+@layer componentes {
+    .salida-video {
+        display: block;
+        inline-size: 100vw;
+        block-size: 100vh;
+        object-fit: contain;
+        background: var(--monitor);
+    }
+    html.transparente .salida-video:not(.reproduciendo) { visibility: hidden; }
+    .salida-video.cubrir { object-fit: cover; }
 
-.salida-video {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain;
-    background: #000;
-}
-html.transparente .salida-video:not(.reproduciendo) { visibility: hidden; }
-.salida-video.cubrir { object-fit: cover; }
+    .aviso-salida {
+        position: fixed;
+        inset-inline-start: 50%;
+        inset-block-end: var(--e-5);
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: var(--e-2);
+        max-inline-size: calc(100vw - 2 * var(--e-4));
+        padding: var(--e-2) var(--e-4);
+        border: var(--borde);
+        border-radius: var(--radio-panel);
+        background: var(--superficie);
+        color: var(--texto);
+        font: inherit;
+        font-size: var(--t-m);
+        cursor: pointer;
+    }
 
-/* Avisos de depuración: ocultos en OBS */
-.depuracion-solo { display: none !important; }
-html.depuracion .depuracion-solo:not([hidden]) { display: flex !important; }
+    .espera {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--texto-3);
+        font-size: var(--t-xl);
+        font-stretch: var(--ancho-cifras);
+        pointer-events: none;
+    }
 
-.aviso-salida {
-    position: fixed;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
-    align-items: center;
-    gap: 8px;
-    max-width: calc(100vw - 32px);
-    padding: 8px 16px;
-    border: 1px solid #3a4654;
-    border-radius: 6px;
-    background: rgba(26, 32, 40, 0.92);
-    font-size: 15px;
-    cursor: pointer;
+    /* Selector de cámara (neoplayer sin ?stream=): solo se ve abriendo la página a mano */
+    .selector {
+        position: fixed;
+        inset: 0;
+        overflow: auto;
+        padding: var(--e-6) var(--e-5);
+        background: var(--fondo);
+    }
+    .selector__caja { max-inline-size: 640px; margin-inline: auto; }
+    .selector h1 {
+        margin: 0 0 var(--e-2);
+        font-size: var(--t-titulo);
+        font-stretch: var(--ancho-condensado);
+        font-weight: 650;
+    }
+    .selector p { margin: 0 0 var(--e-5); color: var(--texto-2); line-height: 1.5; }
+    .selector code {
+        font-size: 0.9em;
+        background: var(--hundido);
+        border: var(--borde-suave);
+        border-radius: var(--radio-control);
+        padding: 0 var(--e-1);
+    }
+    .selector ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-2); }
+    .selector a {
+        display: flex;
+        align-items: center;
+        gap: var(--e-3);
+        padding: var(--e-3) var(--e-4);
+        border: var(--borde);
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--cam-neutro));
+        border-radius: var(--radio-control);
+        background: var(--superficie);
+        color: var(--texto);
+        font-size: var(--t-l);
+        font-weight: 600;
+        font-stretch: var(--ancho-cifras);
+        text-decoration: none;
+    }
+    .selector a:hover { border-color: var(--cam, var(--cam-neutro)); }
+    .selector a:focus-visible { outline: var(--grosor-foco) solid var(--foco); outline-offset: var(--grosor-foco); }
+    .selector a span {
+        margin-inline-start: auto;
+        font-size: var(--t-s);
+        font-weight: 400;
+        color: var(--texto-2);
+        font-stretch: 100%;
+        overflow-wrap: anywhere;
+    }
 }
-.aviso-salida[hidden] { display: none !important; }
 
-.espera {
-    position: fixed;
-    inset: 0;
-    align-items: center;
-    justify-content: center;
-    color: #6f7d8c;
-    font-size: 22px;
-    font-stretch: 85%;
-    pointer-events: none;
+@layer utilidades {
+    [hidden] { display: none; }
+    /* Avisos de depuración: ocultos en OBS (el [hidden] de arriba sigue mandando) */
+    html:not(.depuracion) .depuracion-solo { display: none; }
 }
-.espera[hidden] { display: none !important; }
-
-/* Selector de cámara (neoplayer sin ?stream=): solo se ve abriendo la página a mano */
-.selector {
-    position: fixed;
-    inset: 0;
-    overflow: auto;
-    padding: 32px 24px;
-    background: #1a2028;
-}
-.selector[hidden] { display: none; }
-.selector__caja { max-width: 640px; margin: 0 auto; }
-.selector h1 {
-    margin: 0 0 8px;
-    font-size: 30px;
-    font-stretch: 78%;
-    font-weight: 650;
-}
-.selector p { margin: 0 0 24px; color: #93a1b0; line-height: 1.5; }
-.selector code {
-    font-size: 0.9em;
-    background: #141920;
-    border: 1px solid #2f3945;
-    border-radius: 3px;
-    padding: 0 4px;
-}
-.selector ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.selector a {
-    --cam: #93a1b0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border: 1px solid #3a4654;
-    border-left: 4px solid var(--cam);
-    border-radius: 3px;
-    background: #222a33;
-    color: #e6ebf0;
-    font-size: 19px;
-    font-weight: 600;
-    font-stretch: 85%;
-    text-decoration: none;
-}
-.selector a:hover { border-color: var(--cam); }
-.selector a:focus-visible { outline: 2px solid #9cc3ff; outline-offset: 2px; }
-.selector a span { margin-left: auto; font-size: 13px; font-weight: 400; color: #93a1b0; font-stretch: 100%; overflow-wrap: anywhere; }
