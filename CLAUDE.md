@@ -97,6 +97,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
   - Para empezar justo al inicio de una toma usa su `startISO` (microsegundos): un `Date` redondea a milisegundos, cae antes de la grabación y MediaMTX da 404 (`urlPlayback` en `js/utils/grabaciones.js`).
 - `/api/playback/list` ya une los segmentos de 10 min: cada elemento es una toma. Para borrar hay que ir segmento a segmento (`/v3/recordings/get` y `deletesegment`).
 - Código compartido entre Repeticiones y Archivo: `js/utils/grabaciones.js` (consulta y URLs) y `js/utils/salida-obs.js` (enviar, quitar, SSE y tally de la salida) y `js/utils/marcados.js` (cliente de `/api/marcados`; las marcas se comparten entre equipos por SSE y Archivo también marca). Miniaturas en el navegador con caché en IndexedDB: `js/utils/miniaturas.js`.
+- Todas las páginas de operador llevan el reloj de la cabecera (`<time id="reloj">` + `js/ui/reloj.js`): usa la hora del servidor si el equipo va desfasado más de 1,5 s, para que cuadre con las horas de las grabaciones.
 - El rojo y el verde se reservan para el estado tally: en directo / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 

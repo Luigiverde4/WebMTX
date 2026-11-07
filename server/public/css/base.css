@@ -193,6 +193,14 @@
   }
   .nav a:hover { color: var(--texto); background: var(--superficie); }
   .nav a[aria-current="page"] { color: var(--texto); background: var(--superficie-2); }
+  /* Reloj arriba a la derecha (js/ui/reloj.js); la navegación se encoge antes que él */
+  .reloj {
+    flex: none;
+    margin-inline-start: auto;
+    font-size: var(--t-l);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+  }
 
   /* --- Barra de tally ---------------------------------------------------- */
   .tally {
@@ -701,6 +709,7 @@
   }
   @media (max-width: 600px) {
     .marca { font-size: var(--t-m); }
+    .reloj { font-size: var(--t-m); }
     /* Indica que la navegación se desliza */
     .nav {
       mask-image: linear-gradient(to right, black 82%, transparent);
