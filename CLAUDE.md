@@ -18,7 +18,7 @@ Sistema genérico de streaming de baja latencia (TFG). Un servidor **Node.js/Exp
 .\scripts\gen-certs.ps1 -IPsLocales        # primera vez: server\cert.pem + key.pem (mkcert)
 docker compose up --build -d               # levanta 'server' (Node) y 'mediamtx' (contenedor mediamtxTFG)
 docker compose logs -f server              # o: -f mediamtx  (también en mediamtx\logs\mediamtx.log)
-docker compose down                        # ¡no uses -v: borra el volumen de grabaciones!
+docker compose down                        # ¡no uses -v: borra las grabaciones y las marcas!
 
 node scripts/check-dom.mjs                 # contratos HTML<->JS del front + node --check
 pwsh scripts/smoke.ps1 -RequiereReplay -CompruebaRedireccion   # prueba de humo contra el stack
@@ -53,7 +53,8 @@ Broadcaster (WHIP) ─► MediaMTX :8889 (WebRTC) ─► player / neoplayer (WHE
 Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
                          ├─ /api/mediamtx/*  ─proxy─► MediaMTX :9997 (API v3; bufferiza y re-parsea JSON)
                          ├─ /api/playback/*  ─proxy─► MediaMTX :9996 (stream con pipe; lleva vídeo)
-                         └─ /api/replay/*    control de repeticiones para OBS (estado en memoria + SSE)
+                         ├─ /api/replay/*    control de repeticiones para OBS (estado en memoria + SSE)
+                         └─ /api/marcados/*  momentos marcados compartidos (datos_volume:/datos/marcados.json + SSE)
 ```
 
 **Puertos.** 9996 no se publica al host: solo se llega a través del proxy. El 80 solo redirige.
@@ -95,7 +96,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 - Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
   - Para empezar justo al inicio de una toma usa su `startISO` (microsegundos): un `Date` redondea a milisegundos, cae antes de la grabación y MediaMTX da 404 (`urlPlayback` en `js/utils/grabaciones.js`).
 - `/api/playback/list` ya une los segmentos de 10 min: cada elemento es una toma. Para borrar hay que ir segmento a segmento (`/v3/recordings/get` y `deletesegment`).
-- Código compartido entre Repeticiones y Archivo: `js/utils/grabaciones.js` (consulta y URLs) y `js/utils/salida-obs.js` (enviar, quitar, SSE y tally de la salida) y `js/utils/marcados.js` (momentos marcados en localStorage; Archivo también marca). Miniaturas en el navegador con caché en IndexedDB: `js/utils/miniaturas.js`.
+- Código compartido entre Repeticiones y Archivo: `js/utils/grabaciones.js` (consulta y URLs) y `js/utils/salida-obs.js` (enviar, quitar, SSE y tally de la salida) y `js/utils/marcados.js` (cliente de `/api/marcados`; las marcas se comparten entre equipos por SSE y Archivo también marca). Miniaturas en el navegador con caché en IndexedDB: `js/utils/miniaturas.js`.
 - El rojo y el verde se reservan para el estado tally: en directo / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 

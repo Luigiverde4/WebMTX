@@ -301,18 +301,19 @@ async function quitarTomaDeObs() {
 }
 
 /**
- * Guarda el instante que se está viendo en los momentos marcados de
- * Repeticiones (mismo navegador). Allí se reproduce desde unos segundos
- * antes, como cualquier otra marca.
+ * Guarda el instante que se está viendo en los momentos marcados, que se
+ * comparten con todos los equipos (aparecen en Repeticiones). Allí se
+ * reproduce desde unos segundos antes, como cualquier otra marca.
  */
-function marcarInstanteArchivo() {
+async function marcarInstanteArchivo() {
     let toma = tomaElegida;
     let instante = instanteVisor();
     if (!toma || !instante) return;
-    if (anadirMarcado(toma.stream, instante)) {
-        mostrarAviso(`Marcado ${toma.stream} a las ${formatTimeOnly(instante)}. Lo tienes en Momentos marcados de Repeticiones.`, 'ok');
-    } else {
-        mostrarAviso('No se pudo guardar la marca: este navegador no deja guardar datos (¿ventana privada?).', 'error');
+    try {
+        await anadirMarcado(toma.stream, instante);
+        mostrarAviso(`Marcado ${toma.stream} a las ${formatTimeOnly(instante)}. Está en Momentos marcados de Repeticiones, en todos los equipos.`, 'ok');
+    } catch (error) {
+        mostrarAviso(`No se pudo guardar la marca: ${error.message}`, 'error');
     }
 }
 

@@ -3,9 +3,11 @@
  * Lista de instantes que el operador marca en directo ("acaba de pasar algo")
  * para pincharlos luego sin tener que buscarlos por la línea temporal.
  *
- * Se guardan en el navegador (js/utils/marcados.js), no en el servidor: son
- * notas de trabajo del operador. También se marcan desde Archivo. Cada momento
- * es solo stream + instante; la URL de reproducción se reconstruye al pincharlo.
+ * Se guardan en el servidor y se comparten entre todos los equipos
+ * (js/utils/marcados.js): la lista llega por SSE y cada acción es una
+ * petición a la API; lo que se pinta es siempre lo que manda el servidor.
+ * También se marcan desde Archivo. Cada momento es solo stream + instante; la
+ * URL de reproducción se reconstruye al pincharlo.
  */
 
 // Al pinchar un momento se reproduce desde unos segundos antes del instante
@@ -14,20 +16,17 @@ const MARGEN_PREVIO_S = 5;
 const DURACION_MARCADO_S = 30;
 
 let momentosMarcados = [];
+// Si llega una lista nueva mientras el operador escribe una nota, se espera
+// a que termine para no borrarle el texto.
+let repintadoPendiente = false;
 
-/**
- * Lee los momentos guardados en el navegador.
- * @returns {Array}
- */
-function leerMomentos() {
-    return leerMarcadosGuardados();
-}
-
-/**
- * Persiste la lista actual.
- */
-function guardarMomentos() {
-    guardarMarcados(momentosMarcados);
+/** Ejecuta una acción sobre la API avisando si falla. */
+async function accionMarcados(accion, mensajeError) {
+    try {
+        await accion();
+    } catch (error) {
+        avisarError(`${mensajeError}: ${error.message}`);
+    }
 }
 
 /**
@@ -51,16 +50,7 @@ function marcarMomento() {
     }
 
     let instante = instanteAMarcar();
-
-    momentosMarcados.unshift({
-        id: Date.now(),
-        stream: stream,
-        iso: instante.toISOString(),
-        nota: ''
-    });
-
-    guardarMomentos();
-    renderizarMomentos();
+    accionMarcados(() => anadirMarcado(stream, instante), 'No se pudo guardar la marca');
 }
 
 /**
@@ -103,9 +93,7 @@ function enviarMomentoAOBS(id) {
  * @param {number} id - Identificador del momento.
  */
 function borrarMomento(id) {
-    momentosMarcados = momentosMarcados.filter(m => m.id !== id);
-    guardarMomentos();
-    renderizarMomentos();
+    accionMarcados(() => borrarMarcado(id), 'No se pudo borrar la marca');
 }
 
 /**
@@ -113,15 +101,13 @@ function borrarMomento(id) {
  */
 async function borrarTodosLosMomentos() {
     if (momentosMarcados.length === 0) return;
-    let ok = await confirmar(`¿Borrar los ${momentosMarcados.length} momentos marcados? No se puede deshacer.`, {
+    let ok = await confirmar(`¿Borrar los ${momentosMarcados.length} momentos marcados? Se borran para todos los equipos y no se puede deshacer.`, {
         aceptar: 'Borrar todos',
         peligro: true
     });
     if (!ok) return;
 
-    momentosMarcados = [];
-    guardarMomentos();
-    renderizarMomentos();
+    accionMarcados(() => borrarTodosLosMarcados(), 'No se pudieron borrar las marcas');
 }
 
 /**
@@ -130,11 +116,7 @@ async function borrarTodosLosMomentos() {
  * @param {string} texto - Nota del usuario.
  */
 function anotarMomento(id, texto) {
-    let momento = momentosMarcados.find(m => m.id === id);
-    if (!momento) return;
-
-    momento.nota = texto.slice(0, 60);
-    guardarMomentos();
+    accionMarcados(() => anotarMarcado(id, texto.slice(0, 60)), 'No se pudo guardar la nota');
 }
 
 function crearBotonIcono(icono, etiqueta, clases = '') {
@@ -237,18 +219,36 @@ function actualizarEtiquetaMarcar() {
     destino.textContent = `${stream}, ${formatTimeOnly(instanteAMarcar())}`;
 }
 
+/** ¿El operador está escribiendo una nota de la lista? */
+function editandoNota() {
+    let activo = document.activeElement;
+    return Boolean(activo && activo.classList.contains('marcado__nota'));
+}
+
 window.addEventListener('load', () => {
-    momentosMarcados = leerMomentos();
     renderizarMomentos();
     actualizarEtiquetaMarcar();
 
     // La hora del botón corre con el reloj: refrescarla cada segundo.
     setInterval(actualizarEtiquetaMarcar, 1000);
-});
 
-// Un momento marcado desde Archivo (u otra pestaña) aparece sin recargar
-window.addEventListener('storage', evento => {
-    if (evento.key !== CLAVE_MARCADOS) return;
-    momentosMarcados = leerMomentos();
-    renderizarMomentos();
+    // La lista llega del servidor al conectar y tras cada cambio de cualquier equipo
+    suscribirMarcados(lista => {
+        momentosMarcados = lista;
+        if (editandoNota()) {
+            repintadoPendiente = true;
+            return;
+        }
+        renderizarMomentos();
+    });
+
+    // Al salir de la nota (después de su 'change'), aplicar lo que llegó mientras tanto
+    document.getElementById('marcadosLista').addEventListener('focusout', () => {
+        setTimeout(() => {
+            if (repintadoPendiente && !editandoNota()) {
+                repintadoPendiente = false;
+                renderizarMomentos();
+            }
+        }, 0);
+    });
 });
