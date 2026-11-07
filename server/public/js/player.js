@@ -367,7 +367,7 @@ async function playWebRTC(server, streamName) {
         const answerSDP = await response.text();
         await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
-            sdp: answerSDP
+            sdp: anadirCandidatoDelServidor(answerSDP, url)
         }));
 
         console.log('WebRTC iniciado correctamente');
@@ -461,7 +461,7 @@ async function actualizarPathsActivosPlayer(mostrarCarga = false) {
 
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', async () => {
-    server.value = window.location.host;
+    server.value = window.location.hostname; // sin el puerto de la página: WebRTC va a MediaMTX (:8889)
     // ?stream=cam1 abre directamente esa cámara (enlaces desde Inicio)
     let streamUrl = new URLSearchParams(window.location.search).get('stream');
     let savedStream = localStorage.getItem('player_streamName');

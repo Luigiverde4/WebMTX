@@ -260,7 +260,7 @@ async function startBroadcast(opciones = {}) {
         let answerSDP = await response.text();
         await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
-            sdp: answerSDP
+            sdp: anadirCandidatoDelServidor(answerSDP, whipUrl)
         }));
 
         // Si ICE ya se cortó, 'inestable' recordará volver aquí al recuperarse

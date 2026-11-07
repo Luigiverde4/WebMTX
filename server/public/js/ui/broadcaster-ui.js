@@ -804,7 +804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     actualizarEtiquetaBitrate();
 
     // Servidor = host de esta página (sin protocolo)
-    serverInput.value = window.location.host;
+    serverInput.value = window.location.hostname; // sin el puerto de la página: WebRTC va a MediaMTX (:8889)
     let savedEndpoint = localStorage.getItem('broadcaster_endpoint');
     if (savedEndpoint) endpointInput.value = sanitizarEndpoint(savedEndpoint);
     marcarEndpointElegido();
