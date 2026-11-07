@@ -129,6 +129,7 @@ function pintarTomas(lista, { agrupar, enDirecto, elegida, total }) {
             <span class="toma__imagen">
                 <img alt="" ${miniatura ? `src="${miniatura}"` : 'hidden'}>
                 <span class="toma__marcador" aria-hidden="true">${escapeHtml(toma.stream)}</span>
+                <span class="toma__obs" hidden>En OBS</span>
                 <span class="toma__duracion cifra">${escapeHtml(formatDuration(toma.duration))}</span>
             </span>
             <span class="toma__camara">${escapeHtml(toma.stream)}${agrupar ? '' : ` <span class="texto-2">${escapeHtml(fechaCorta(toma.start))}</span>`}</span>
@@ -160,6 +161,15 @@ function actualizarTomasEnSitio(lista, enDirecto) {
         tarjeta.classList.toggle('toma--directo', directo);
         tarjeta.querySelector('.toma__duracion').textContent = formatDuration(toma.duration);
         tarjeta.querySelector('.toma__horas').innerHTML = horasTomaHtml(toma, directo);
+    });
+}
+
+/** Borde rojo y etiqueta "En OBS" en la toma que está en la salida (o en ninguna). */
+function marcarTomaEnObs(id) {
+    tomasEl.querySelectorAll('.toma').forEach(t => {
+        let enObs = t.dataset.id === id;
+        t.classList.toggle('toma--en-obs', enObs);
+        t.querySelector('.toma__obs').hidden = !enObs;
     });
 }
 
