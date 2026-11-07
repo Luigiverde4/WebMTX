@@ -1,5 +1,5 @@
 # Configuración por equipo: copia .env.example a .env y ajústalo (ver README).
-# Todas las variables tienen valor por defecto (WEBRTC_HOSTS es opcional).
+# IP_EQUIPO es obligatoria; el resto tiene valor por defecto.
 # Solo se pasan a cada contenedor las variables que necesita (sin env_file).
 services:
   server:
@@ -53,10 +53,8 @@ services:
     environment:
       # MediaMTX permite sobrescribir cualquier parámetro de mediamtx.yml con MTX_<PARÁMETRO>.
       # Lo que cambia según el equipo vive en .env, no en el yml.
-      # IPs que MediaMTX anuncia para WebRTC. Opcional: nuestras páginas añaden la IP con la
-      # que se abrieron (anadirCandidatoDelServidor). Solo hace falta para clientes WebRTC
-      # externos (WHIP de OBS, ffmpeg...). MediaMTX exige al menos una: por defecto, 127.0.0.1.
-      - MTX_WEBRTCADDITIONALHOSTS=${WEBRTC_HOSTS:-127.0.0.1}
+      # Obligatoria: sin ninguna IP, MediaMTX no arranca. Mejor fallar aquí con un mensaje claro.
+      - MTX_WEBRTCADDITIONALHOSTS=${IP_EQUIPO:?Falta IP_EQUIPO. Copia .env.example a .env y pon la IP de este equipo en la red local}
       - MTX_PATHDEFAULTS_RECORDDELETEAFTER=${RETENCION_GRABACIONES:-7d}
       - MTX_LOGLEVEL=${NIVEL_LOG_MEDIAMTX:-info}
     volumes:

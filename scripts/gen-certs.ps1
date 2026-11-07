@@ -6,12 +6,12 @@
 .DESCRIPTION
     Crea server\cert.pem y server\key.pem (los ficheros que cargan tanto el
     servidor Node como MediaMTX) usando mkcert. Siempre incluye localhost,
-    127.0.0.1 y ::1, ademas de las IPs de WEBRTC_HOSTS en el fichero .env de la
+    127.0.0.1 y ::1, ademas de la IP_EQUIPO del fichero .env de la
     raiz del repo (o, si no hay .env, las de webrtcAdditionalHosts en
     mediamtx\mediamtx.yml). Se pueden anadir IPs/hosts extra con -IP.
 
-    En una red nueva basta con -IPsLocales: WEBRTC_HOSTS es opcional (las paginas
-    de WebMTX anuncian ellas mismas la IP con la que se abrieron).
+    Recuerda: al cambiar de red, pon la IP nueva en IP_EQUIPO del .env para que
+    los clientes WebRTC de esa red reciban candidatos ICE validos.
 
 .PARAMETER IP
     Una o varias IPs o hosts adicionales que cubrira el certificado.
@@ -62,18 +62,18 @@ $keyFile  = Join-Path $serverDir "key.pem"
 
 # --- Hosts que cubrira el certificado --------------------------------------
 
-# 1. WEBRTC_HOSTS del .env (fuente principal); si no hay .env, el yml (versiones antiguas)
+# 1. IP_EQUIPO del .env (fuente principal); si no hay .env, el yml (versiones antiguas)
 $ipsConfig = @()
 $origenConfig = "ninguno"
 if (-not $SinConfig) {
     $envFile = Join-Path $repoRoot ".env"
     $ymlFile = Join-Path $repoRoot "mediamtx\mediamtx.yml"
     if (Test-Path $envFile) {
-        $linea = Get-Content $envFile | Where-Object { $_ -match '^\s*WEBRTC_HOSTS\s*=' } | Select-Object -First 1
+        $linea = Get-Content $envFile | Where-Object { $_ -match '^\s*IP_EQUIPO\s*=' } | Select-Object -First 1
         if ($linea) {
-            $valor = ($linea -replace '^\s*WEBRTC_HOSTS\s*=\s*', '').Trim().Trim('"').Trim("'")
+            $valor = ($linea -replace '^\s*IP_EQUIPO\s*=\s*', '').Trim().Trim('"').Trim("'")
             $ipsConfig = $valor -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-            $origenConfig = ".env (WEBRTC_HOSTS)"
+            $origenConfig = ".env (IP_EQUIPO)"
         }
     }
     if (-not $ipsConfig -and (Test-Path $ymlFile)) {
@@ -146,5 +146,5 @@ Write-Host "Certificados generados:" -ForegroundColor Green
 Write-Host "  $certFile"
 Write-Host "  $keyFile"
 Write-Host ""
-Write-Host "En una red nueva, vuelve a generarlos con -IPsLocales para que cubran la IP nueva" -ForegroundColor DarkGray
+Write-Host "Si has cambiado de red, pon la IP nueva en IP_EQUIPO del .env" -ForegroundColor DarkGray
 Write-Host "y reinicia los servicios: docker compose up -d" -ForegroundColor DarkGray

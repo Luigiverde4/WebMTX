@@ -367,7 +367,7 @@ async function playWebRTC(server, streamName) {
         const answerSDP = await response.text();
         await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
-            sdp: anadirCandidatoDelServidor(answerSDP, url)
+            sdp: answerSDP
         }));
 
         console.log('WebRTC iniciado correctamente');

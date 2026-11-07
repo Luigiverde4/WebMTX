@@ -37,8 +37,7 @@ pwsh scripts/streams-prueba.ps1            # publica cam1/cam2 sintéticos con f
   - Los cargan Node y MediaMTX; este último los monta como `/server.crt` y `/server.key`.
   - Sin ellos Node no arranca (sale con un mensaje de error). Además el navegador no concede cámara ni micrófono fuera de HTTPS, salvo en localhost.
 - **`.env`** (plantilla documentada en `.env.example`; el `.env` no se sube a git): todo lo que depende del equipo.
-  - `WEBRTC_HOSTS` es opcional (por defecto `127.0.0.1`). WebRTC se limita a nuestras páginas: añaden a la respuesta WHIP/WHEP un candidato ICE con la IP con la que se abrieron (`anadirCandidatoDelServidor` en `js/utils/utils.js`) y funcionan en cualquier red sin configurar nada. Solo haría falta para clientes WebRTC externos (WHIP de OBS, ffmpeg…), que no se soportan; para meter señal desde fuera, RTMP o RTSP.
-  - Las páginas pasan a `construirBaseUrlWebRTC` el `location.hostname` (sin puerto): con `PUERTO_HTTPS` distinto de 443, WebRTC sigue yendo a MediaMTX (:8889).
+  - `IP_EQUIPO` es obligatoria: si falta, compose se niega a arrancar. Es la IP de este equipo en la red local (una sola) y es lo que MediaMTX anuncia para WebRTC (`MTX_WEBRTCADDITIONALHOSTS`). Al cambiar de red, se cambia aquí.
   - El resto (`PUERTO_HTTPS`, `PUERTO_HTTP`, `HTTP_REDIRECT`, `RETENCION_GRABACIONES`, `NIVEL_LOG_MEDIAMTX`, `NODE_ENV`) tiene valor por defecto.
   - **Regla:** nada que dependa del equipo se escribe en `mediamtx.yml` ni en `docker-compose.yml`. MediaMTX lo recibe como `MTX_<PARÁMETRO>` (p. ej. `MTX_WEBRTCADDITIONALHOSTS`), que sobrescribe su yml.
   - El compose pasa a cada servicio solo sus variables, con `${VAR:-por_defecto}` y sin `env_file`.

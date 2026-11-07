@@ -142,7 +142,7 @@ async function playWebRTC(server, streamName) {
 
         await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
-            sdp: anadirCandidatoDelServidor(await response.text(), url)
+            sdp: await response.text()
         }));
     } catch (error) {
         console.warn('WHEP no disponible, se reintentará:', error.message);
