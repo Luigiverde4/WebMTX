@@ -662,6 +662,29 @@ function revisarCambiosPendientes() {
 }
 
 /** Devuelve los controles a lo que se está emitiendo ahora. */
+/**
+ * Muestra (o esconde) el previo: la cámara preparada que aún no sale. Con
+ * previo, el monitor grande lleva la etiqueta "Programa".
+ * @param {MediaStreamTrack|null} pista
+ */
+function pintarPrevio(pista) {
+    let previoEl = document.getElementById('previo');
+    let video = document.getElementById('previoVideo');
+    previoEl.hidden = !pista;
+    document.getElementById('etiquetaPrograma').hidden = !pista;
+    if (!pista) {
+        video.srcObject = null;
+        return;
+    }
+    video.srcObject = new MediaStream([pista]);
+    let ajustes = pista.getSettings();
+    let tamaño = ajustes.width ? `, ${ajustes.width}×${ajustes.height}` : '';
+    // El nombre, como en el selector (la pista no siempre lo trae)
+    let opcion = [...videoSource.options].find(o => o.value === ajustes.deviceId) || videoSource.selectedOptions[0];
+    let nombre = (opcion && opcion.text) || pista.label || 'otra cámara';
+    document.getElementById('previoNombre').textContent = `${nombre}${tamaño}`;
+}
+
 /** Devuelve a la UI los ajustes de captura (cámara, micro, resolución, fps, procesado). */
 function ponerAjustesDeCaptura(a) {
     seleccionarSiExiste(videoSource, a.camara);

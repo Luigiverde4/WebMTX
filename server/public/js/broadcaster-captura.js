@@ -2,10 +2,12 @@
  * CAMBIOS DE CAPTURA DURANTE LA EMISIÓN (sin cortar)
  * WebRTC deja cambiar la pista que se envía sin renegociar la conexión
  * (RTCRtpSender.replaceTrack) y reconfigurar la cámara abierta
- * (MediaStreamTrack.applyConstraints). Así, emitiendo, cámara, resolución,
- * fps, micro y procesado se aplican al momento: los visores solo ven el
- * cambio de imagen. Solo el códec, el nombre y pasar de "Sin micrófono" a un
- * micro piden volver a emitir (cambian la propia conexión).
+ * (MediaStreamTrack.applyConstraints). Así, emitiendo, resolución, fps, micro
+ * y procesado se aplican al momento: los visores solo ven el cambio de imagen.
+ * Otra cámara va antes a un PREVIO (monitor pequeño, verde) y sale con "Pasar
+ * a directo", como en una mesa de realización. Solo el códec, el nombre y
+ * pasar de "Sin micrófono" a un micro piden volver a emitir (cambian la
+ * propia conexión).
  *
  * Base de comparación: capturaAbiertaCon (js/utils/broadcast-utils.js), los
  * ajustes con los que se abrió lo que está saliendo ahora.
@@ -34,17 +36,32 @@ function cambiaPresenciaMicro(antes, ahora) {
     return (antes.micro === 'none') !== (ahora.micro === 'none');
 }
 
+// PREVIO: otra cámara abierta y a la vista, aún sin salir.
+// { pista, ajustes: { camara, resolucion, fps } } o null.
+let previo = null;
+
 /**
  * Aplica en la emisión lo que haya cambiado en Captura respecto a lo que sale.
+ * Otra cámara no sale directamente: va al previo hasta "Pasar a directo".
  */
 async function cambiarCapturaEnDirecto() {
     let antes = capturaAbiertaCon;
     if (!antes || !pc) return;
     let ahora = leerAjustesDeReconexion();
+    let enPrevio = previo ? previo.ajustes : null;
 
-    if (ahora.camara !== antes.camara) {
-        await cambiarCamaraEnDirecto(antes);
-    } else if (ahora.resolucion !== antes.resolucion || ahora.fps !== antes.fps) {
+    if (ahora.camara !== (enPrevio ? enPrevio.camara : antes.camara)) {
+        if (ahora.camara === antes.camara) {
+            // Se volvió a elegir la cámara que sale: el previo sobra
+            cerrarPrevio();
+            ajustarOpcionesSegunCapacidades(localStream.getVideoTracks()[0]);
+            if (ahora.resolucion !== antes.resolucion || ahora.fps !== antes.fps) await cambiarFormatoEnDirecto(antes);
+        } else {
+            await abrirPrevio(enPrevio || antes);
+        }
+    } else if (enPrevio && (ahora.resolucion !== enPrevio.resolucion || ahora.fps !== enPrevio.fps)) {
+        await cambiarFormatoPrevio();
+    } else if (!enPrevio && (ahora.resolucion !== antes.resolucion || ahora.fps !== antes.fps)) {
         await cambiarFormatoEnDirecto(antes);
     }
 
@@ -71,21 +88,83 @@ function deshacerCambioCaptura(antes, error, que) {
 }
 
 /**
- * Otra cámara: se abre la nueva sin cerrar la que sale y se pasa la emisión
- * a ella. Si no abre, no se toca nada de lo que sale.
+ * Otra cámara: se abre en el previo, sin tocar lo que sale. Si no abre, los
+ * selectores vuelven a lo que había (el previo anterior o el programa).
+ * @param {object} base - Ajustes a los que volver si falla.
  */
-async function cambiarCamaraEnDirecto(antes) {
+async function abrirPrevio(base) {
     let nueva;
     try {
         nueva = await abrirPistaVideo();
     } catch (error) {
-        deshacerCambioCaptura(antes, error, 'de cámara');
+        deshacerCambioCaptura(base, error, 'de cámara');
         return;
     }
     if (!ESTADOS_EN_DIRECTO.has(estadoEmision)) { nueva.stop(); return; }
-    await sustituirPista('video', nueva);
-    await despuesDeCambiarVideo(nueva);
-    mostrarAviso(`Ahora sale ${nueva.label || 'la nueva cámara'}`, 'ok', 2000);
+    if (previo) previo.pista.stop();
+    previo = { pista: nueva, ajustes: { camara: videoSource.value, resolucion: resolution.value, fps: frameRateSelect.value } };
+    ajustarOpcionesSegunCapacidades(nueva);
+    pintarPrevio(nueva);
+}
+
+/** Otra resolución o fps con el previo abierto: se aplican al previo, no a lo que sale. */
+async function cambiarFormatoPrevio() {
+    let pista = previo.pista;
+    try {
+        try {
+            await pista.applyConstraints(constraintsFormatoVideo(true));
+        } catch (error) {
+            if (!esFalloDeFormato(error)) throw error;
+            await pista.applyConstraints(constraintsFormatoVideo(false));
+        }
+    } catch {
+        // Reabrir la cámara del previo con el formato nuevo
+        pista.stop();
+        try {
+            pista = await abrirPistaVideo();
+        } catch (error) {
+            let base = { ...capturaAbiertaCon, ...previo.ajustes };
+            cerrarPrevio();
+            deshacerCambioCaptura(base, error, 'la resolución o los fps del previo');
+            return;
+        }
+        previo.pista = pista;
+    }
+    previo.ajustes = { ...previo.ajustes, resolucion: resolution.value, fps: frameRateSelect.value };
+    pintarPrevio(pista);
+}
+
+/** La cámara del previo pasa a salir, sin cortar la emisión. */
+async function pasarPrevioADirecto(evento) {
+    if (evento) evento.stopPropagation();
+    if (!previo || !ESTADOS_EN_DIRECTO.has(estadoEmision)) return;
+    let { pista, ajustes } = previo;
+    previo = null;
+    pintarPrevio(null);
+    await sustituirPista('video', pista);
+    capturaAbiertaCon = { ...capturaAbiertaCon, ...ajustes };
+    await despuesDeCambiarVideo(pista);
+}
+
+/** Cierra el previo y los selectores vuelven a lo que sale. */
+function descartarPrevio(evento) {
+    if (evento) evento.stopPropagation();
+    if (!previo) return;
+    cerrarPrevio();
+    if (capturaAbiertaCon) {
+        ponerAjustesDeCaptura({ ...leerAjustesDeReconexion(), camara: capturaAbiertaCon.camara, resolucion: capturaAbiertaCon.resolucion, fps: capturaAbiertaCon.fps });
+        guardarAjustesDesdeUi();
+    }
+    let pista = localStream && localStream.getVideoTracks()[0];
+    if (pista) ajustarOpcionesSegunCapacidades(pista);
+}
+
+/** Suelta el previo sin tocar los selectores (al detener o volver a emitir). */
+function cerrarPrevio() {
+    if (!previo) return;
+    previo.pista.stop();
+    previo = null;
+    pintarPrevio(null);
 }
 
 /**

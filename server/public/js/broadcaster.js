@@ -171,6 +171,7 @@ async function startBroadcast(opciones = {}) {
 
     // Mientras se esperaba la confirmación pudo empezar otra emisión
     if (!cambiarEstadoEmision(ESTADOS_EMISION.ABRIENDO)) return;
+    cerrarPrevio(); // al volver a emitir, sale lo que digan los selectores
     fijarAjustesEmitidos(); // foto de lo que se emite: base de "Volver a emitir"
 
     let intento = ++intentoEmision;
@@ -294,6 +295,7 @@ async function stopBroadcast(opciones = {}) {
     if (!cambiarEstadoEmision(ESTADOS_EMISION.DETENIENDO)) return;
     intentoEmision += 1; // Invalida cualquier intento en curso
     olvidarAjustesEmitidos();
+    cerrarPrevio();
 
     console.log('[broadcaster] stopBroadcast()', {
         hasSession: Boolean(whipSession),

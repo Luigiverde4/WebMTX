@@ -99,6 +99,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 - Código compartido entre Repeticiones y Archivo: `js/utils/grabaciones.js` (consulta y URLs) y `js/utils/salida-obs.js` (enviar, quitar, SSE y tally de la salida) y `js/utils/marcados.js` (cliente de `/api/marcados`; las marcas se comparten entre equipos por SSE y Archivo también marca). Miniaturas en el navegador con caché en IndexedDB: `js/utils/miniaturas.js`.
 - Todas las páginas de operador llevan el reloj de la cabecera (`<time id="reloj">` + `js/ui/reloj.js`): usa la hora del servidor si el equipo va desfasado más de 1,5 s, para que cuadre con las horas de las grabaciones.
 - En Emitir, los ajustes **objetivo** (resolución, fps y bitrate de vídeo: los pide la app, pero deciden la cámara, la CPU y la red) llevan la etiqueta `.objetivo` y debajo el valor real (`.campo__real`, en `--texto-aviso` si no coincide y diciendo quién lo impide). Los ajustes fijos no llevan marca.
+- En Emitir, emitiendo, los cambios de captura no cortan la conexión (`js/broadcaster-captura.js`: `replaceTrack` y `applyConstraints`). Otra cámara va antes al **previo** (verde) y sale con "Pasar a directo"; el monitor grande es el **programa** (rojo). Solo el códec, el nombre y pasar de "Sin micrófono" a un micro piden "Volver a emitir".
 - El rojo y el verde se reservan para el estado tally: en directo / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 

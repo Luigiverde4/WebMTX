@@ -42,6 +42,19 @@
                 <div class="en-directo" id="liveIndicator" hidden>
                     <span aria-hidden="true"></span>En directo
                 </div>
+                <!-- Previo y programa: emitiendo, otra cámara se ve aquí antes de salir.
+                     El monitor grande es el programa (lo que sale). -->
+                <span class="monitor__programa" id="etiquetaPrograma" hidden>Programa</span>
+                <div class="previo" id="previo" role="group" aria-labelledby="previoTitulo" hidden>
+                    <video id="previoVideo" muted autoplay playsinline aria-label="Cámara en previo"></video>
+                    <div class="previo__barra">
+                        <span class="previo__titulo" id="previoTitulo">Previo: <span id="previoNombre"></span></span>
+                        <div class="previo__botones">
+                            <button type="button" class="boton boton--peq" onclick="descartarPrevio(event)">Descartar</button>
+                            <button type="button" class="boton boton--peq boton--directo" onclick="pasarPrevioADirecto(event)">Pasar a directo</button>
+                        </div>
+                    </div>
+                </div>
                 <button type="button" class="boton-monitor" id="pantallaCompletaBtn" onclick="alternarPantallaCompleta(event)" aria-label="Ver a pantalla completa">
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#expandir"/></svg>
                 </button>
@@ -138,7 +151,7 @@
             <section class="panel emisor__captura" aria-labelledby="tituloCaptura">
                 <div class="panel__cabecera">
                     <h2 id="tituloCaptura">Captura</h2>
-                    <p class="panel__nota">Emitiendo, se aplican al momento sin cortar; el códec pide volver a emitir.</p>
+                    <p class="panel__nota">Emitiendo, se aplican sin cortar: otra cámara aparece en Previo hasta que la pases a directo. El códec pide volver a emitir.</p>
                 </div>
                 <div class="pila">
                     <div class="campos">

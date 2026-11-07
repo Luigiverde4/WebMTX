@@ -89,6 +89,75 @@
     .monitor:fullscreen .en-directo { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
     .monitor:fullscreen .boton-monitor { inset-block-end: var(--e-5); inset-inline-end: var(--e-5); }
 
+    /* Previo y programa, como en una mesa de realización: verde lo que se
+       prepara, rojo lo que sale. El previo va dentro del monitor, abajo a la
+       izquierda (el botón de pantalla completa está abajo a la derecha). */
+    .monitor__programa {
+        position: absolute;
+        inset-block-start: var(--e-3);
+        inset-inline-start: var(--e-3);
+        padding: var(--e-1) var(--e-3);
+        border-radius: var(--radio-control);
+        background: var(--programa);
+        color: var(--sobre-programa);
+        font-size: var(--t-s);
+        font-weight: 700;
+        pointer-events: none;
+    }
+    .previo {
+        position: absolute;
+        inset-block-end: var(--e-3);
+        inset-inline-start: var(--e-3);
+        z-index: 2;
+        inline-size: min(38%, 380px);
+        overflow: hidden;
+        border: 3px solid var(--preview);
+        border-radius: var(--radio-panel);
+        background: var(--superficie);
+        box-shadow: var(--sombra-flotante);
+        cursor: default;
+    }
+    .previo video {
+        display: block;
+        inline-size: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: contain;
+        background: var(--monitor);
+    }
+    .previo__barra {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-2);
+        padding: var(--e-2);
+    }
+    .previo__titulo {
+        flex: 1 1 8em;
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--t-s);
+        font-weight: 650;
+    }
+    .previo__botones { display: flex; gap: var(--e-1); }
+    /* Móvil: el monitor es pequeño; el previo va en horizontal (vídeo a la
+       izquierda, botones apilados a la derecha) para no tapar el programa */
+    @media (max-width: 600px) {
+        .previo {
+            display: grid;
+            grid-template-columns: 48% 1fr;
+            inline-size: 76%;
+            inset-block-end: var(--e-2);
+            inset-inline-start: var(--e-2);
+            border-width: 2px;
+        }
+        .previo__barra { padding: var(--e-1); }
+        .previo__titulo { display: none; }
+        .previo__botones { flex-direction: column; inline-size: 100%; }
+        .previo__botones .boton { min-block-size: 0; padding: 2px var(--e-1); font-size: var(--t-xs); }
+    }
+
     /* Rótulo sobre el monitor mientras se emite. Solo a pantalla completa:
        fuera de ella el tally ya dice que estás en directo. */
     .monitor:not(:fullscreen) .en-directo { display: none; }
