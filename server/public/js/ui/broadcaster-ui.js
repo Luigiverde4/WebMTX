@@ -470,15 +470,15 @@ const VISTA_ESTADO_EMISION = {
     negociando: { pildora: 'conectando', tally: 'conectando', texto: 'Conectando' },
     esperando_trafico: { pildora: 'conectando', tally: 'conectando', texto: 'Comprobando el envío' },
     // En 'inestable' el tally sigue en rojo para no reiniciar el cronómetro por un microcorte
-    en_antena: { pildora: 'antena', tally: 'antena', texto: 'En antena' },
-    inestable: { pildora: 'conectando', tally: 'antena', texto: 'Conexión inestable' },
+    en_directo: { pildora: 'directo', tally: 'directo', texto: 'En directo' },
+    inestable: { pildora: 'conectando', tally: 'directo', texto: 'Conexión inestable' },
     deteniendo: { pildora: 'conectando', tally: 'conectando', texto: 'Deteniendo' },
     error: { pildora: 'error', tally: 'error', texto: 'Error' }
 };
 
 /**
  * Pinta TODA la UI que depende del estado de la emisión: píldora, tally,
- * botones y rótulo "En antena". Es el único sitio que la toca.
+ * botones y rótulo "En directo". Es el único sitio que la toca.
  * @param {string} estado - Uno de ESTADOS_EMISION.
  * @param {{mensaje?: string}} [contexto]
  */
@@ -490,8 +490,8 @@ function pintarEstadoEmision(estado, contexto = {}) {
     statusEl.className = `estado estado--${vista.pildora}`;
     statusEl.textContent = texto;
 
-    if (vista.tally === 'antena') {
-        ponerTally('antena', { estado: texto, detalle: endpoint, cronometro: true });
+    if (vista.tally === 'directo') {
+        ponerTally('directo', { estado: texto, detalle: endpoint, cronometro: true });
     } else if (vista.tally === 'inactivo') {
         ponerTally('inactivo', { estado: 'Sin emitir', detalle: estado === 'previsualizando' ? 'Previsualizando' : '' });
     } else {
@@ -502,11 +502,11 @@ function pintarEstadoEmision(estado, contexto = {}) {
     startBtn.disabled = !libre;
     stopBtn.disabled = libre || estado === 'deteniendo';
     document.getElementById('previewBtn').disabled = !libre;
-    liveIndicator.hidden = !ESTADOS_EN_AIRE.has(estado);
+    liveIndicator.hidden = !ESTADOS_EN_DIRECTO.has(estado);
 }
 
 /**
- * Pone el monitor (vídeo + rótulo "En antena") a pantalla completa, o sale.
+ * Pone el monitor (vídeo + rótulo "En directo") a pantalla completa, o sale.
  * En el móvil, si la imagen es horizontal, intenta girar a apaisado.
  * @param {Event} [evento]
  */

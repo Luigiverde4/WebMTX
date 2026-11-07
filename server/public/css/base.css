@@ -6,7 +6,7 @@
    - Valores: todos salen de tokens.css (colores, medidas, tipografía).
    - Cascada: capas reset < base < componentes < paginas < utilidades.
      Cada hoja de página va en @layer paginas.
-   - El color significa algo: rojo = en antena, verde = recibiendo,
+   - El color significa algo: rojo = en directo, verde = recibiendo,
      ámbar = conectando. Cada cámara tiene su color (js/utils/camaras.js).
    - Lo único llamativo es la barra de tally bajo la cabecera.
    ========================================================================== */
@@ -242,9 +242,9 @@
     background: var(--aviso);
     animation: parpadeo 1s steps(2, jump-none) infinite;
   }
-  .tally[data-estado="antena"] { background: var(--programa); color: var(--sobre-programa); }
-  .tally[data-estado="antena"] .tally__estado { color: var(--sobre-programa); }
-  .tally[data-estado="antena"] .tally__lampara {
+  .tally[data-estado="directo"] { background: var(--programa); color: var(--sobre-programa); }
+  .tally[data-estado="directo"] .tally__estado { color: var(--sobre-programa); }
+  .tally[data-estado="directo"] .tally__lampara {
     background: var(--sobre-programa);
     box-shadow: 0 0 0 3px var(--halo-sobre-programa);
   }
@@ -387,13 +387,13 @@
     color: var(--sobre-primario);
   }
   .boton--primario:hover { background: var(--primario-hover); }
-  /* Acción que pone algo en antena (emitir, enviar a OBS) */
-  .boton--antena {
+  /* Acción que pone algo en directo (emitir, enviar a OBS) */
+  .boton--directo {
     background: var(--programa);
     border-color: var(--programa);
     color: var(--sobre-programa);
   }
-  .boton--antena:hover { background: var(--programa-hover); }
+  .boton--directo:hover { background: var(--programa-hover); }
   .boton--peligro {
     background: transparent;
     border-color: var(--programa-borde);
@@ -502,7 +502,7 @@
   }
 
   /* --- Píldora de estado (lámpara + texto) ------------------------------- */
-  /* Variantes: inactivo, conectando, antena, recibiendo, ok, aviso, error */
+  /* Variantes: inactivo, conectando, directo, recibiendo, ok, aviso, error */
   .estado {
     display: inline-flex;
     align-items: center;
@@ -518,7 +518,7 @@
     background: var(--texto-3);
   }
   .estado--recibiendo::before, .estado--ok::before { background: var(--preview); }
-  .estado--antena::before { background: var(--programa); }
+  .estado--directo::before { background: var(--programa); }
   .estado--conectando::before, .estado--aviso::before { background: var(--aviso); }
   .estado--error::before { background: var(--programa); }
   .estado--error { color: var(--texto-peligro); }

@@ -1,7 +1,7 @@
 /**
  * BARRA DE TALLY
  * Estado global de la página bajo la cabecera, con la semántica de los pilotos
- * de cámara: rojo = en antena, verde = recibiendo, ámbar = conectando.
+ * de cámara: rojo = en directo, verde = recibiendo, ámbar = conectando.
  *
  * HTML esperado:
  *   <div class="tally" id="tally" data-estado="inactivo">
@@ -11,7 +11,7 @@
  *     <span class="tally__tiempo" id="tallyTiempo"></span>
  *   </div>
  *
- *   ponerTally('antena', { estado: 'En antena', detalle: 'cam1', cronometro: true })
+ *   ponerTally('directo', { estado: 'En directo', detalle: 'cam1', cronometro: true })
  *   ponerTally('inactivo', { estado: 'Sin emitir' })
  */
 
@@ -26,7 +26,7 @@ function formatearCronometro(ms) {
 }
 
 /**
- * @param {'inactivo'|'conectando'|'antena'|'recibiendo'|'error'} estado
+ * @param {'inactivo'|'conectando'|'directo'|'recibiendo'|'error'} estado
  * @param {{estado?: string, detalle?: string, cronometro?: boolean, tiempo?: string}} [textos]
  *   cronometro: cuenta el tiempo desde que se entra en este estado (se mantiene
  *   si se vuelve a llamar con el mismo estado y cronometro: true).

@@ -90,7 +90,7 @@
   --primario-hover: var(--gris-0);
   --sobre-primario: var(--gris-975);
 
-  /* Semántica tally: rojo = en antena, verde = recibiendo, ámbar = conectando */
+  /* Semántica tally: rojo = en directo, verde = recibiendo, ámbar = conectando */
   --programa: var(--rojo-500);
   --programa-hover: var(--rojo-600);
   --programa-tenue: rgb(224 49 43 / 0.14);

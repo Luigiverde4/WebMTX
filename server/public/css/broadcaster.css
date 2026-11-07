@@ -46,7 +46,7 @@
     }
     .boton-monitor .icono { inline-size: var(--tam-icono-grande); block-size: var(--tam-icono-grande); }
 
-    /* El contenedor entero va a pantalla completa: el rótulo "En antena" sigue visible */
+    /* El contenedor entero va a pantalla completa: el rótulo "En directo" sigue visible */
     .monitor:fullscreen {
         aspect-ratio: auto;
         inline-size: 100%;
@@ -54,11 +54,11 @@
         border: 0;
         border-radius: 0;
     }
-    .monitor:fullscreen .en-antena { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
+    .monitor:fullscreen .en-directo { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
     .monitor:fullscreen .boton-monitor { inset-block-end: var(--e-5); inset-inline-end: var(--e-5); }
 
     /* Rótulo sobre el monitor mientras se emite */
-    .en-antena {
+    .en-directo {
         position: absolute;
         inset-block-start: var(--e-3);
         inset-inline-start: var(--e-3);
@@ -72,7 +72,7 @@
         font-weight: 700;
         font-stretch: 80%;
     }
-    .en-antena span {
+    .en-directo span {
         inline-size: var(--tam-punto);
         block-size: var(--tam-punto);
         border-radius: 50%;

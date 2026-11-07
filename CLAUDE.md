@@ -81,16 +81,16 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
   - No hay estilos sin capa: ganarían a todo.
 - **`[hidden]`** está en la capa `utilidades`, así que siempre gana a los `display` de las clases. Usa `hidden` para mostrar y ocultar, no `style.display`.
 - **Breakpoints:** solo 600, 900 y 1280 px. Lo que pueda acabar en un hueco estrecho (escenario de repeticiones en un dock de OBS, lista de directo, secciones de stats, configuración de la API) usa *container queries*.
-- **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--antena`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `listo`, `ocupado`, `visible`).
+- **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--directo`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `listo`, `ocupado`, `visible`).
 - **Temas:** oscuro por defecto y claro automático (`prefers-color-scheme`), redefiniendo solo los tokens de uso. Las salidas de OBS llevan `<html class="salida-obs">` y siempre son oscuras.
 - Usa propiedades lógicas (`margin-inline`, `padding-block`, `inset-inline-start`…). Los títulos son fluidos (`--t-titulo`).
 - **Cámaras:** cada una tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). Hay una paleta por tema (`--cam-oscuro-*`, `--cam-claro-*`), validadas con el validador de la skill dataviz. Si cambias alguna, vuelve a validarla.
 - Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
-- El rojo y el verde se reservan para el estado tally: en antena / recibiendo.
+- El rojo y el verde se reservan para el estado tally: en directo / recibiendo.
 - Para avisos y confirmaciones usa `js/ui/avisos.js` (`mostrarAviso`, `confirmar`) en lugar de `alert` y `confirm`.
 
 **Salidas para OBS** (`neoplayer.html` y `display.html`):
-- Solo vídeo sobre negro: nada se superpone en antena.
+- Solo vídeo sobre negro: nada se superpone en directo.
 - Los avisos de depuración aparecen únicamente fuera de OBS (`!window.obsstudio`) o con `?debug=1`.
 
 **Páginas:**

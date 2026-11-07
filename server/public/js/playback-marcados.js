@@ -202,7 +202,7 @@ function renderizarMomentos() {
 
         let obsBtn = document.createElement('button');
         obsBtn.type = 'button';
-        obsBtn.className = 'boton boton--peq boton--antena';
+        obsBtn.className = 'boton boton--peq boton--directo';
         obsBtn.textContent = 'OBS';
         obsBtn.title = 'Enviar este momento a OBS';
         obsBtn.addEventListener('click', () => enviarMomentoAOBS(momento.id));

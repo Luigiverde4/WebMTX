@@ -298,7 +298,7 @@ Acceso WHEP directo sin la interfaz: `https://<IP_SERVIDOR>:8889/<cámara>`.
 - **Línea temporal**: logarítmica (los últimos 5 minutos ocupan la mitad derecha). Arrastrarla elige el momento; la burbuja muestra la hora real.
 - **Otros modos**: desde el inicio de una grabación (en segundos) o a una hora concreta.
 - **Marcar**: guarda el instante de "hace N segundos" para pincharlo luego; cada momento se puede previsualizar, anotar o enviar a OBS.
-- **Enviar a OBS / Quitar**: manda a `display.html` lo que se está previsualizando. La barra superior se pone en rojo mientras hay una repetición en antena.
+- **Enviar a OBS / Quitar**: manda a `display.html` lo que se está previsualizando. La barra superior se pone en rojo mientras hay una repetición en directo.
 - Velocidad de 0,25× a 4×.
 
 > Playback no usa WebRTC: el navegador recibe fMP4 por HTTPS a través del proxy `/api/playback`.
@@ -458,7 +458,7 @@ js/
 └── <página>.js       # Lógica de cada página (WebRTC, repeticiones…)
 ```
 
-- `css/base.css` contiene el sistema de diseño: tokens de color (incluida la paleta de cámaras, validada para daltonismo sobre el fondo oscuro), tipografía, componentes y la barra de tally. Rojo = en antena, verde = recibiendo, ámbar = conectando.
+- `css/base.css` contiene el sistema de diseño: tokens de color (incluida la paleta de cámaras, validada para daltonismo sobre el fondo oscuro), tipografía, componentes y la barra de tally. Rojo = en directo, verde = recibiendo, ámbar = conectando.
 - Las funciones llamadas desde `onclick`/`data-load` y los ids que usa el JS son contrato. Antes de dar un cambio por bueno:
 
 ```powershell

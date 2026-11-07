@@ -36,8 +36,8 @@
             <div class="monitor emisor__pantalla" id="monitorEmisor">
                 <video id="preview" muted autoplay playsinline aria-label="Previsualización de la cámara local"></video>
                 <div class="monitor__vacio" id="previewVacio">Pulsa Previsualizar o toca aquí para ver la cámara</div>
-                <div class="en-antena" id="liveIndicator" hidden>
-                    <span aria-hidden="true"></span>En antena
+                <div class="en-directo" id="liveIndicator" hidden>
+                    <span aria-hidden="true"></span>En directo
                 </div>
                 <button type="button" class="boton-monitor" id="pantallaCompletaBtn" onclick="alternarPantallaCompleta(event)" aria-label="Ver a pantalla completa">
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#expandir"/></svg>
@@ -55,8 +55,8 @@
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#parar"/></svg>
                         Detener
                     </button>
-                    <button type="button" class="boton boton--antena" id="startBtn" onclick="startBroadcast()">
-                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#antena"/></svg>
+                    <button type="button" class="boton boton--directo" id="startBtn" onclick="startBroadcast()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
                         Emitir
                     </button>
                 </div>

@@ -108,7 +108,7 @@ async function playWebRTC(server, streamName) {
                 clearTimeout(disconnectTimer);
                 disconnectTimer = null;
             } else if (estado === 'disconnected') {
-                // Microcorte: margen antes de reconectar (no cortar la imagen en antena por un parpadeo)
+                // Microcorte: margen antes de reconectar (no cortar la imagen en directo por un parpadeo)
                 if (!disconnectTimer) {
                     disconnectTimer = setTimeout(() => {
                         disconnectTimer = null;

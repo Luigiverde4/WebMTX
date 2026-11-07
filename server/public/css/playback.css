@@ -176,7 +176,7 @@
         font-size: var(--t-s);
     }
     .marcado__acciones { grid-area: acciones; display: flex; gap: var(--e-1); }
-    .marcado__acciones .boton--antena { padding-inline: var(--e-2); }
+    .marcado__acciones .boton--directo { padding-inline: var(--e-2); }
     .marcado__nota { min-block-size: var(--alto-control-peq); font-size: var(--t-s); }
     .marcados__vacio { padding-block: var(--e-2); }
 

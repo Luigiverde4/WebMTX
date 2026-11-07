@@ -5,7 +5,7 @@
  * salía de combinar pc, localStream, whipSession, isStoppingBroadcast, el
  * temporizador de gracia ICE y hasta la clase CSS de la píldora de estado.
  *
- *   inactivo ─► previsualizando ─► abriendo ─► negociando ─► esperando_trafico ─► en_antena ⇄ inestable
+ *   inactivo ─► previsualizando ─► abriendo ─► negociando ─► esperando_trafico ─► en_directo ⇄ inestable
  *       ▲              │               │            │                │                 │           │
  *       │              └───────────────┴─── error ◄─┴────────────────┘                 │           │
  *       └──────────────────────────── deteniendo ◄─────────────────────────────────────┴───────────┘
@@ -23,7 +23,7 @@ const ESTADOS_EMISION = Object.freeze({
     ABRIENDO: 'abriendo',               // getUserMedia en curso
     NEGOCIANDO: 'negociando',           // ICE + intercambio SDP con WHIP
     ESPERANDO_TRAFICO: 'esperando_trafico',
-    EN_ANTENA: 'en_antena',
+    EN_DIRECTO: 'en_directo',
     INESTABLE: 'inestable',             // ICE 'disconnected', dentro del margen de gracia
     DETENIENDO: 'deteniendo',
     ERROR: 'error'
@@ -38,15 +38,15 @@ const TRANSICIONES_EMISION = Object.freeze({
     [E.ERROR]: [E.PREVISUALIZANDO, E.ABRIENDO, E.INACTIVO, E.ERROR],
     [E.ABRIENDO]: [E.NEGOCIANDO, E.DETENIENDO],
     [E.NEGOCIANDO]: [E.ESPERANDO_TRAFICO, E.INESTABLE, E.DETENIENDO],
-    [E.ESPERANDO_TRAFICO]: [E.EN_ANTENA, E.INESTABLE, E.DETENIENDO],
-    [E.EN_ANTENA]: [E.INESTABLE, E.DETENIENDO],
-    [E.INESTABLE]: [E.EN_ANTENA, E.ESPERANDO_TRAFICO, E.NEGOCIANDO, E.DETENIENDO],
+    [E.ESPERANDO_TRAFICO]: [E.EN_DIRECTO, E.INESTABLE, E.DETENIENDO],
+    [E.EN_DIRECTO]: [E.INESTABLE, E.DETENIENDO],
+    [E.INESTABLE]: [E.EN_DIRECTO, E.ESPERANDO_TRAFICO, E.NEGOCIANDO, E.DETENIENDO],
     [E.DETENIENDO]: [E.INACTIVO, E.ERROR]
 });
 
 // Agrupaciones que usa el resto del código en vez de mirar variables sueltas
 const ESTADOS_SIN_EMISION = new Set([E.INACTIVO, E.PREVISUALIZANDO, E.ERROR]);
-const ESTADOS_EN_AIRE = new Set([E.EN_ANTENA, E.INESTABLE]);
+const ESTADOS_EN_DIRECTO = new Set([E.EN_DIRECTO, E.INESTABLE]);
 
 let estadoEmision = E.INACTIVO;
 let mensajeErrorEmision = '';
@@ -105,7 +105,7 @@ function entrarEnEstadoEmision(estado, anterior) {
  */
 function recuperarDeInestable() {
     if (estadoEmision !== E.INESTABLE) return;
-    cambiarEstadoEmision(estadoPrevioInestable || E.EN_ANTENA);
+    cambiarEstadoEmision(estadoPrevioInestable || E.EN_DIRECTO);
 }
 
 /** ¿Se puede empezar a emitir (o previsualizar) ahora? */

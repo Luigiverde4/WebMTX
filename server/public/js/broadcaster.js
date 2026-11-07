@@ -243,8 +243,8 @@ async function startBroadcast() {
         await esperarStreamSaliente(conexion);
         if (cancelado()) return; // Se canceló esperando tráfico saliente
 
-        if (estadoEmision === ESTADOS_EMISION.ESPERANDO_TRAFICO) cambiarEstadoEmision(ESTADOS_EMISION.EN_ANTENA);
-        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.EN_ANTENA;
+        if (estadoEmision === ESTADOS_EMISION.ESPERANDO_TRAFICO) cambiarEstadoEmision(ESTADOS_EMISION.EN_DIRECTO);
+        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.EN_DIRECTO;
         startCodecStatsPolling();
         console.log('Transmisión WHIP iniciada correctamente');
     } catch (error) {

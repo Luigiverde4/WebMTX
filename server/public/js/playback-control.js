@@ -61,8 +61,8 @@ async function quitarDelDisplay() {
             let enviado = estado.ts ? formatTimeOnly(new Date(estado.ts)) : '';
             obsStatusEl.textContent = `En OBS: ${estado.label || 'repetición'}${enviado ? `, enviada a las ${enviado}` : ''}`;
             obsStatusEl.classList.add('activo');
-            // El cronómetro cuenta cuánto lleva en antena esta repetición
-            ponerTally('antena', { estado: 'En OBS', detalle: estado.label || 'Repetición', cronometro: true });
+            // El cronómetro cuenta cuánto lleva en directo esta repetición
+            ponerTally('directo', { estado: 'En OBS', detalle: estado.label || 'Repetición', cronometro: true });
         }
     };
 
