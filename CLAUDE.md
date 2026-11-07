@@ -73,7 +73,7 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 **Capas:**
 - `js/utils/*`: helpers puros.
 - `js/ui/*`: referencias al DOM y renderizado.
-- `js/<pagina>.js`: lógica WebRTC o de negocio. Es el principal de `<pagina>.html` y solo hay uno por página (el de `display.html` es `display.js`).
+- `js/<pagina>.js`: lógica WebRTC o de negocio. Es el principal de `<pagina>.html` y solo hay uno por página. Excepción: el de `display.html` es `playback-display.js`, porque es la salida de OBS de Repeticiones; se carga solo, sin `playback.js`.
 - `js/<pagina>-<parte>.js`: partes de la lógica de esa misma página que, por tamaño, van aparte (`broadcaster-captura.js`, `playback-marcados.js`). Usan los globales del principal y se cargan después de él. No son `utils` porque no son puras. Si una parte es poco más que pegamento, va dentro del principal.
 - `js/api/api.js`: `GET`/`POST`/`PATCH`/`DELETE` contra `/api/mediamtx/v3`.
 

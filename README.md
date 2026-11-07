@@ -243,7 +243,7 @@ WebMTX/
 │       ├── fonts/                 # Archivo variable (OFL), autoalojada: funciona sin internet
 │       ├── img/iconos.svg         # Iconos
 │       └── js/
-│           ├── <página>.js        # Lógica WebRTC / de cada página (el principal; display.js es el de display.html)
+│           ├── <página>.js        # Lógica WebRTC / de cada página (el principal; el de display.html es playback-display.js)
 │           ├── <página>-<parte>.js  # Partes de la lógica de esa página, cargadas tras su principal:
 │           │                      #   broadcaster-captura.js (cámara, formato y micro en directo; previo y programa)
 │           │                      #   playback-marcados.js (momentos marcados)
