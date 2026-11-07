@@ -327,8 +327,10 @@ async function actualizarCodecStats() {
             let codificacion = report.frameWidth
                 ? `${report.frameWidth}×${report.frameHeight} a ${Math.round(report.framesPerSecond || 0)} fps`
                 : 'Esperando fotogramas…';
-            document.getElementById('aplicadoCodificacion').textContent =
-                `${codificacion}${kbps !== null ? `, ${(kbps / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps` : ''}`;
+            let textoCodificacion = `${codificacion}${kbps !== null ? `, ${(kbps / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps` : ''}`;
+            document.getElementById('aplicadoCodificacion').textContent = textoCodificacion;
+            // El mismo resumen, bajo el vídeo (el panel completo está al final de los controles)
+            document.getElementById('resumenEnvio').textContent = textoCodificacion;
             let motivo = report.qualityLimitationReason || 'none';
             document.getElementById('aplicadoLimitacion').textContent = MOTIVOS_LIMITACION[motivo] || motivo;
         }
@@ -388,6 +390,7 @@ function stopCodecStatsPolling() {
     ponerMensajeStatsCodec('Sin datos: empieza a emitir para ver el tráfico.');
     document.getElementById('aplicadoCodificacion').textContent = '—';
     document.getElementById('aplicadoLimitacion').textContent = '—';
+    document.getElementById('resumenEnvio').textContent = '';
 }
 
 

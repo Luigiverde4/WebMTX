@@ -5,20 +5,24 @@
  */
 
 @layer paginas {
+    /* Altura fija (pagina--app) y tres columnas: el vídeo se lleva todo el
+       hueco central; las laterales hacen scroll por dentro. */
     .repeticiones {
         display: grid;
-        grid-template-columns: 320px minmax(0, 1fr) 300px;
+        grid-template-columns: 300px minmax(0, 1fr) 280px;
+        grid-template-rows: minmax(0, 1fr);
         grid-template-areas: "fuente escenario marcados";
         gap: var(--e-4);
-        align-items: start;
+        padding-block: var(--e-4);
     }
     .rep__escenario {
         grid-area: escenario;
         container: escenario / inline-size;
         display: flex;
         flex-direction: column;
-        gap: var(--e-3);
+        gap: var(--e-2);
         min-inline-size: 0;
+        min-block-size: 0;
     }
     .rep__fuente { grid-area: fuente; }
     .rep__marcados { grid-area: marcados; }
@@ -91,7 +95,10 @@
         flex-wrap: wrap;
         align-items: center;
         gap: var(--e-3) var(--e-4);
+        padding-block: var(--e-2);       /* compacta: el alto es para el vídeo */
     }
+    /* Todo lo que va bajo el vídeo mantiene su alto; el vídeo se queda el resto */
+    .rep__escenario > :not(.monitor) { flex: none; }
     .salida-obs__texto { flex: 1 1 260px; min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
     .salida-obs__texto h2 { font-size: var(--t-m); }
     .salida-obs__pendiente.listo { color: var(--texto); }
@@ -138,12 +145,11 @@
     }
     .boton-marcar__destino { grid-area: destino; font-size: var(--t-s); color: var(--texto-2); }
 
+    /* Sin alto máximo propio: hace scroll la columna entera (columna-scroll) */
     .marcados {
         display: flex;
         flex-direction: column;
         gap: var(--e-2);
-        max-block-size: 60vh;
-        overflow-y: auto;
     }
     .marcado {
         display: flex;
@@ -181,20 +187,39 @@
     .marcados__vacio { padding-block: var(--e-2); }
 
     /* --- Responsive: la página -------------------------------------------- */
+    /* 900-1280: vídeo a la izquierda; qué repetir y marcados apilados a la
+       derecha, cada uno con su scroll. Sigue sin scroll de página. */
     @media (max-width: 1280px) {
         .repeticiones {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr) 300px;
+            grid-template-rows: auto minmax(0, 1fr);
             grid-template-areas:
-                "escenario escenario"
-                "fuente marcados";
+                "escenario fuente"
+                "escenario marcados";
         }
+        .rep__fuente { max-block-size: 60%; }
     }
+    /* Móvil o dock estrecho: página normal con scroll, todo apilado y el
+       monitor vuelve a 16:9. */
     @media (max-width: 900px) {
+        .repeticiones.pagina--app { block-size: auto; overflow: visible; }
         .repeticiones {
             grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: none;
             grid-template-areas: "escenario" "fuente" "marcados";
         }
-        .marcados { max-block-size: none; }
+        .rep__fuente { max-block-size: none; }
+        .rep__escenario .monitor--llenar { aspect-ratio: 16 / 9; flex: none; }
+        .columna-scroll { overflow: visible; }
+    }
+    @media (max-height: 600px) {
+        .repeticiones {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: none;
+            grid-template-areas: "escenario" "fuente" "marcados";
+        }
+        .rep__escenario .monitor--llenar { aspect-ratio: 16 / 9; flex: none; }
+        .columna-scroll { overflow: visible; }
     }
 
     /* --- Responsive: el escenario según su propio ancho (dock de OBS) ------ */

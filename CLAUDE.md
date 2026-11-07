@@ -88,6 +88,9 @@ Navegador ─HTTPS :443─► Node/Express (server/modules/app.js)
 - **Nombres:** BEM en castellano, `bloque__elemento` y `bloque--modificador`. Los estados de la píldora son `estado--inactivo`, `--conectando`, `--directo`, `--recibiendo`, `--ok`, `--aviso` y `--error`. Otros modificadores: `mensaje-linea--error`/`--ok` y `vacio--error`. Los estados de interacción van como clase suelta (`activo`, `listo`, `ocupado`, `visible`).
 - **Temas:** oscuro por defecto y claro automático (`prefers-color-scheme`), redefiniendo solo los tokens de uso. Las salidas de OBS llevan `<html class="salida-obs">` y siempre son oscuras.
 - Usa propiedades lógicas (`margin-inline`, `padding-block`, `inset-inline-start`…). Los títulos son fluidos (`--t-titulo`).
+- **Páginas "de aplicación"** (repeticiones, emitir): son `.pagina--app`, a altura fija de pantalla, a todo el ancho y sin scroll de página. El vídeo usa `.monitor--llenar`, que crece hasta el hueco disponible, y lo que no cabe va en `.columna-scroll`.
+  - En móvil (< 900 px) y en ventanas de menos de 600 px de alto vuelven al scroll normal, con el monitor en 16:9.
+  - En Emitir, el monitor y los botones quedan *sticky* bajo el tally.
 - **Cámaras:** cada una tiene un color fijo que asigna `js/utils/camaras.js` (azul, naranja, cian, magenta y violeta, en ese orden). Hay una paleta por tema (`--cam-oscuro-*`, `--cam-claro-*`), validadas con el validador de la skill dataviz. Si cambias alguna, vuelve a validarla.
 - Las URLs de `/api/playback/get` empiezan en el `start` pedido (su t=0). No hagas `currentTime = offset` encima. El fin de un tramo se calcula en `ended`: `video.duration` crece mientras llega el fMP4.
 - El rojo y el verde se reservan para el estado tally: en directo / recibiendo.

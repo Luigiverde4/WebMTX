@@ -28,12 +28,12 @@
         <span class="tally__tiempo" id="tallyTiempo"></span>
     </div>
 
-    <main class="pagina emisor">
+    <main class="pagina pagina--app emisor">
         <h1 class="visualmente-oculto">Emitir una cámara</h1>
 
-        <!-- Columna principal: monitor, acciones y lo que realmente se envía -->
+        <!-- Columna fija: monitor y acciones (con resumen de lo que se envía) -->
         <section class="emisor__monitor" aria-label="Previsualización y emisión">
-            <div class="monitor emisor__pantalla" id="monitorEmisor">
+            <div class="monitor monitor--llenar emisor__pantalla" id="monitorEmisor">
                 <video id="preview" muted autoplay playsinline aria-label="Previsualización de la cámara local"></video>
                 <div class="monitor__vacio" id="previewVacio">Pulsa Previsualizar o toca aquí para ver la cámara</div>
                 <div class="en-directo" id="liveIndicator" hidden>
@@ -50,6 +50,7 @@
                     Previsualizar
                 </button>
                 <span class="estado" id="status">Sin emitir</span>
+                <span class="resumen-envio cifra texto-2 texto-peq" id="resumenEnvio"></span>
                 <div class="acciones__principales">
                     <button type="button" class="boton" id="stopBtn" onclick="stopBroadcast()" disabled>
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#parar"/></svg>
@@ -65,26 +66,30 @@
                 </div>
             </div>
 
-            <div class="panel emisor__enviando">
-                <div class="panel__cabecera">
-                    <h2>Lo que se está enviando</h2>
-                </div>
-                <dl class="datos" id="aplicado">
-                    <dt>Cámara</dt><dd id="aplicadoCamara">—</dd>
-                    <dt>Captura</dt><dd id="aplicadoCaptura">—</dd>
-                    <dt>Codificación</dt><dd id="aplicadoCodificacion">—</dd>
-                    <dt>Limitación</dt><dd id="aplicadoLimitacion">—</dd>
-                </dl>
-                <p class="mensaje-linea" id="aplicadoAviso"></p>
-                <h3 class="emisor__subtitulo">Tráfico por pista</h3>
-                <div id="codecStats" class="tabla-scroll">
-                    <p class="vacio">Sin datos: empieza a emitir para ver el tráfico.</p>
-                </div>
-            </div>
         </section>
 
-        <!-- Columna de ajustes -->
-        <div class="emisor__ajustes">
+        <!-- Columna de controles: hace scroll mientras el monitor se queda fijo -->
+        <div class="emisor__ajustes columna-scroll">
+            <section class="panel emisor__fuentes" aria-labelledby="tituloFuentes">
+                <div class="panel__cabecera">
+                    <h2 id="tituloFuentes">Fuentes</h2>
+                    <button type="button" class="boton boton--fantasma boton--peq" onclick="actualizarDispositivos()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#refrescar"/></svg>
+                        Buscar dispositivos
+                    </button>
+                </div>
+                <div class="pila">
+                    <div class="campo">
+                        <label for="videoSource">Cámara</label>
+                        <select id="videoSource"></select>
+                    </div>
+                    <div class="campo">
+                        <label for="audioSource">Micrófono</label>
+                        <select id="audioSource"></select>
+                    </div>
+                </div>
+            </section>
+
             <section class="panel emisor__destino" aria-labelledby="tituloDestino">
                 <div class="panel__cabecera">
                     <h2 id="tituloDestino">Destino</h2>
@@ -123,26 +128,6 @@
                             <span class="campo__ayuda">Se rellena con la dirección de esta página. WHIP usa el puerto 8889.</span>
                         </div>
                     </details>
-                </div>
-            </section>
-
-            <section class="panel emisor__fuentes" aria-labelledby="tituloFuentes">
-                <div class="panel__cabecera">
-                    <h2 id="tituloFuentes">Fuentes</h2>
-                    <button type="button" class="boton boton--fantasma boton--peq" onclick="actualizarDispositivos()">
-                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#refrescar"/></svg>
-                        Buscar dispositivos
-                    </button>
-                </div>
-                <div class="pila">
-                    <div class="campo">
-                        <label for="videoSource">Cámara</label>
-                        <select id="videoSource"></select>
-                    </div>
-                    <div class="campo">
-                        <label for="audioSource">Micrófono</label>
-                        <select id="audioSource"></select>
-                    </div>
                 </div>
             </section>
 
@@ -246,6 +231,22 @@
                         <label class="opcion"><input type="checkbox" id="autoGainControl"> Ganancia automática</label>
                         <span class="campo__ayuda">Desactívalo todo si entra sonido de mesa o de ambiente.</span>
                     </fieldset>
+                </div>
+            </section>
+            <section class="panel emisor__enviando" aria-labelledby="tituloEnviando">
+                <div class="panel__cabecera">
+                    <h2 id="tituloEnviando">Lo que se está enviando</h2>
+                </div>
+                <dl class="datos" id="aplicado">
+                    <dt>Cámara</dt><dd id="aplicadoCamara">—</dd>
+                    <dt>Captura</dt><dd id="aplicadoCaptura">—</dd>
+                    <dt>Codificación</dt><dd id="aplicadoCodificacion">—</dd>
+                    <dt>Limitación</dt><dd id="aplicadoLimitacion">—</dd>
+                </dl>
+                <p class="mensaje-linea" id="aplicadoAviso"></p>
+                <h3 class="emisor__subtitulo">Tráfico por pista</h3>
+                <div id="codecStats" class="tabla-scroll">
+                    <p class="vacio">Sin datos: empieza a emitir para ver el tráfico.</p>
                 </div>
             </section>
         </div>

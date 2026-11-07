@@ -274,6 +274,25 @@
   }
   .titulo-pagina p { color: var(--texto-2); max-inline-size: 65ch; }
 
+  /* Páginas "de aplicación" (repeticiones, emitir): ocupan exactamente la
+     pantalla útil y lo que no cabe hace scroll dentro de su columna. */
+  .pagina--app {
+    block-size: calc(100dvh - var(--alto-cabecera) - var(--alto-tally));
+    max-inline-size: none;              /* todo el ancho: el vídeo es lo importante */
+    overflow: hidden;
+  }
+  /* Cabecera y tally alineados con el contenido a todo el ancho */
+  body:has(.pagina--app) { --margen-lateral: var(--e-5); }
+  /* Ventanas muy bajas: vuelta a la página normal para que nada quede inaccesible */
+  @media (max-height: 600px) {
+    .pagina--app { block-size: auto; overflow: visible; }
+  }
+  .columna-scroll {
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .pila { display: flex; flex-direction: column; gap: var(--e-4); }
   .fila {
     display: flex;
@@ -489,6 +508,13 @@
     block-size: 100%;
     object-fit: contain;
     background: var(--monitor);
+  }
+  /* Monitor que crece hasta el hueco disponible (sin 16:9 fijo); la imagen
+     nunca se recorta: object-fit contain sobre negro. */
+  .monitor--llenar {
+    aspect-ratio: auto;
+    flex: 1 1 auto;
+    min-block-size: 0;
   }
   .monitor__vacio {
     position: absolute;

@@ -1,25 +1,34 @@
-/* Emitir: monitor y acciones a la izquierda, ajustes a la derecha */
+/*
+ * Emitir: el monitor no se va nunca de la vista mientras se tocan ajustes.
+ * - Escritorio: página de altura fija (pagina--app); a la izquierda el monitor
+ *   llena el alto con los botones debajo; a la derecha los controles hacen scroll.
+ * - Móvil: la página hace scroll, pero monitor y botones se quedan pegados
+ *   bajo el tally y los controles pasan por debajo.
+ */
 
 @layer paginas {
     .emisor {
         --ancho-ajustes: 380px;
         display: grid;
         grid-template-columns: minmax(0, 1fr) var(--ancho-ajustes);
+        grid-template-rows: minmax(0, 1fr);
         gap: var(--e-5);
-        align-items: start;
+        padding-block: var(--e-4);
     }
     .emisor__monitor {
         display: flex;
         flex-direction: column;
-        gap: var(--e-4);
-        position: sticky;
-        inset-block-start: calc(var(--alto-cabecera) + var(--alto-tally) + var(--e-4));
+        gap: var(--e-3);
+        min-block-size: 0;
     }
+    .emisor__monitor > .acciones { flex: none; }
     .emisor__ajustes {
         display: flex;
         flex-direction: column;
         gap: var(--e-4);
+        padding-inline-end: var(--e-1);   /* aire para la barra de scroll */
     }
+    .resumen-envio:empty { display: none; }
     .emisor__subtitulo {
         margin-block: var(--e-4) var(--e-2);
         color: var(--texto-2);
@@ -101,20 +110,33 @@
     @media (max-width: 1280px) {
         .emisor { --ancho-ajustes: 340px; }
     }
-    /* Una columna: en el móvil, tras el vídeo van los botones de emitir y
-       luego las fuentes (lo primero que se toca); después, el resto de ajustes.
-       display: contents saca los paneles de sus columnas para poder ordenarlos. */
+    /* Ventanas bajas (base.css desactiva pagina--app): el monitor recupera el 16:9 */
+    @media (max-height: 600px) {
+        .emisor { grid-template-rows: none; align-items: start; }
+        .emisor .monitor--llenar { aspect-ratio: 16 / 9; flex: none; }
+        .emisor__ajustes.columna-scroll { overflow: visible; }
+    }
+
+    /* Móvil: una columna con scroll de página. La cabecera se va al hacer
+       scroll; tally, monitor y botones se quedan pegados arriba y los
+       controles (en el orden del HTML: fuentes, destino, vídeo, audio, envío)
+       pasan por debajo. */
     @media (max-width: 900px) {
-        .emisor { display: flex; flex-direction: column; gap: var(--e-4); }
-        .emisor__monitor,
-        .emisor__ajustes { display: contents; }
-        .emisor__pantalla { order: 1; }
-        .emisor__acciones { order: 2; }
-        .emisor__fuentes { order: 3; }
-        .emisor__destino { order: 4; }
-        .emisor__video { order: 5; }
-        .emisor__audio { order: 6; }
-        .emisor__enviando { order: 7; }
+        .cabecera { position: static; }
+        .tally { inset-block-start: 0; }
+        .emisor.pagina--app { block-size: auto; overflow: visible; }
+        .emisor { display: flex; flex-direction: column; gap: var(--e-4); padding-block-start: 0; }
+        .emisor__monitor {
+            position: sticky;
+            inset-block-start: var(--alto-tally);
+            z-index: 5;
+            margin-inline: calc(-1 * var(--e-4));
+            padding: var(--e-3) var(--e-4);
+            background: var(--fondo);
+            border-block-end: var(--borde-suave);
+        }
+        .emisor .monitor--llenar { aspect-ratio: 16 / 9; flex: none; }
+        .emisor__ajustes.columna-scroll { overflow: visible; padding-inline-end: 0; }
     }
     @media (max-width: 600px) {
         .acciones__principales { inline-size: 100%; margin-inline-start: 0; }
