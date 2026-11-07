@@ -11,8 +11,8 @@ RUN npm install
 # Copiar el resto del código
 COPY server/ .
 
-# Puerto de la aplicación
-EXPOSE 80
+# Puertos de la aplicación (80 solo redirige a HTTPS; ver HTTP_REDIRECT)
+EXPOSE 80 443
 
 # Comando de inicio
 CMD ["npm", "start"]

@@ -3,6 +3,42 @@
  * Gestiona la consulta y reproducción de segmentos grabados.
  */
 
+// Margen (s) que dejamos sin pedir junto al borde "vivo": los últimos segundos
+// pueden no estar volcados a disco todavía (ver recordPartDuration en mediamtx.yml).
+const MARGEN_FIN_VIVO_S = 4;
+
+// Sondeo de la lista: el stream seleccionado cada segundo (su segmento vivo
+// crece en tiempo real) y la lista completa de cámaras cada 10 s. Antes se
+// pedían todas las cámaras cada segundo (N+1 peticiones/s).
+const INTERVALO_REFRESCO_MS = 1000;
+const INTERVALO_LISTA_COMPLETA_MS = 10000;
+let ultimaListaCompleta = 0;
+
+// Última repetición reproducida (url + offset + etiqueta); la usa el control de
+// OBS (playback-control.js) para enviar al display justo lo que se previsualizó.
+let ultimaSeleccion = null;
+
+// Evita solapar peticiones si MediaMTX tarda más de un tick en responder.
+let refrescoEnCurso = false;
+
+// CONTINUACIÓN DE LA REPETICIÓN
+// El playback server corta la petición en el borde vivo: pidas la duración que
+// pidas, solo sirve lo que ya estaba grabado. Para que una repetición no se
+// pare, al terminar un tramo se pide el siguiente desde donde acabó.
+
+// Reproducción en curso; sube a cada nueva repetición para que los tramos de una
+// anterior (con peticiones en vuelo) no se encadenen encima de la actual.
+let sesionReproduccion = 0;
+
+// Instante real en el que termina el tramo que se está viendo: de ahí arranca el siguiente.
+let finDelTramo = null;
+// Instante real que corresponde al segundo 0 del vídeo cargado ahora mismo.
+let inicioTramo = null;
+let streamEnCurso = null;
+
+// Si al pedir el tramo siguiente aún no hay material nuevo, se reintenta.
+const REINTENTO_CONTINUACION_MS = 1000;
+
 /**
  * Convierte la URL absoluta que entrega MediaMTX en una URL del proxy local.
  * @param {string} segmentUrl - URL del segmento devuelta por /api/playback/list.
@@ -18,250 +54,148 @@ function construirUrlProxyPlayback(segmentUrl) {
 }
 
 /**
- * Carga las grabaciones disponibles desde los endpoints de grabación.
+ * Segmentos grabados de un stream.
+ * @param {string} stream
+ * @returns {Promise<Array>}
  */
-async function loadRecordings() {
+async function consultarSegmentos(stream) {
+    let response = await fetch(`/api/playback/list?path=${encodeURIComponent(stream)}`);
+    if (!response.ok) return [];
+    let segments = await response.json();
+    return (Array.isArray(segments) ? segments : []).map(segment => ({
+        stream,
+        start: new Date(segment.start),
+        duration: segment.duration,
+        startISO: segment.start,
+        url: segment.url
+    }));
+}
+
+function ordenarGrabaciones(grabaciones) {
+    return grabaciones.sort((a, b) => b.start - a.start);
+}
+
+/**
+ * Descarga la lista de segmentos de todos los paths grabados.
+ * @returns {Promise<Array>} Grabaciones ordenadas de más reciente a más antigua.
+ */
+async function consultarGrabaciones() {
+    let pathsResponse = await fetch('/api/mediamtx/v3/recordings/list');
+    if (!pathsResponse.ok) {
+        throw new Error(`HTTP ${pathsResponse.status}: ${pathsResponse.statusText}`);
+    }
+
+    let pathsData = await pathsResponse.json();
+    let nombres = (pathsData.items || []).map(item => item.name);
+    let listas = await Promise.all(nombres.map(consultarSegmentos));
+    ultimaListaCompleta = Date.now();
+    return ordenarGrabaciones(listas.flat());
+}
+
+/**
+ * Refresco rápido: solo los segmentos del stream seleccionado.
+ * @returns {Promise<Array>} Lista completa con ese stream actualizado.
+ */
+async function consultarStreamSeleccionado() {
+    let stream = streamSelectEl.value;
+    if (!stream) return consultarGrabaciones();
+    let segmentos = await consultarSegmentos(stream);
+    return ordenarGrabaciones(allRecordings.filter(r => r.stream !== stream).concat(segmentos));
+}
+
+/**
+ * Carga las grabaciones disponibles.
+ * @param {Object} [opciones]
+ * @param {boolean} [opciones.silencioso] - Refresco automático: no pisa los
+ *   mensajes de estado ni repinta los desplegables si la lista no ha cambiado.
+ * @param {boolean} [opciones.completa] - Consultar todos los streams (si no, solo el seleccionado).
+ */
+async function loadRecordings({ silencioso = false, completa = true } = {}) {
+    if (refrescoEnCurso) return; // Un tick anterior sigue en vuelo: dejarle terminar
+    refrescoEnCurso = true;
+
     try {
-        recordingsListEl.innerHTML = '<div class="empty-state"><p>⏳ Cargando grabaciones...</p></div>';
+        if (!silencioso) setEstado('Cargando grabaciones…', 'info');
 
-        // Usar proxy del backend para evitar errores de red/CORS en el navegador.
-        let pathsResponse = await fetch('/api/mediamtx/v3/recordings/list');
-        if (!pathsResponse.ok) {
-            throw new Error(`HTTPS ${pathsResponse.status}: ${pathsResponse.statusText}`);
-        }
+        let grabaciones = completa ? await consultarGrabaciones() : await consultarStreamSeleccionado();
 
-        let pathsData = await pathsResponse.json();
-
-        if (!pathsData.items || pathsData.items.length === 0) {
-            recordingsListEl.innerHTML = '<div class="empty-state"><p>🎬 No hay grabaciones disponibles</p></div>';
-            recordingCountEl.textContent = '0 grabaciones';
+        // En un refresco automático, repintar solo si algo cambió de verdad.
+        if (silencioso && !haCambiadoLaLista(grabaciones)) {
+            allRecordings = grabaciones;
             return;
         }
 
-        allRecordings = [];
-        for (let item of pathsData.items) {
-            let listURL = `/api/playback/list?path=${encodeURIComponent(item.name)}`;
-            let response = await fetch(listURL);
-            if (!response.ok) continue;
+        allRecordings = grabaciones;
+        poblarStreams({ preservarSeleccion: silencioso });
 
-            let segments = await response.json();
-            segments.forEach(segment => {
-                allRecordings.push({
-                    stream: item.name,
-                    start: new Date(segment.start),
-                    duration: segment.duration,
-                    startISO: segment.start,
-                    url: segment.url
-                });
-            });
-        }
+        let total = allRecordings.length;
+        recordingCountEl.textContent = `${total} ${total === 1 ? 'grabación' : 'grabaciones'}`;
 
-        if (allRecordings.length === 0) {
-            recordingsListEl.innerHTML = '<div class="empty-state"><p>🎬 No hay grabaciones disponibles</p></div>';
-            recordingCountEl.textContent = '0 grabaciones';
+        if (total === 0) {
+            if (!silencioso) setEstado('Todavía no hay grabaciones. Aparecerán en cuanto una cámara empiece a emitir.', 'info');
             return;
         }
-
-        allRecordings.sort((a, b) => b.start - a.start);
-        actualizarFiltroStream();
-        mostrarGrabaciones(allRecordings);
-
-        recordingCountEl.textContent = `${allRecordings.length} grabación${allRecordings.length !== 1 ? 'es' : ''}`;
+        if (!silencioso) setEstado('', 'info');
     } catch (error) {
         console.error('Error al cargar grabaciones:', error);
-        recordingsListEl.innerHTML = `
-            <div class="empty-state">
-                <p>❌ Error al cargar grabaciones</p>
-                <p class="hint">${error.message}</p>
-                <p class="hint">Asegúrate de que MediaMTX está ejecutándose</p>
-            </div>
-        `;
-        alert('Error al cargar grabaciones: ' + error.message);
+        if (!silencioso) {
+            setEstado(`No se pudieron cargar las grabaciones (${error.message}). Comprueba que MediaMTX está en marcha.`, 'error');
+        }
+    } finally {
+        refrescoEnCurso = false;
     }
 }
 
 /**
- * Reproduce una grabación concreta y sincroniza la UI con su duración.
- * @param {Object} recording - Segmento de grabación seleccionado.
+ * Refresco inmediato del stream recién elegido (lo llama la UI al cambiarlo).
  */
-function playRecording(recording) {
-    selectedRecording = recording;
-    actualizarGrabacionSeleccionada();
-
-    startOffsetInput.max = Math.floor(recording.duration);
-    startOffsetInput.value = 0;
-    timelineSlider.max = Math.floor(recording.duration);
-    timelineSlider.value = 0;
-    timelineSlider.disabled = false;
-
-    let startDate = new Date(recording.start);
-    let endDate = new Date(startDate.getTime() + recording.duration * 1000);
-    timelineStart.textContent = formatTimeOnly(startDate);
-    timelineEnd.textContent = formatTimeOnly(endDate);
-
-    playFromOffset();
+function refrescarStreamSeleccionado() {
+    loadRecordings({ silencioso: true, completa: false });
 }
 
 /**
- * Calcula la ventana temporal a reproducir y lanza el vídeo.
+ * Arranca el refresco periódico de la lista. Se salta los ticks en los que
+ * repintar sería contraproducente: pestaña oculta, desplegable abierto o
+ * línea temporal en uso.
  */
-function playFromOffset() {
-    if (!selectedRecording) {
-        alert('Por favor, selecciona una grabación primero');
-        return;
-    }
+function iniciarRefrescoAutomatico() {
+    setInterval(() => {
+        if (document.hidden) return;
+        if (hayDesplegableAbierto()) return;
+        if (ajustandoTimeline) return;
+        let completa = Date.now() - ultimaListaCompleta >= INTERVALO_LISTA_COMPLETA_MS;
+        loadRecordings({ silencioso: true, completa });
+    }, INTERVALO_REFRESCO_MS);
+}
 
-    let mode = document.querySelector('input[name="playbackMode"]:checked').value;
+/**
+ * Arranca el vídeo en la URL dada y deja registrada la repetición para el display.
+ * Las URLs de este reproductor empiezan siempre en el instante pedido (start),
+ * así que no hay que saltar dentro del vídeo: seekOffset es 0 salvo URLs ajenas.
+ * @param {string} playURL - URL del proxy de playback.
+ * @param {number} seekOffset - Segundos a los que saltar dentro del vídeo cargado.
+ * @param {string} stream - Path del stream reproducido.
+ * @param {Date} momento - Instante real del contenido que empieza a verse.
+ * @param {string} detalle - Descripción para el estado (p. ej. "últimos 30 s").
+ */
+function lanzarReproduccion(playURL, seekOffset, stream, momento, detalle) {
+    // Nueva repetición: invalida los tramos pendientes de la anterior.
+    sesionReproduccion++;
+    streamEnCurso = stream;
+    finDelTramo = null;
+    // Instante real que corresponde a t=0 del vídeo cargado
+    inicioTramo = new Date(momento.getTime() - seekOffset * 1000);
 
-    let offset = 0;
-    let newDuration = selectedRecording.duration;
-
-    if (mode === 'offset') {
-        offset = parseFloat(startOffsetInput.value) || 0;
-        newDuration = selectedRecording.duration - offset;
-
-        if (offset > selectedRecording.duration) {
-            alert('El offset es mayor que la duración de la grabación');
-            return;
-        }
-    } else if (mode === 'lookback') {
-        let lookbackSeconds = parseFloat(lookbackTimeInput.value) || 60;
-        let now = new Date();
-        let recordingStart = new Date(selectedRecording.start);
-        let recordingEnd = new Date(recordingStart.getTime() + selectedRecording.duration * 1000);
-
-        if (now < recordingStart) {
-            alert('La grabación aún no ha comenzado');
-            return;
-        }
-
-        let startPoint = new Date(now.getTime() - lookbackSeconds * 1000);
-
-        if (startPoint < recordingStart) {
-            offset = 0;
-            let endPoint = now < recordingEnd ? now : recordingEnd;
-            newDuration = (endPoint.getTime() - recordingStart.getTime()) / 1000;
-
-            if (newDuration <= 0) {
-                alert('No hay contenido disponible en ese rango');
-                return;
-            }
-        } else if (startPoint > recordingEnd) {
-            alert('El tiempo solicitado está más allá del final de la grabación');
-            return;
-        } else {
-            offset = (startPoint.getTime() - recordingStart.getTime()) / 1000;
-            let endPoint = now < recordingEnd ? now : recordingEnd;
-            newDuration = (endPoint.getTime() - startPoint.getTime()) / 1000;
-
-            if (newDuration <= 0) {
-                alert('No hay contenido disponible en ese rango');
-                return;
-            }
-        }
-    } else if (mode === 'specific') {
-        // Modo specific: acepta HH:MM o HH:MM:SS
-        let timeValue = specificTimeInput.value.trim();
-        if (!timeValue) {
-            alert('Por favor, introduce una hora en formato HH:MM o HH:MM:SS');
-            return;
-        }
-
-        // Validar formato HH:MM[:SS]
-        let match = timeValue.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-        if (!match) {
-            alert('Formato inválido. Usa HH:MM o HH:MM:SS');
-            return;
-        }
-
-        let hh = parseInt(match[1], 10);
-        let mm = parseInt(match[2], 10);
-        let ss = match[3] ? parseInt(match[3], 10) : 0;
-        
-        // Validar rango de horas/minutos/segundos
-        if (hh < 0 || hh > 23 || mm < 0 || mm > 59 || ss < 0 || ss > 59) {
-            alert('Hora inválida');
-            return;
-        }
-
-        let recordingStart = new Date(selectedRecording.start);
-        let recordingEnd = new Date(recordingStart.getTime() + selectedRecording.duration * 1000);
-
-        // Construir la hora específica en la misma fecha que la grabación
-        let specificDate = new Date(recordingStart);
-        specificDate.setHours(hh, mm, ss, 0);
-
-        // Validar que la hora esté dentro del rango de la grabación
-        if (specificDate < recordingStart) {
-            alert('El tiempo solicitado está antes del inicio de la grabación');
-            return;
-        }
-
-        if (specificDate > recordingEnd) {
-            alert('El tiempo solicitado está más allá del final de la grabación');
-            return;
-        }
-
-        // Calcular offset y duración desde ese punto
-        offset = (specificDate.getTime() - recordingStart.getTime()) / 1000;
-        newDuration = (recordingEnd.getTime() - specificDate.getTime()) / 1000;
-
-        if (newDuration <= 0) {
-            alert('No hay contenido disponible desde ese punto');
-            return;
-        }
-    }
-
-    if (newDuration <= 0) {
-        alert('La duración calculada no es válida');
-        return;
-    }
-
-    // Calcular el nuevo timestamp de inicio (start) basado en el offset
-    let recordingStartDate = new Date(selectedRecording.start);
-    let newStartDate = new Date(recordingStartDate.getTime() + offset * 1000);
-    let newStartISO = newStartDate.toISOString();
-
-    // Construir URL con los parámetros recalculados
-    // Nota: Si hay offset, siempre construimos manualmente para garantizar los parámetros correctos
-    let playURL;
-    if (offset === 0 && newDuration === selectedRecording.duration) {
-        // Reproducción desde el inicio sin cambios: podemos usar la URL original
-        playURL = construirUrlProxyPlayback(selectedRecording.url);
-    } else {
-        // Hay offset o cambio de duración: construir manualmente con nuevos parámetros
-        playURL = null;
-    }
-
-    if (!playURL) {
-        playURL = `/api/playback/get?duration=${encodeURIComponent(newDuration)}&path=${encodeURIComponent(selectedRecording.stream)}&start=${encodeURIComponent(newStartISO)}`;
-    }
-
-    console.log('Modo:', mode);
-    console.log('Offset:', offset.toFixed(2), 's');
-    console.log('Duración:', newDuration.toFixed(2), 's');
-    console.log('URL:', playURL);
-
-    const seekOffset = Math.max(0, Math.min(offset, selectedRecording.duration));
-    const onLoadedMetadata = () => {
-        if (seekOffset > 0) {
+    if (seekOffset > 0) {
+        const onLoadedMetadata = () => {
             try {
                 video.currentTime = seekOffset;
             } catch (error) {
                 console.warn('No se pudo aplicar seek inicial:', error);
             }
-        }
-        video.removeEventListener('loadedmetadata', onLoadedMetadata);
-    };
-    video.addEventListener('loadedmetadata', onLoadedMetadata);
-
-    let originalStart = new Date(selectedRecording.start);
-    let now = new Date();
-    let recordingEnd = new Date(originalStart.getTime() + selectedRecording.duration * 1000);
-    let secondsSinceEnd = (now - recordingEnd) / 1000;
-
-    if (secondsSinceEnd < 10 && secondsSinceEnd > 0) {
-        console.warn('Advertencia: Grabación muy reciente, puede no estar completamente disponible');
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+        };
+        video.addEventListener('loadedmetadata', onLoadedMetadata);
     }
 
     // Limpiar reproducción previa para evitar AbortError al cambiar rápidamente de segmento.
@@ -272,21 +206,197 @@ function playFromOffset() {
     video.src = playURL;
     video.load();
     video.play().catch(err => {
-        if (err && err.name === 'AbortError') {
-            return;
-        }
+        if (err && err.name === 'AbortError') return;
         console.error('Error al reproducir:', err);
-        alert('⚠️ No se pudo iniciar la reproducción. El segmento puede no estar disponible aún.');
+        setEstado('No se pudo iniciar la reproducción. El tramo puede no estar grabado todavía.', 'error');
     });
 
-    let offsetText = '';
-    if (mode === 'offset' && offset > 0) {
-        offsetText = ` (desde +${offset.toFixed(0)}s)`;
-    } else if (mode === 'lookback') {
-        let lookback = parseFloat(lookbackTimeInput.value) || 60;
-        offsetText = ` (últimos ${lookback}s)`;
-    } else if (mode === 'specific') {
-        offsetText = ` (desde ${specificTimeInput.value})`;
+    // Rótulo y etiqueta: el instante REAL reproducido, no el inicio del fichero.
+    pintarRotuloActual(stream, momento);
+    setEstado(`Reproduciendo ${detalle}`.trim(), 'ok');
+
+    ultimaSeleccion = {
+        url: playURL,
+        seekOffset: seekOffset,
+        label: `${stream} a las ${formatTimeOnly(momento)}`
+    };
+
+    actualizarPendienteEnvio();
+}
+
+/**
+ * Encadena el tramo siguiente: continúa la repetición desde donde acabó la
+ * anterior, para que no se detenga al alcanzar el borde vivo de cuando se pidió.
+ * @param {number} sesion - Sesión que pidió la continuación (descarta las viejas).
+ */
+async function continuarRepeticion(sesion) {
+    if (sesion !== sesionReproduccion) return;
+    if (!finDelTramo || !streamEnCurso) return;
+
+    // Solo se puede continuar hasta donde el directo ya haya grabado.
+    let disponible = (Date.now() - MARGEN_FIN_VIVO_S * 1000 - finDelTramo.getTime()) / 1000;
+
+    if (disponible < 1) {
+        // La repetición ha alcanzado el directo: esperar a que se grabe más.
+        setTimeout(() => continuarRepeticion(sesion), REINTENTO_CONTINUACION_MS);
+        return;
     }
-    currentRecordingEl.textContent = `${selectedRecording.stream} - ${formatDate(originalStart)}${offsetText}`;
+
+    let inicio = finDelTramo;
+    let playURL = `/api/playback/get?duration=${encodeURIComponent(disponible)}`
+        + `&path=${encodeURIComponent(streamEnCurso)}`
+        + `&start=${encodeURIComponent(inicio.toISOString())}`;
+
+    inicioTramo = inicio;
+    finDelTramo = null;
+    video.src = playURL;
+    video.load();
+    video.play().catch(err => {
+        if (err && err.name === 'AbortError') return;
+        console.warn('No se pudo continuar la repetición:', err);
+    });
+}
+
+// Al acabarse un tramo no se para: se pide el siguiente y se sigue.
+// El fin del tramo se calcula AQUÍ y no en loadedmetadata: el fMP4 llega en
+// streaming y video.duration crece mientras se descarga (en loadedmetadata
+// solo vale lo que haya llegado, ~1 s), así que solo al terminar es la real.
+video.addEventListener('ended', () => {
+    if (inicioTramo && isFinite(video.duration)) {
+        finDelTramo = new Date(inicioTramo.getTime() + video.duration * 1000);
+    }
+    continuarRepeticion(sesionReproduccion);
+});
+
+/**
+ * Modo "hace unos segundos": los últimos N segundos del stream, calculados
+ * contra el RELOJ, no contra el segmento seleccionado. El playback server cose
+ * los segmentos, así que sigue al directo aunque el desplegable esté en otro.
+ * @param {number} segundos - Cuántos segundos mirar hacia atrás desde ahora.
+ */
+function reproducirHaciaAtras(segundos) {
+    let stream = streamSelectEl.value;
+    if (!stream) {
+        setEstado('No hay ninguna cámara grabada todavía', 'error');
+        return;
+    }
+
+    // Terminar un poco antes de "ahora": los últimos segundos pueden no estar en disco.
+    let inicio = new Date(Date.now() - segundos * 1000);
+    let duracion = segundos - MARGEN_FIN_VIVO_S;
+
+    if (duracion <= 0) {
+        setEstado(`La repetición debe ser de más de ${MARGEN_FIN_VIVO_S} segundos`, 'error');
+        return;
+    }
+
+    let playURL = `/api/playback/get?duration=${encodeURIComponent(duracion)}`
+        + `&path=${encodeURIComponent(stream)}`
+        + `&start=${encodeURIComponent(inicio.toISOString())}`;
+
+    // La URL ya empieza en el momento pedido: no hay que saltar dentro del vídeo.
+    lanzarReproduccion(playURL, 0, stream, inicio, `los últimos ${segundos} s`);
+}
+
+/**
+ * Atajo: fija los segundos hacia atrás y reproduce de inmediato.
+ * @param {number} segundos - Segundos hacia atrás.
+ */
+function repetirAtajo(segundos) {
+    playbackModeEl.value = 'lookback';
+    actualizarModoPlayback();
+    fijarSegundosAtras(segundos);
+    reproducirHaciaAtras(segundos);
+}
+
+/**
+ * Calcula la ventana temporal a reproducir y lanza el vídeo.
+ */
+function playFromOffset() {
+    let mode = playbackModeEl.value;
+
+    if (mode === 'lookback') {
+        reproducirHaciaAtras(segundosAtras());
+        return;
+    }
+
+    if (!selectedRecording) {
+        setEstado('Elige una grabación primero', 'error');
+        return;
+    }
+
+    let offset = 0;
+    let newDuration = selectedRecording.duration;
+
+    if (mode === 'offset') {
+        offset = parseFloat(startOffsetInput.value) || 0;
+        newDuration = selectedRecording.duration - offset;
+
+        if (offset > selectedRecording.duration) {
+            setEstado(`El segundo ${offset} queda fuera: la grabación dura ${formatDuration(selectedRecording.duration)}`, 'error');
+            return;
+        }
+    } else if (mode === 'specific') {
+        let timeValue = specificTimeInput.value.trim();
+        let match = timeValue.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+        if (!match) {
+            setEstado('Escribe la hora como HH:MM o HH:MM:SS', 'error');
+            return;
+        }
+
+        let hh = parseInt(match[1], 10);
+        let mm = parseInt(match[2], 10);
+        let ss = match[3] ? parseInt(match[3], 10) : 0;
+
+        if (hh > 23 || mm > 59 || ss > 59) {
+            setEstado('Hora inválida', 'error');
+            return;
+        }
+
+        let recordingStart = new Date(selectedRecording.start);
+        let recordingEnd = new Date(recordingStart.getTime() + selectedRecording.duration * 1000);
+
+        // La hora específica en la misma fecha que la grabación
+        let specificDate = new Date(recordingStart);
+        specificDate.setHours(hh, mm, ss, 0);
+
+        if (specificDate < recordingStart || specificDate > recordingEnd) {
+            setEstado(`Esa hora no está en la grabación elegida (de ${formatTimeOnly(recordingStart)} a ${formatTimeOnly(recordingEnd)})`, 'error');
+            return;
+        }
+
+        offset = (specificDate.getTime() - recordingStart.getTime()) / 1000;
+        newDuration = (recordingEnd.getTime() - specificDate.getTime()) / 1000;
+    }
+
+    if (newDuration <= 0) {
+        setEstado('No queda contenido desde ese punto', 'error');
+        return;
+    }
+
+    // Instante real donde empieza la reproducción = inicio del segmento + offset.
+    let recordingStart = new Date(selectedRecording.start);
+    let newStartDate = new Date(recordingStart.getTime() + offset * 1000);
+
+    // Reproducción íntegra del segmento: sirve la URL que ya dio MediaMTX. En
+    // cualquier otro caso se reconstruye con start = instante pedido.
+    let intacto = (offset === 0 && newDuration === selectedRecording.duration);
+    let playURL = intacto ? construirUrlProxyPlayback(selectedRecording.url) : null;
+
+    if (!playURL) {
+        playURL = `/api/playback/get?duration=${encodeURIComponent(newDuration)}`
+            + `&path=${encodeURIComponent(selectedRecording.stream)}`
+            + `&start=${encodeURIComponent(newStartDate.toISOString())}`;
+    }
+
+    let detalle = '';
+    if (mode === 'offset' && offset > 0) {
+        detalle = `desde el segundo ${offset.toFixed(0)}`;
+    } else if (mode === 'specific') {
+        detalle = `desde las ${specificTimeInput.value}`;
+    }
+
+    // El vídeo servido ya empieza en newStartDate (su t=0): NO se vuelve a
+    // saltar el offset dentro de él (antes se aplicaba dos veces).
+    lanzarReproduccion(playURL, 0, selectedRecording.stream, newStartDate, detalle);
 }

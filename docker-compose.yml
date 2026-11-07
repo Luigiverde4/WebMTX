@@ -6,6 +6,8 @@ services:
     hostname: server
     container_name: server
     ports:
+      # 80 solo redirige a HTTPS. Si el puerto 80 lo usa otro servicio del equipo,
+      # pon HTTP_REDIRECT=false y comenta esta línea.
       - "80:80"
       - "443:443"
     restart: unless-stopped
@@ -22,9 +24,10 @@ services:
     environment:
       - NODE_ENV=development
       - MEDIAMTX_HOST=mediamtx
+      - HTTP_REDIRECT=${HTTP_REDIRECT:-true}
     networks:
       - tfg-network
-    
+
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: mediamtxTFG
@@ -49,9 +52,16 @@ services:
         source: ./server/cert.pem
         target: /server.crt
         read_only: true
-      - type: bind
-        source: ./mediamtx/recordings
+      # Grabaciones en volumen NATIVO de Docker (no bind-mount de Windows): el acceso
+      # aleatorio dentro del fMP4 es mucho más rápido y las repeticiones arrancan casi
+      # al instante. Para sacar ficheros a Windows: scripts/exportar-grabaciones.ps1.
+      # OJO: `docker compose down -v` borra este volumen (y con él las grabaciones).
+      - type: volume
+        source: recordings_volume
         target: /recordings
+      - type: bind
+        source: ./mediamtx/logs
+        target: /logs
     networks:
       - tfg-network
 
@@ -61,3 +71,4 @@ networks:
 
 volumes:
   node_modules_volume:
+  recordings_volume:

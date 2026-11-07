@@ -17,14 +17,14 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - **Ultra baja latencia**: ~100-300ms gracias a WebRTC
 - **Multi-protocolo**: Soporte para WHIP/WHEP, RTSP, RTMP, HLS y SRT
 - **Multiplataforma**: Scripts para Windows, Mac, Android, Linux y Raspberry Pi
-- **Interfaz web completa**: 
-  - Broadcaster (emisor desde navegador)
-  - Player (reproductor WebRTC en vivo)
-  - Playback (reproductor de grabaciones)
-  - **Statistics Dashboard** (monitoreo en tiempo real) 📊
-  - **API Control Panel** (exploración y control de API REST) 🔧
+- **Interfaz web de sala de realización** (HTML/CSS/JS sin dependencias de build, responsive hasta móvil y dock de OBS):
+  - Emitir (broadcaster WHIP desde el navegador, con códec, resolución, fps y bitrate configurables)
+  - Ver (player WHEP con reconexión automática)
+  - Repeticiones (repetición "hace N segundos", línea temporal, momentos marcados y envío a OBS)
+  - Salidas para OBS: cámara a pantalla completa (`neoplayer.html`) y repeticiones (`display.html`)
+  - Estadísticas en tiempo real y panel de la API de MediaMTX
 - **Containerizado**: Despliegue sencillo con Docker Compose
-- **API de control**: Gestión completa de streams mediante API HTTP REST v2
+- **API de control**: Gestión completa de streams mediante la API HTTP v3 de MediaMTX
 - **Arquitectura modular**: Componentes JS organizados por funcionalidad
 
 ## Índice
@@ -35,6 +35,7 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - [Instalación](#instalación)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Uso](#uso)
+- [Grabaciones](#grabaciones)
 - [Puertos y Protocolos](#puertos-y-protocolos)
 - [API MediaMTX](#api-mediamtx)
 - [Configuración avanzada](#configuración-avanzada)
@@ -75,7 +76,8 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 3. **Servidor (MediaMTX)**: Recibe los streams y los redistribuye a los clientes conectados
 4. **Reproducción (WHEP)**: Los navegadores se conectan mediante WebRTC para visualización en tiempo real
 5. **Monitoreo**: Dashboard de estadísticas obtiene métricas en tiempo real via API REST
-6. **Control**: API REST v2 permite gestionar configuración, paths, grabaciones y sesiones
+6. **Control**: la API v3 de MediaMTX permite gestionar configuración, paths, grabaciones y sesiones
+7. **Repeticiones**: MediaMTX graba cada cámara en fMP4; la página de repeticiones las sirve por el proxy de playback y las envía a OBS (`display.html`) por SSE
 
 ## Requisitos
 
@@ -83,7 +85,8 @@ Este proyecto implementa un sistema completo de transmisión de vídeo con baja 
 - Docker Engine 20.10+
 - Docker Compose v2.0+
 - 2GB RAM mínimo
-- Puertos disponibles: 80, 443, 1935, 8554, 8888, 8889, 8189/UDP, 9997, 9996
+- Puertos disponibles: 443, 1935, 8554, 8888, 8889, 8189/UDP, 9997 y, si se usa la redirección, 80
+- mkcert (certificados TLS locales)
 
 ### Para emisión desde Windows
 - FFmpeg compilado con soporte WebRTC/WHIP (ver `/docs/compilacion_todo_junto.md`)
@@ -161,20 +164,21 @@ sudo apt install mkcert
 
 #### Generar certificados
 
-```bash
-# Instalar CA local (solo la primera vez)
-mkcert -install
+Desde la raíz del repositorio, en PowerShell:
 
-# Generar certificados para localhost y tu IP
-cd server
-mkcert localhost 127.0.0.1 192.168.X.X  # Cambiar por tu IP
+```powershell
+# Primera vez en este equipo: instala la CA local y genera server\cert.pem + key.pem
+.\scripts\gen-certs.ps1 -Install -IPsLocales
 
-# Renombrar los archivos generados
-mv localhost+2.pem cert.pem
-mv localhost+2-key.pem key.pem
+# Regenerar añadiendo una IP concreta (sobrescribe los existentes)
+.\scripts\gen-certs.ps1 -IP 192.168.1.46 -IPsLocales -Force
 ```
 
-> **Nota**: Los certificados deben estar en la carpeta `server/` con los nombres `cert.pem` y `key.pem`. Si no se encuentran, el servidor funcionará solo con HTTP.
+El script incluye siempre `localhost`, `127.0.0.1` y `::1`, las IPs de `webrtcAdditionalHosts` de `mediamtx/mediamtx.yml` y, con `-IPsLocales`, las IPv4 actuales del equipo.
+
+> **Nota**: los certificados deben estar en `server/` como `cert.pem` y `key.pem` (están en `.gitignore`). Sin ellos el servidor Node no arranca y lo indica en el log; MediaMTX tampoco, porque usa los mismos ficheros.
+>
+> En otros dispositivos (móvil, otro PC) hay que confiar en la CA de mkcert (`mkcert -CAROOT` indica dónde está `rootCA.pem`) o aceptar el aviso del navegador.
 
 ### 5. Levantar los servicios
 
@@ -193,242 +197,166 @@ Acceder a las interfaces web:
 
 | Interfaz | URL | Descripción |
 |----------|-----|-------------|
-| **Index** | https://localhost/ | Página principal con acceso a todas las herramientas |
-| **Broadcaster** | https://localhost/broadcaster.html | Emitir stream desde el navegador (cámara/micrófono) |
-| **Player** | https://localhost/player.html | Reproductor WebRTC principal con WHEP |
-| **Playback** | https://localhost/playback.html | Reproductor de grabaciones con controles avanzados (fMP4) |
-| **Statistics** | https://localhost/stats.html | Dashboard en tiempo real de estadísticas y métricas del servidor |
-| **API Control** | https://localhost/api.html | Panel avanzado para explorar y controlar la API REST v2 |
+| **Inicio** | https://localhost/ | Cámaras en directo (con accesos a ver, repetir y URL para OBS) y herramientas |
+| **Emitir** | https://localhost/broadcaster.html | Emitir cámara y micrófono desde el navegador (WHIP) |
+| **Ver** | https://localhost/player.html | Monitor WebRTC (WHEP) con reconexión; `?stream=cam1` abre una cámara |
+| **Repeticiones** | https://localhost/playback.html | Repeticiones de lo grabado, momentos marcados y control de la salida OBS |
+| **Estadísticas** | https://localhost/stats.html | Tráfico y espectadores de cada cámara en tiempo real |
+| **API** | https://localhost/api.html | Paths, sesiones, configuración y grabaciones de MediaMTX (API v3) |
+| **Salida de cámara (OBS)** | https://localhost/neoplayer.html?stream=cam1 | Solo vídeo a pantalla completa, para fuente de navegador |
+| **Salida de repeticiones (OBS)** | https://localhost/display.html | Reproduce lo que se envíe desde Repeticiones |
+
+Para comprobarlo todo de una vez: `pwsh scripts/smoke.ps1 -RequiereReplay -CompruebaRedireccion`.
 
 > **Acceso por IP**: Para usar el Broadcaster desde otros dispositivos, usar `https://<IP_SERVIDOR>/broadcaster.html`. HTTPS es obligatorio para acceder a la cámara cuando no es localhost.
 
 ## Estructura del Proyecto
 
 ```
-TFG/
-├── CAMS/                      # Scripts de captura y streaming
-│   ├── WHIP/                  # Scripts FFmpeg para WebRTC (Windows)
-│   │   ├── test.bat           # Stream de prueba (testsrc)
-│   │   ├── webcam.bat         # Stream desde webcam
-│   │   └── multi_*.bat        # Configuraciones cámaras de Multi
-│   ├── RTSP/                  # Scripts para streaming RTSP
-│   ├── SRT/                   # Scripts para streaming SRT
-│   └── PYWHIP/                # Scripts Python para streaming
-│       ├── pywhip.py          # Emisor WHIP en Python
-│       └── pywhip_screen.py   # Captura de pantalla
-├── server/                    # Servidor web Node.js
-│   ├── server.js              # Servidor Express (puertos 80/443 HTTP/HTTPS)
-│   ├── modules/
-│   │   └── app.js             # Configuración de rutas y proxies
-│   └── public/                # Archivos estáticos
-│       ├── index.html         # Página principal con enlaces
-│       ├── broadcaster.html   # Emisor WHIP desde navegador
-│       ├── player.html        # Reproductor WHEP (WebRTC en vivo)
-│       ├── playback.html      # Reproductor de grabaciones (fMP4/HTTP)
-│       ├── stats.html         # Dashboard de estadísticas en tiempo real 📊
-│       ├── api.html           # Panel de control API REST v2 🔧
-│       ├── css/               # Estilos CSS
-│       └── js/                # Módulos JavaScript
-│           ├── broadcaster.js      # Bootstrap broadcaster
-│           ├── player.js           # Bootstrap player
-│           ├── playback.js         # Bootstrap playback
-│           ├── stats.js            # Bootstrap stats
-│           ├── api/                # Módulos API
-│           │   ├── api.js          # Cliente HTTP genérico
-│           │   ├── api-config.js   # Endpoints de configuración
-│           │   ├── api-paths.js    # Endpoints de paths/streams
-│           │   ├── api-recordings.js # Endpoints de grabaciones
-│           │   ├── api-sessions.js # Endpoints de sesiones
-│           │   └── api-ui.js       # Helpers de UI para API
-│           ├── ui/                 # Componentes UI
-│           │   ├── broadcaster-ui.js # Selectores de dispositivos
-│           │   ├── playback-ui.js    # Controles de reproducción
-│           │   └── stats-ui.js       # Renderizado dashboard
-│           └── utils/              # Funciones compartidas
-│               ├── utils.js          # Utilidades generales (escapeHtml, formatBytes)
-│               ├── watchdog.js       # Monitor de tráfico/estadísticas
-│               ├── stats-charts.js   # Gráficos en tiempo real
-│               ├── broadcast-utils.js # Helpers para broadcaster
-│               └── playback-utils.js # Helpers para playback
-├── mediamtx/                  # Configuración de MediaMTX
-│   ├── mediamtx.yml           # Configuración del servidor
-│   └── recordings/            # Directorio para grabaciones
-├── docker/                    # Dockerfiles
-│   └── node/
-│       └── Dockerfile         # Imagen Node.js
-├── rpi/                       # Scripts para Raspberry Pi
-│   ├── stream_mjpeg_high.sh   # MJPEG 1080p con audio
-│   ├── stream_yuv_high.sh     # YUV 1080p con audio
-│   └── multi_*.sh             # # Configuraciones cámaras de Multi
-├── docs/                      # Documentación adicional
-│   ├── compilacion_ffmpeg_webrtc.md
-│   └── webRTC2webRTCLL.md
-├── docker-compose.yml         # Orquestación de servicios
+WebMTX/
+├── server/                        # Servidor web Node.js (montado en el contenedor 'server')
+│   ├── server.js                  # HTTPS :443 y redirección :80 (HTTP_REDIRECT)
+│   ├── modules/app.js             # Estáticos, proxies /api/mediamtx y /api/playback, /api/replay (SSE)
+│   └── public/                    # Front: HTML/CSS/JS sin build
+│       ├── index.html             # Inicio: cámaras en directo y herramientas
+│       ├── broadcaster.html       # Emitir (WHIP)
+│       ├── player.html            # Ver (WHEP)
+│       ├── playback.html          # Repeticiones y control de la salida OBS
+│       ├── stats.html             # Estadísticas (Chart.js servido desde /vendor)
+│       ├── api.html               # Panel de la API v3 de MediaMTX
+│       ├── neoplayer.html         # Salida OBS: una cámara a pantalla completa
+│       ├── display.html           # Salida OBS: repeticiones
+│       ├── css/                   # base.css (sistema de diseño) + una hoja por página; obs.css para las salidas
+│       ├── fonts/                 # Archivo variable (OFL), autoalojada: funciona sin internet
+│       ├── img/iconos.svg         # Iconos
+│       └── js/
+│           ├── <página>.js        # Lógica WebRTC / de cada página
+│           ├── playback-marcados.js, playback-control.js, playback-display.js
+│           ├── api/               # api.js (GET/POST/PATCH/DELETE) + secciones del panel
+│           ├── ui/                # DOM y render: avisos.js, tally.js, <página>-ui.js
+│           └── utils/             # utils.js, camaras.js, watchdog.js, *-utils.js, stats-charts.js
+├── mediamtx/
+│   ├── mediamtx.yml               # Configuración (webrtcAdditionalHosts, grabación, playback…)
+│   └── logs/                      # mediamtx.log (montado como /logs)
+├── scripts/                       # Utilidades (PowerShell / Node)
+│   ├── gen-certs.ps1              # Certificados TLS con mkcert
+│   ├── exportar-grabaciones.ps1   # Copia grabaciones del volumen Docker a disco
+│   ├── streams-prueba.ps1         # Cámaras sintéticas con ffmpeg (cam1, cam2…)
+│   ├── whep-view.ps1 / whep-receive.ps1  # Visores WHEP con GStreamer
+│   ├── smoke.ps1                  # Prueba de humo del servidor
+│   └── check-dom.mjs              # Contratos HTML↔JS del front
+├── docker/node/Dockerfile
+├── docker-compose.yml             # Servicios 'server' y 'mediamtx' (contenedor mediamtxTFG)
+├── docs/                          # Material del TFG
+│   ├── CAMS/                      # Emisores FFmpeg (WHIP, RTSP, SRT) y PYWHIP
+│   ├── rpi/                       # Scripts para Raspberry Pi
+│   ├── otros/                     # Notas técnicas y checklist-front.md (pruebas del front)
+│   └── diagramas/
+├── CLAUDE.md
 └── README.md
 ```
 
+Las grabaciones viven en el volumen Docker `recordings_volume` (no en una carpeta del repo): ver [Grabaciones](#grabaciones).
+
 ## Uso
 
-### 🎥 Broadcaster - Emitir desde el navegador
+### Emitir desde el navegador
 
-El **Broadcaster** es la forma más sencilla de emitir streams sin instalar software. Funciona en cualquier dispositivo con navegador moderno (PC, móvil, tablet, Smart TV).
+`https://<IP_SERVIDOR>/broadcaster.html` convierte cualquier dispositivo con navegador (portátil, móvil, tablet) en una cámara.
 
-#### Características
+1. **Destino**: escribe el nombre de la cámara o pulsa uno de los habituales (`cam1`, `cam2`, `movil`, `extra`). Los que ya están emitiendo se marcan con un punto rojo; si eliges uno ocupado, pide confirmación antes de reemplazarlo.
+2. **Fuentes**: cámara y micrófono (o "Sin micrófono").
+3. **Vídeo**: códec (H264 recomendado: es el que mejor se repite después), resolución y fps (solo los que admite la cámara), bitrate, prioridad del encoder, qué hacer si falta red o CPU y resolución enviada.
+4. **Audio**: bitrate Opus y procesado del micrófono (eco, ruido, ganancia).
+5. **Emitir**: la barra superior se pone en rojo con el cronómetro. Bitrate, prioridad, degradación, resolución enviada y bitrate de audio se pueden cambiar en directo sin cortar.
 
-- ✅ Sin instalación de software
-- ✅ Soporte para cámaras y micrófonos del dispositivo
-- ✅ Captura de pantalla (en navegadores soportados)
-- ✅ Múltiples resoluciones para adaptarse a la red
-- ✅ Protocolo WHIP nativo del navegador
-- ✅ Ultra baja latencia (~100-300ms)
+"Lo que se está enviando" muestra lo que entrega la cámara y lo que se codifica de verdad (resolución, fps, Mbps y si la CPU o la red están limitando). Los ajustes se recuerdan en el navegador.
 
-#### Cómo usar
+### Emitir con FFmpeg u otros emisores
 
-**Desde el mismo equipo:**
-1. Abrir https://localhost/broadcaster.html
-2. Seleccionar cámara y micrófono a usar
-3. Elegir resolución deseada (480p, 720p, 1080p)
-4. Introducir nombre del endpoint (ej: `cam1`, `movil`, `pantalla`)
-5. Hacer clic en **🔴 Iniciar Transmisión**
-6. ✅ Stream visible inmediatamente en el Player
+Para automatización o equipos sin interfaz gráfica:
 
-**Desde otro dispositivo en la red:**
-1. Abrir `https://<IP_SERVIDOR>/broadcaster.html` (ej: https://192.168.1.100/broadcaster.html)
-2. Mismo proceso que arriba
-3. El stream es accesible por todos los dispositivos de la red
+```powershell
+# Cámaras sintéticas para pruebas (sin hardware), se relanzan si MediaMTX se reinicia
+pwsh .\scripts\streams-prueba.ps1 -Streams cam1,cam2
 
-**Acceso seguro:**
-- **localhost**: Funciona con HTTPS (https://localhost/broadcaster.html)
-- **Por IP**: Requiere HTTPS obligatoriamente para acceder a cámara. Usa certificados mkcert:
-  ```bash
-  cd server
-  mkcert localhost 127.0.0.1 192.168.X.X
-  mv localhost+2.pem cert.pem && mv localhost+2-key.pem key.pem
-  ```
-
-#### Captura de pantalla
-
-El Broadcaster también permite compartir la pantalla:
-1. Hacer clic en **Capturar pantalla** en lugar de seleccionar cámara
-2. Seleccionar ventana o pantalla a compartir
-3. Iniciar transmisión
-
----
-
-### FFmpeg - Streaming desde línea de comandos
-
-Para automatización o emisión desde servidores sin interfaz gráfica:
-
-**Streaming de prueba (Windows)**
-```bash
-cd CAMS/WHIP
-.\test.bat
-```
-Envía un stream de prueba (testsrc + tono de audio) al servidor.
-
-**Streaming desde webcam (Windows)**
-```bash
-cd CAMS/WHIP
-.\webcam.bat
+# Scripts del TFG (WHIP, RTSP, SRT, Raspberry Pi)
+cd docs\CAMS\WHIP; .\test.bat
 ```
 
-**Streaming desde Raspberry Pi**
-```bash
-cd rpi
-chmod +x stream_mjpeg_high.sh
-./stream_mjpeg_high.sh
+### Ver una cámara
+
+`https://<IP_SERVIDOR>/player.html` lista las cámaras en directo (se actualiza sola). Un clic la abre en el monitor; `player.html?stream=cam1` la abre directamente. Si la conexión cae, se reconecta sola; el panel "Recepción" muestra imagen, bitrate, pérdidas y búfer.
+
+Acceso WHEP directo sin la interfaz: `https://<IP_SERVIDOR>:8889/<cámara>`.
+
+### Repeticiones
+
+`https://<IP_SERVIDOR>/playback.html` está pensada para el operador de repeticiones (también funciona como dock de OBS de ~400 px):
+
+- **Repetir al momento**: "Últimos 15 s / 30 s / 60 s" o "Desde hace N segundos". Se calcula contra el reloj, así que siempre sigue al directo, y la repetición no se detiene al alcanzarlo.
+- **Línea temporal**: logarítmica (los últimos 5 minutos ocupan la mitad derecha). Arrastrarla elige el momento; la burbuja muestra la hora real.
+- **Otros modos**: desde el inicio de una grabación (en segundos) o a una hora concreta.
+- **Marcar**: guarda el instante de "hace N segundos" para pincharlo luego; cada momento se puede previsualizar, anotar o enviar a OBS.
+- **Enviar a OBS / Quitar**: manda a `display.html` lo que se está previsualizando. La barra superior se pone en rojo mientras hay una repetición en directo.
+- Velocidad de 0,25× a 4×.
+
+> Playback no usa WebRTC: el navegador recibe fMP4 por HTTPS a través del proxy `/api/playback`.
+
+### Salidas para OBS
+
+Añádelas como **fuente de navegador** a 1920×1080. Dentro de OBS solo muestran vídeo sobre negro; los avisos (por ejemplo, audio bloqueado) solo aparecen al abrirlas en un navegador normal o con `?debug=1`.
+
+| Salida | URL | Parámetros |
+|--------|-----|------------|
+| Cámara | `https://<IP>/neoplayer.html?stream=cam1` | `ajuste=cubrir` (rellena recortando), `fondo=transparente`, `debug=1` |
+| Repeticiones | `https://<IP>/display.html` | `fondo=transparente` (deja ver la escena cuando no hay repetición), `debug=1` |
+
+La página de Inicio copia estas URLs con un clic. Sin `?stream=`, `neoplayer.html` muestra un selector de cámaras.
+
+### Estadísticas
+
+`https://<IP_SERVIDOR>/stats.html`: paths, espectadores y tráfico total; gráficas de tráfico total, por cámara y espectadores; y una sección por cámara con mínimo, media y máximo. Se actualiza cada 1,5 s (configurable, se recuerda).
+
+### Panel de la API
+
+`https://<IP_SERVIDOR>/api.html`: acciones rápidas (recargar configuración, cerrar path, expulsar sesiones, borrar segmentos), paths (crear, modificar, cerrar), configuración global (ver y cambiar con PATCH; pulsar una clave la copia al formulario), sesiones RTSP/WebRTC/HLS y grabaciones. Las secciones se cargan al abrirlas.
+
+## Grabaciones
+
+MediaMTX graba todas las cámaras en fMP4 (segmentos de 10 minutos, se borran a los 7 días; ver `pathDefaults` en `mediamtx/mediamtx.yml`). Para no grabar una cámara, declárala en `paths:` con `record: no`.
+
+Las grabaciones están en el volumen Docker `webmtx_recordings_volume`: el acceso aleatorio es mucho más rápido que en una carpeta compartida de Windows (medido: una repetición a 15 s del directo empieza a llegar en 0,12 s frente a 40 s).
+
+```powershell
+.\scripts\exportar-grabaciones.ps1 -Path cam1            # a mediamtx\grabaciones_exportadas
+.\scripts\exportar-grabaciones.ps1 -Destino D:\copias    # todas, a otra carpeta
 ```
 
----
-
-### Reproducción de streams
-
-#### Player WebRTC (Ultra baja latencia)
-
-El reproductor utiliza el protocolo **WHEP** (WebRTC-HTTP Egress Protocol) para recibir el stream con ultra baja latencia.
-
-**Desde el mismo equipo:**
-1. Abrir https://localhost/player.html
-2. Configurar el nombre del stream (por defecto: `whipLL`)
-3. Hacer clic en **▶ Reproducir**
-
-**Desde otro dispositivo en la red:**
-1. Abrir `https://<IP_SERVIDOR>/player.html` (ej: https://192.168.1.100/player.html)
-2. Configurar el servidor con la IP del equipo que ejecuta MediaMTX
-3. Hacer clic en **▶ Reproducir**
-
-**Acceso directo via WHEP (sin interfaz web):**
-```
-https://<IP_SERVIDOR>:8889/<nombre_stream>
-```
-Ejemplo: `https://192.168.1.100:8889/whipLL`
-
-#### Playback - Reproductor de grabaciones
-
-El reproductor de grabaciones permite visualizar vídeos grabados bajo demanda:
-
-1. Abrir https://localhost/playback.html
-2. Seleccionar un stream grabado de la lista
-3. Elegir el punto de inicio o usar modo lookback
-4. Pulsar **▶ Reproducir desde tiempo seleccionado**
-
-**Características:**
-- Búsqueda por fecha/hora
-- Timeline interactivo
-- Controles de reproducción (play/pausa/velocidad)
-- Múltiples formatos (fMP4 via HTTPS)
-- Acceso desde cualquier dispositivo en la red
-
-> **Nota**: Playback no usa WebRTC. El navegador recibe fragmentos fMP4 vía HTTPS y los reproduce con el elemento `<video>`.
-
----
-
-### 📊 Monitorizar estadísticas en tiempo real
-
-El **Statistics Dashboard** permite visualizar métricas del servidor y los streams activos en tiempo real:
-
-1. Abrir https://localhost/stats.html
-2. El dashboard se actualiza automáticamente cada 1.5 segundos (configurable)
-3. Visualiza:
-   - Total de paths, paths listos y online
-   - Readers/writers activos
-   - Bytes recibidos/enviados
-   - Gráficos de tráfico en tiempo real
-   - Estado individual de cada stream
-
-**Desde otro dispositivo:**
-1. Abrir `https://<IP_SERVIDOR>/stats.html`
-2. El dashboard funciona desde cualquier punto de la red
-
----
-
-### 🔧 Explorar y controlar la API REST
-
-El **API Control Panel** proporciona interface interactiva para:
-
-1. Acceder a https://localhost/api.html
-2. Explorar endpoints de la API REST v2 de MediaMTX:
-   - **Config**: Recargar configuración, obtener información del servidor
-   - **Paths**: Listar, crear, editar y eliminar paths
-   - **Recordings**: Gestionar grabaciones
-   - **Sessions**: Monitorizar sesiones de lectura/escritura
-3. Ejecutar acciones directamente desde la interfaz
-4. Ver respuestas en formato JSON
+> ⚠️ `docker compose down -v` borra los volúmenes, **incluidas las grabaciones**. Usa `docker compose down` sin `-v`.
 
 ## Puertos y Protocolos
 
 | Puerto | Protocolo | Descripción | Latencia |
 |--------|-----------|-------------|----------|
-| **80** | HTTP | Servidor web (redirige a HTTPS) | - |
-| **443** | HTTPS | Servidor web seguro (requerido para getUserMedia por IP) | - |
+| **80** | HTTP | Redirige a HTTPS (desactivable con `HTTP_REDIRECT=false`) | - |
+| **443** | HTTPS | Servidor web (necesario para getUserMedia por IP) | - |
 | **1935** | RTMP | Streaming RTMP | ~2-5s |
 | **8554** | RTSP | Streaming RTSP | ~1-2s |
-| **8890** | UDP | SRT (Secure Reliable Transport) | ~200ms-2s |
 | **8888** | HTTPS | HLS (HTTP Live Streaming) | ~6-30s |
 | **8889** | HTTPS | WebRTC (WHIP/WHEP) | **~100-300ms** |
-| **8189** | UDP | WebRTC ICE/STUN | - |
-| **9997** | HTTPS | API REST MediaMTX | - |
-| **9996** | HTTPS | Playback server (fMP4) | - |
+| **8189** | UDP | WebRTC ICE | - |
+| **9997** | HTTPS | API de control de MediaMTX (v3) | - |
+
+No se publican al host (solo dentro de la red de Docker): **9996** (playback, se usa por el proxy `/api/playback`), **8890/UDP** (SRT) y **9998** (métricas). Si necesitas SRT desde fuera, añade `"8890:8890/udp"` en `docker-compose.yml`.
+
+### Variables de entorno (servicio `server`)
+
+| Variable | Por defecto | Uso |
+|----------|-------------|-----|
+| `HTTP_REDIRECT` | `true` | `false` deja libre el puerto 80 (comenta también `"80:80"` en `docker-compose.yml`) |
+| `MEDIAMTX_HOST` | `mediamtx` (en compose) | Host de la API de MediaMTX |
+| `PLAYBACK_HOST` / `PLAYBACK_PORT` | `MEDIAMTX_HOST` / `9996` | Servidor de playback |
 
 ## API MediaMTX
 
@@ -439,7 +367,7 @@ La API REST está disponible en el puerto 9997:
 curl https://localhost:9997/v3/paths/list
 
 # Obtener información de un stream
-curl https://localhost:9997/v3/paths/get/whipLL
+curl https://localhost:9997/v3/paths/get/cam1
 
 # Estadísticas del servidor
 curl https://localhost:9997/v3/hlsmuxers/list
@@ -477,8 +405,18 @@ curl https://localhost:9997/v3/hlsmuxers/list
 ### El stream no se reproduce
 
 1. Verificar que MediaMTX está corriendo: `docker compose ps`
-2. Comprobar logs: `docker compose logs mediamtx`
+2. Comprobar logs: `docker compose logs mediamtx` o `mediamtx\logs\mediamtx.log`
 3. Verificar que FFmpeg está enviando correctamente: buscar "WHIP session established" en los logs
+4. Si la cámara se ve en local pero no desde otro equipo: la IP del servidor debe estar en `webrtcAdditionalHosts` (`mediamtx.yml`) y en el certificado (`scripts\gen-certs.ps1`)
+
+### Las repeticiones no se reproducen
+
+- Emite en **H264**: el navegador no decodifica todos los códecs que WebRTC puede enviar (H265, VP9, AV1 dependen del equipo).
+- Lo grabado hace menos de ~4 s todavía no está en disco; la página deja ese margen automáticamente.
+
+### No arranca el servidor web
+
+Faltan `server/cert.pem` y `server/key.pem`: genera los certificados con `.\scripts\gen-certs.ps1 -IPsLocales`.
 
 ### Alta latencia
 
@@ -503,53 +441,57 @@ ffmpeg -list_devices true -f dshow -i dummy
 v4l2-ctl --list-devices
 
 # Python
-python CAMS/list_devices.py
+python docs/CAMS/list_devices.py
 ```
 
 ## Desarrollo
 
 ### Arquitectura de módulos JavaScript
 
-La interfaz web está organizada en una arquitectura modular y escalable:
+El front no tiene build ni módulos ES: cada página carga `<script>` clásicos que comparten el ámbito global, y el orden de las etiquetas es el grafo de dependencias.
 
 ```
 js/
-├── api/              # Capa API REST
-│   ├── api.js        # Cliente HTTP genérico
-│   ├── api-*.js      # Endpoints específicos (config, paths, recordings, sessions)
-│   └── api-ui.js     # Helpers de UI para respuestas API
-├── ui/               # Componentes de Interfaz
-│   ├── *-ui.js       # Renderizado y controles UI
-├── utils/            # Lógica compartida
-│   ├── utils.js      # Utilidades generales
-│   ├── watchdog.js   # Monitoreo de tráfico/WebRTC
-│   ├── *-utils.js    # Helpers específicos por módulo
-│   └── *-charts.js   # Visualizaciones
-├── broadcaster.js    # Entry point broadcaster
-├── player.js         # Entry point player
-├── playback.js       # Entry point playback
-└── stats.js          # Entry point stats
+├── api/              # api.js (GET/POST/PATCH/DELETE contra /api/mediamtx/v3) + secciones del panel
+├── ui/               # DOM y render: avisos.js (avisos y confirmaciones), tally.js, <página>-ui.js
+├── utils/            # utils.js, camaras.js (color por cámara), watchdog.js, *-utils.js, stats-charts.js
+└── <página>.js       # Lógica de cada página (WebRTC, repeticiones…)
 ```
+
+- `css/base.css` contiene el sistema de diseño: tokens de color (incluida la paleta de cámaras, validada para daltonismo sobre el fondo oscuro), tipografía, componentes y la barra de tally. Rojo = en directo, verde = recibiendo, ámbar = conectando.
+- Las funciones llamadas desde `onclick`/`data-load` y los ids que usa el JS son contrato. Antes de dar un cambio por bueno:
+
+```powershell
+node scripts/check-dom.mjs                                # ids, handlers, globales duplicados, node --check
+pwsh scripts/smoke.ps1 -RequiereReplay -CompruebaRedireccion
+```
+
+- `docs/otros/checklist-front.md` es el checklist funcional de todas las páginas.
 
 ### Reiniciar servicios
 
-```bash
-docker compose down
-docker compose up --build
+```powershell
+docker compose restart server     # tras tocar server/*.js (el front no necesita reinicio)
+docker compose down               # sin -v: -v borra las grabaciones
+docker compose up -d --build
 ```
+
+Si cambian las dependencias de `server/package.json`, borra el volumen de `node_modules` para que se regenere: `docker volume rm webmtx_node_modules_volume`.
 
 ### Ver logs en tiempo real
 
-```bash
+```powershell
 docker compose logs -f
+Get-Content .\mediamtx\logs\mediamtx.log -Tail 20 -Wait
 ```
 
 ### Acceder al contenedor
 
-```bash
+```powershell
 docker exec -it server sh
-docker exec -it mediamtx sh
 ```
+
+La imagen de MediaMTX no incluye shell; para ver sus ficheros usa `docker cp` o `scripts\exportar-grabaciones.ps1`.
 
 ## Tecnologías
 

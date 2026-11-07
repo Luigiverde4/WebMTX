@@ -1,440 +1,208 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.container {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    padding: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 30px;
-    font-size: 28px;
-}
-
-h2 {
-    color: #2193b0;
-    font-size: 20px;
-    margin: 0;
-}
-
-.controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.control-group {
-    display: flex;
-    flex-direction: column;
-}
-
-label {
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 5px;
-    font-size: 14px;
-}
-
-input, select {
-    padding: 10px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: #2193b0;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-refresh {
-    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
-    color: white;
-}
-
-.btn-refresh:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(33, 147, 176, 0.4);
-}
-
-.recordings-section, .player-section {
-    margin-bottom: 30px;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.recording-count {
-    color: #666;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.current-recording {
-    color: #2193b0;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.stream-filter {
-    margin-bottom: 15px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.stream-filter select {
-    flex: 1;
-}
-
-.recordings-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 2px solid #f0f0f0;
-    border-radius: 8px;
-    padding: 15px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #999;
-}
-
-.empty-state p {
-    margin: 10px 0;
-}
-
-.hint {
-    font-size: 13px;
-    color: #bbb;
-}
-
-.recording-item {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.recording-item:hover {
-    border-color: #2193b0;
-    background: #e7f5f9;
-    transform: translateX(5px);
-}
-
-.recording-item.selected {
-    border-color: #2193b0;
-    background: #d4eef5;
-    box-shadow: 0 3px 10px rgba(33, 147, 176, 0.2);
-}
-
-.recording-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.recording-stream {
-    font-weight: 700;
-    color: #2193b0;
-    font-size: 16px;
-}
-
-.recording-date {
-    color: #666;
-    font-size: 14px;
-}
-
-.recording-filename {
-    color: #888;
-    font-size: 13px;
-    font-family: 'Courier New', monospace;
-}
-
-.video-container {
-    position: relative;
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-
-video {
-    width: 100%;
-    height: auto;
-    display: block;
-    min-height: 400px;
-}
-
-.playback-options {
-    margin-bottom: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.time-controls {
-    margin-bottom: 15px;
-}
-
-.mode-selector {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-.mode-selector > label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #333;
-}
-
-.radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.radio-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-weight: normal;
-    color: #555;
-    margin: 0;
-}
-
-.radio-label input[type="radio"] {
-    width: auto;
-    margin: 0;
-    cursor: pointer;
-}
-
-.time-control-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.time-control-group label {
-    margin: 0;
-    white-space: nowrap;
-}
-
-.time-control-group input[type="number"] {
-    width: 120px;
-}
-
-.time-unit {
-    color: #666;
-    font-size: 13px;
-}
-
-.btn-play-from {
-    width: 100%;
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-    color: white;
-    padding: 10px;
-}
-
-.btn-play-from:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
-}
-
-.btn-play-from:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.recording-timeline {
-    padding: 10px 0;
-}
-
-.timeline-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.timeline-info span {
-    font-size: 13px;
-    color: #666;
-    font-family: 'Courier New', monospace;
-    min-width: 70px;
-}
-
-.timeline-info input[type="range"] {
-    flex: 1;
-    padding: 0;
-}
-
-.timeline-info input[type="range"]:disabled {
-    opacity: 0.5;
-}
-
-.playback-controls {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.btn-control {
-    flex: 1;
-    min-width: 80px;
-    background: #6c757d;
-    color: white;
-    font-size: 14px;
-}
-
-.btn-control:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-}
-
-.btn-control:active {
-    transform: translateY(0);
-}
-
-#normalSpeed {
-    background: #2193b0;
-}
-
-#normalSpeed:hover {
-    background: #1a7a93;
-}
-
-.video-info {
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.video-info p {
-    margin: 5px 0;
-    color: #555;
-}
-
-.video-info strong {
-    color: #333;
-}
-
-.info {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 13px;
-}
-
-.info p {
-    margin: 5px 0;
-    color: #555;
-}
-
-.info strong {
-    color: #333;
-}
-
-/* Scrollbar personalizado */
-.recordings-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.recordings-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.recordings-list::-webkit-scrollbar-thumb {
-    background: #2193b0;
-    border-radius: 10px;
-}
-
-.recordings-list::-webkit-scrollbar-thumb:hover {
-    background: #1a7a93;
-}
-
-@media (max-width: 768px) {
-    .controls {
-        grid-template-columns: 1fr;
+/*
+ * Repeticiones: escenario (vídeo, línea temporal, salida a OBS), qué repetir y
+ * momentos marcados. Pensada para un portátil en control, una pantalla de
+ * 1920 px o un dock de OBS estrecho (~400 px).
+ */
+
+@layer paginas {
+    .repeticiones {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr) 300px;
+        grid-template-areas: "fuente escenario marcados";
+        gap: var(--e-4);
+        align-items: start;
     }
-
-    .section-header {
+    .rep__escenario {
+        grid-area: escenario;
+        container: escenario / inline-size;
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        gap: var(--e-3);
+        min-inline-size: 0;
+    }
+    .rep__fuente { grid-area: fuente; }
+    .rep__marcados { grid-area: marcados; }
+
+    /* --- Rótulo y velocidad ---------------------------------------------- */
+    .rep__info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-2) var(--e-4);
+    }
+    .rep__actual {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-1) var(--e-2);
+        margin-inline-end: auto;
+        min-inline-size: 0;
+    }
+    .rep__actual strong { font-stretch: var(--ancho-cifras); font-size: var(--t-l); }
+    .rep__velocidad {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-1);
+    }
+    .rep__velocidad-valor {
+        min-inline-size: 4ch;
+        text-align: end;
+        font-weight: 600;
     }
 
-    .playback-controls {
-        grid-template-columns: repeat(3, 1fr);
+    /* --- Línea temporal -------------------------------------------------- */
+    .linea-tiempo {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--e-3);
+        padding: var(--e-5) var(--e-3) var(--e-2);
+        background: var(--superficie);
+        border: var(--borde-suave);
+        border-radius: var(--radio-panel);
+        color: var(--texto-2);
+        font-size: var(--t-s);
     }
-
-    .btn-control {
-        min-width: unset;
+    .linea-tiempo__pista { position: relative; }
+    .linea-tiempo input[type="range"] { display: block; }
+    .linea-tiempo input[type="range"]:disabled { cursor: not-allowed; opacity: 0.5; }
+    /* La posición la fija el JS en --posicion (px desde el inicio de la pista) */
+    .linea-tiempo__burbuja {
+        position: absolute;
+        inset-block-end: calc(100% + 2px);
+        inset-inline-start: var(--posicion, 50%);
+        transform: translateX(-50%);
+        padding: 1px var(--e-2);
+        border-radius: var(--radio-control);
+        background: var(--primario);
+        color: var(--sobre-primario);
+        font-size: var(--t-xs);
+        font-weight: 650;
+        white-space: nowrap;
+        pointer-events: none;
+        visibility: hidden;
     }
+    .linea-tiempo__burbuja.visible { visibility: visible; }
 
-    .time-control-group {
+    /* --- Salida a OBS ---------------------------------------------------- */
+    .salida-obs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-3) var(--e-4);
+    }
+    .salida-obs__texto { flex: 1 1 260px; min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
+    .salida-obs__texto h2 { font-size: var(--t-m); }
+    .salida-obs__pendiente.listo { color: var(--texto); }
+    .salida-obs__estado { color: var(--texto-2); }
+    .salida-obs__estado.activo { color: var(--texto-peligro); font-weight: 600; }
+    .salida-obs__botones { display: flex; gap: var(--e-2); }
+    .salida-obs__botones .boton { min-block-size: var(--alto-control-grande); }
+
+    /* --- Qué repetir ----------------------------------------------------- */
+    .selector-camara.con-camara {
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--linea));
+    }
+    .rep__numero { inline-size: 5.5em; }
+    .atajos { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-block-start: var(--e-2); }
+
+    /* --- Momentos marcados ----------------------------------------------- */
+    .boton-marcar {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+            "icono titulo"
+            "icono destino";
+        align-items: center;
+        column-gap: var(--e-3);
+        inline-size: 100%;
+        margin-block-end: var(--e-3);
+        padding: var(--e-3) var(--e-4);
+        border: var(--grosor-borde) solid var(--aviso);
+        border-radius: var(--radio-control);
+        background: var(--aviso-tenue);
+        color: var(--texto);
+        text-align: start;
+        cursor: pointer;
+    }
+    .boton-marcar:hover { background: var(--aviso-tenue-hover); }
+    .boton-marcar:active { transform: translateY(1px); }
+    .boton-marcar .icono { grid-area: icono; inline-size: 24px; block-size: 24px; color: var(--aviso); }
+    .boton-marcar__titulo {
+        grid-area: titulo;
+        font-size: var(--t-xl);
+        font-weight: 700;
+        font-stretch: 75%;
+        line-height: 1.1;
+    }
+    .boton-marcar__destino { grid-area: destino; font-size: var(--t-s); color: var(--texto-2); }
+
+    .marcados {
+        display: flex;
         flex-direction: column;
-        align-items: stretch;
+        gap: var(--e-2);
+        max-block-size: 60vh;
+        overflow-y: auto;
+    }
+    .marcado {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-2);
+        padding: var(--e-2) var(--e-2) var(--e-2) var(--e-3);
+        border: var(--borde-suave);
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--cam-neutro));
+        border-radius: var(--radio-control);
+        background: var(--superficie-2);
+    }
+    .marcado__cabecera {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "hora acciones"
+            "stream acciones";
+        align-items: center;
+        column-gap: var(--e-2);
+        min-inline-size: 0;
+    }
+    .marcado__hora { grid-area: hora; font-weight: 650; font-size: var(--t-l); line-height: 1.2; }
+    .marcado__stream {
+        grid-area: stream;
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--texto-2);
+        font-size: var(--t-s);
+    }
+    .marcado__acciones { grid-area: acciones; display: flex; gap: var(--e-1); }
+    .marcado__acciones .boton--directo { padding-inline: var(--e-2); }
+    .marcado__nota { min-block-size: var(--alto-control-peq); font-size: var(--t-s); }
+    .marcados__vacio { padding-block: var(--e-2); }
+
+    /* --- Responsive: la página -------------------------------------------- */
+    @media (max-width: 1280px) {
+        .repeticiones {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "escenario escenario"
+                "fuente marcados";
+        }
+    }
+    @media (max-width: 900px) {
+        .repeticiones {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas: "escenario" "fuente" "marcados";
+        }
+        .marcados { max-block-size: none; }
     }
 
-    .time-control-group input[type="number"] {
-        width: 100%;
-    }
-    
-    .radio-group {
-        gap: 10px;
-    }
-    
-    .radio-label {
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 6px;
+    /* --- Responsive: el escenario según su propio ancho (dock de OBS) ------ */
+    @container escenario (max-width: 480px) {
+        .rep__velocidad .boton:not(.boton--icono) { display: none; }
+        .salida-obs__botones { inline-size: 100%; }
+        .salida-obs__botones .boton { flex: 1; }
+        .linea-tiempo { grid-template-columns: minmax(0, 1fr); padding-block-start: var(--e-6); }
+        .linea-tiempo > span { display: none; }
     }
 }

@@ -1,0 +1,213 @@
+/* ==========================================================================
+   TOKENS DE DISEÑO DE WEBMTX
+   Único sitio con valores de color y medidas base. El resto de hojas solo usa
+   var(--...): scripts/check-dom.mjs falla si aparece un color fijo fuera de
+   este fichero.
+
+   Dos niveles:
+   1. Paleta base (--gris-900, --rojo-500…): los valores en bruto. No se usan
+      directamente en los componentes.
+   2. Tokens de uso (--fondo, --texto, --programa, --alto-control…): qué papel
+      cumple cada valor. Es lo que usan las hojas y lo que cambia cada tema.
+
+   Temas: oscuro por defecto; claro automático si el sistema lo pide
+   (prefers-color-scheme). Las salidas para OBS (<html class="salida-obs">)
+   se quedan siempre en oscuro.
+
+   Breakpoints (las media queries no admiten variables; son estos tres):
+     600px  móvil         900px  tableta / dock ancho         1280px  portátil
+   ========================================================================== */
+
+/* Orden de las capas de la cascada: una capa posterior gana siempre a una
+   anterior, sin importar la especificidad de los selectores. */
+@layer reset, base, componentes, paginas, utilidades;
+
+:root {
+  /* --- 1. Paleta base -------------------------------------------------- */
+  --gris-1000: #000000;
+  --gris-975: #10151b;
+  --gris-950: #141920;
+  --gris-900: #1a2028;
+  --gris-850: #222a33;
+  --gris-800: #2b3540;
+  --gris-775: #2f3945;
+  --gris-750: #34404c;
+  --gris-700: #3a4654;
+  --gris-650: #4b5969;
+  --gris-550: #5f6c79;
+  --gris-450: #8391a0;
+  --gris-400: #93a1b0;
+  --gris-300: #c3ccd5;
+  --gris-250: #d8dee4;
+  --gris-200: #dde2e7;
+  --gris-100: #e6ebf0;
+  --gris-75: #eef1f4;
+  --gris-0: #ffffff;
+  --tinta: #17202a;
+
+  --rojo-700: #b3261e;
+  --rojo-600: #c92721;
+  --rojo-500: #e0312b;
+  --rojo-300: #ff8a84;
+  --verde-700: #1e7a3c;
+  --verde-500: #2fb457;
+  --verde-300: #7fd99a;
+  --ambar-500: #e9a23b;
+  --azul-foco-claro: #9cc3ff;
+  --azul-foco-oscuro: #1d5fd6;
+
+  /* Cámaras: paletas categóricas validadas con el validador de la skill
+     dataviz (separación con daltonismo, visión normal y contraste), en este
+     orden de pares adyacentes. Una por tema. */
+  --cam-oscuro-1: #3987e5;
+  --cam-oscuro-2: #d95926;
+  --cam-oscuro-3: #16a3b8;
+  --cam-oscuro-4: #d55181;
+  --cam-oscuro-5: #9085e9;
+  --cam-claro-1: #2a78d6;
+  --cam-claro-2: #eb6834;
+  --cam-claro-3: #0f8fa3;
+  --cam-claro-4: #d6457a;
+  --cam-claro-5: #6250d6;
+
+  /* --- 2. Tokens de uso: tema oscuro (por defecto) ---------------------- */
+  color-scheme: dark;
+
+  --fondo: var(--gris-900);
+  --hundido: var(--gris-950);          /* campos, cabeceras de tabla */
+  --superficie: var(--gris-850);       /* paneles */
+  --superficie-2: var(--gris-800);     /* paneles de segundo nivel, botones */
+  --superficie-hover: var(--gris-750);
+  --linea: var(--gris-700);
+  --linea-suave: var(--gris-775);
+  --linea-hover: var(--gris-650);
+  --texto: var(--gris-100);
+  --texto-2: var(--gris-400);
+  --texto-3: var(--gris-450);          /* ayudas: >= 4,5:1 sobre --fondo */
+  --foco: var(--azul-foco-claro);
+
+  --primario: var(--gris-100);         /* botón principal: claro sobre oscuro */
+  --primario-hover: var(--gris-0);
+  --sobre-primario: var(--gris-975);
+
+  /* Semántica tally: rojo = en directo, verde = recibiendo, ámbar = conectando */
+  --programa: var(--rojo-500);
+  --programa-hover: var(--rojo-600);
+  --programa-tenue: rgb(224 49 43 / 0.14);
+  --programa-borde: rgb(224 49 43 / 0.6);
+  --sobre-programa: var(--gris-0);
+  --halo-sobre-programa: rgb(255 255 255 / 0.3);
+  --preview: var(--verde-500);
+  --preview-tenue: rgb(47 180 87 / 0.14);
+  --aviso: var(--ambar-500);
+  --aviso-tenue: rgb(233 162 59 / 0.14);
+  --aviso-tenue-hover: rgb(233 162 59 / 0.24);
+  --texto-peligro: var(--rojo-300);
+  --texto-exito: var(--verde-300);
+
+  --cam-azul: var(--cam-oscuro-1);
+  --cam-naranja: var(--cam-oscuro-2);
+  --cam-cian: var(--cam-oscuro-3);
+  --cam-magenta: var(--cam-oscuro-4);
+  --cam-violeta: var(--cam-oscuro-5);
+  --cam-neutro: var(--gris-400);       /* sin cámara asignada */
+
+  --monitor: var(--gris-1000);         /* fondo del vídeo: siempre negro */
+  --sobre-video: var(--gris-0);        /* controles encima del vídeo */
+  --fondo-sobre-video: rgb(0 0 0 / 0.55);
+  --velo: rgb(8 11 15 / 0.7);          /* fondo de los diálogos */
+  --sombra-flotante: 0 8px 24px rgb(0 0 0 / 0.35);
+
+  /* --- Tipografía: escala 1.25 sobre 15px -------------------------------- */
+  --fuente: "Archivo", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --fuente-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --t-xs: 0.8rem;     /* 12 */
+  --t-s: 0.875rem;    /* 14 */
+  --t-m: 1rem;        /* 15 */
+  --t-l: 1.25rem;     /* 19 */
+  --t-xl: 1.5625rem;  /* 23 */
+  --t-xxl: 1.953rem;  /* 29 */
+  /* Títulos fluidos: crecen con el ancho entre el móvil y el escritorio */
+  --t-titulo: clamp(var(--t-xl), 1.2rem + 1.1vw, var(--t-xxl));
+  --t-titulo-grande: clamp(var(--t-l), 1rem + 0.9vw, var(--t-xl));
+  --ancho-condensado: 78%;             /* font-stretch de títulos */
+  --ancho-cifras: 85%;                 /* font-stretch de números */
+
+  /* --- Espaciado --------------------------------------------------------- */
+  --e-1: 4px;
+  --e-2: 8px;
+  --e-3: 12px;
+  --e-4: 16px;
+  --e-5: 24px;
+  --e-6: 32px;
+  --e-7: 48px;
+
+  /* --- Bordes y radios --------------------------------------------------- */
+  --grosor-borde: 1px;
+  --grosor-foco: 2px;
+  --borde: var(--grosor-borde) solid var(--linea);
+  --borde-suave: var(--grosor-borde) solid var(--linea-suave);
+  --radio-control: 3px;
+  --radio-panel: 6px;
+
+  /* --- Componentes ------------------------------------------------------- */
+  --alto-control: 38px;                /* campos y botones */
+  --alto-control-peq: 30px;
+  --alto-control-grande: 44px;         /* acciones principales (emitir, enviar a OBS) */
+  --alto-chip: 34px;
+  --alto-opcion: 32px;                 /* casillas y radios con su etiqueta */
+  --tam-icono: 18px;
+  --tam-icono-peq: 16px;
+  --tam-icono-grande: 20px;
+  --tam-casilla: 18px;
+  --tam-lampara: 12px;                 /* piloto del tally */
+  --tam-punto: 8px;                    /* píldora de estado */
+  --tam-punto-camara: 10px;
+  --tam-azulejo: 40px;                 /* recuadro de icono en Inicio */
+  --ancho-barra-camara: 4px;           /* franja de color de cámara */
+
+  --alto-cabecera: 52px;
+  --alto-tally: 40px;
+  --ancho-max: 1440px;
+  /* Margen lateral que alinea cabecera y tally con el contenido centrado */
+  --margen-lateral: max(var(--e-5), calc((100vw - var(--ancho-max)) / 2 + var(--e-5)));
+
+  --duracion-transicion: 180ms;
+}
+
+/* --- Tema claro (automático) ------------------------------------------- */
+@media (prefers-color-scheme: light) {
+  :root:not(.salida-obs) {
+    color-scheme: light;
+
+    --fondo: var(--gris-75);
+    --hundido: var(--gris-0);
+    --superficie: var(--gris-0);
+    --superficie-2: var(--gris-100);
+    --superficie-hover: var(--gris-200);
+    --linea: var(--gris-300);
+    --linea-suave: var(--gris-250);
+    --linea-hover: var(--gris-400);
+    --texto: var(--tinta);
+    --texto-2: var(--gris-650);
+    --texto-3: var(--gris-550);
+    --foco: var(--azul-foco-oscuro);
+
+    --primario: var(--tinta);
+    --primario-hover: var(--gris-975);
+    --sobre-primario: var(--gris-0);
+
+    --texto-peligro: var(--rojo-700);
+    --texto-exito: var(--verde-700);
+
+    --cam-azul: var(--cam-claro-1);
+    --cam-naranja: var(--cam-claro-2);
+    --cam-cian: var(--cam-claro-3);
+    --cam-magenta: var(--cam-claro-4);
+    --cam-violeta: var(--cam-claro-5);
+    --cam-neutro: var(--gris-550);
+
+    --velo: rgb(20 25 32 / 0.45);
+    --sombra-flotante: 0 8px 24px rgb(23 32 42 / 0.15);
+  }
+}

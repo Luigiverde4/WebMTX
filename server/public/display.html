@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es" class="salida-obs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salida de repeticiones | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/obs.css">
+</head>
+<body>
+    <!--
+        Salida de repeticiones para OBS (fuente de navegador, 1920x1080).
+        Reproduce lo que se envíe desde Repeticiones (playback.html) por SSE.
+        Parámetros: ?fondo=transparente (deja ver la escena si no hay repetición)
+                    ?debug=1 (muestra los avisos también dentro de OBS)
+    -->
+    <video id="video" class="salida-video" autoplay playsinline></video>
+    <div class="espera depuracion-solo" id="idle">Esperando repetición…</div>
+    <button type="button" class="aviso-salida depuracion-solo" id="mutedBadge" hidden>
+        Sin sonido: el navegador bloquea el audio hasta que hagas clic. Haz clic para activarlo.
+    </button>
+
+    <script src="js/playback-display.js"></script>
+</body>
+</html>

@@ -15,54 +15,59 @@ async function cargarConfig() {
     let display = configDisplayEl;
 
     try {
-        display.innerHTML = '<div class="empty-state">Cargando configuración...</div>';
+        display.innerHTML = '<p class="vacio">Cargando configuración…</p>';
 
-        // Petición GET al endpoint global
         let config = await GET('/config/global/get');
 
         display.innerHTML = '';
-        // Llamada a la función recursiva para dibujar el objeto JSON
         mostrarObjetoConfig(config, display);
-        
-        // Marcamos el acordeón como cargado (función definida en el primer script)
+
         marcarAcordeonCargado('configAccordion');
     } catch (error) {
         console.error('Error al cargar config:', error);
-        display.innerHTML = `<div class="empty-state">❌ Error: ${escapeHtml(error.message)}</div>`;
+        display.innerHTML = `<p class="vacio vacio--error">No se pudo cargar la configuración: ${escapeHtml(error.message)}</p>`;
     }
 }
 
 /**
- * Renderiza un objeto JSON de forma jerárquica en el HTML.
+ * Renderiza un objeto JSON de forma jerárquica (clave / valor). Pulsar una
+ * clave la copia al formulario de PATCH.
  * @param {Object} obj - El fragmento de configuración a mostrar.
  * @param {HTMLElement} container - Dónde insertar los elementos.
  */
 function mostrarObjetoConfig(obj, container) {
     for (const [key, value] of Object.entries(obj)) {
-        // Si el valor es un objeto (y no un array o nulo), creamos una subsección
         if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-            let section = document.createElement('div');
-            section.style.marginLeft = '20px'; // Sangría para visualización jerárquica
-            section.style.marginTop = '10px';
-            
-            let header = document.createElement('div');
-            header.style.fontWeight = 'bold';
-            header.style.color = '#2563eb';
-            header.textContent = key;
-            
-            container.appendChild(header);
-            container.appendChild(section);
-            
-            // RECURSIÓN: La función se llama a sí misma para procesar el sub-objeto
-            mostrarObjetoConfig(value, section);
+            let grupo = document.createElement('div');
+            grupo.className = 'config__grupo';
+
+            let titulo = document.createElement('div');
+            titulo.className = 'config__titulo';
+            titulo.textContent = key;
+
+            container.appendChild(titulo);
+            container.appendChild(grupo);
+            mostrarObjetoConfig(value, grupo);
         } else {
-            // Si es un valor simple (string, number, boolean), lo dibujamos directamente
             let item = document.createElement('div');
-            item.className = 'config-item';
-            item.innerHTML = `
-                <span class="config-key">${escapeHtml(key)}</span>
-                <span class="config-value">${escapeHtml(JSON.stringify(value))}</span>
-            `;
+            item.className = 'config__item';
+
+            let clave = document.createElement('button');
+            clave.type = 'button';
+            clave.className = 'config__clave';
+            clave.textContent = key;
+            clave.title = 'Usar esta clave en "Cambiar un valor"';
+            clave.addEventListener('click', () => {
+                configKeyEl.value = key;
+                configValueEl.value = typeof value === 'string' ? value : JSON.stringify(value);
+                configValueEl.focus();
+            });
+
+            let valor = document.createElement('span');
+            valor.className = 'config__valor';
+            valor.textContent = JSON.stringify(value);
+
+            item.append(clave, valor);
             container.appendChild(item);
         }
     }
@@ -76,52 +81,50 @@ async function actualizarConfig() {
     let value = configValueEl.value.trim();
 
     if (!key) {
-        alert('Por favor, introduce una clave de configuración');
+        mostrarAviso('Escribe la clave que quieres cambiar (por ejemplo logLevel).', 'aviso');
+        configKeyEl.focus();
         return;
     }
 
-    // Lógica de tipado dinámico: intentamos parsear como JSON (para captar true, false, números u objetos)
+    // Tipado: se intenta como JSON (true, false, números, listas); si no, texto
     let parsedValue;
     try {
         parsedValue = JSON.parse(value);
     } catch {
-        // Si falla el parseo (ej: es un string simple), lo usamos tal cual
         parsedValue = value;
     }
 
-    // Preparamos el objeto con la clave dinámica, ej: { [rtmp]: false }
-    let config = { [key]: parsedValue };
-
     try {
         // PATCH actualiza solo el campo enviado, manteniendo el resto igual
-        await PATCH('/config/global/patch', config);
+        await PATCH('/config/global/patch', { [key]: parsedValue });
 
-        alert(`Configuración actualizada: ${key} = ${value}`);
-        await cargarConfig(); // Refrescamos la vista para confirmar el cambio
+        mostrarAviso(`Guardado: ${key} = ${value}`, 'ok');
+        await cargarConfig();
 
-        // Limpiamos los campos de entrada
         configKeyEl.value = '';
         configValueEl.value = '';
     } catch (error) {
         console.error('Error al actualizar config:', error);
-        alert('Error al actualizar: ' + error.message);
+        mostrarAviso(`No se pudo guardar ${key}: ${error.message}`, 'error');
     }
 }
 
 /**
- * Solicita al servidor que recargue su configuración desde el archivo físico (mediamtx.yml).
+ * Solicita al servidor que recargue su configuración (PATCH vacío).
  */
 async function recargarConfig() {
-    if (!confirm('¿Recargar configuración desde el archivo?')) return;
+    let ok = await confirmar('¿Recargar la configuración de MediaMTX? Las conexiones activas pueden reiniciarse.', {
+        aceptar: 'Recargar'
+    });
+    if (!ok) return;
 
     try {
-        // Enviar un objeto vacío al patch suele forzar el reload en esta API
         await PATCH('/config/global/patch', {});
 
-        alert('Configuración recargada con éxito');
+        mostrarAviso('Configuración recargada', 'ok');
         await cargarConfig();
     } catch (error) {
         console.error('Error al recargar:', error);
-        alert('Error al recargar: ' + error.message);
+        mostrarAviso(`No se pudo recargar: ${error.message}`, 'error');
     }
 }

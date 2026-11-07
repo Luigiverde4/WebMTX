@@ -1,360 +1,123 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* Emitir: monitor y acciones a la izquierda, ajustes a la derecha */
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.container {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    padding: 30px;
-    max-width: 900px;
-    width: 100%;
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 5px;
-    font-size: 28px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #666;
-    margin-bottom: 25px;
-    font-size: 14px;
-}
-
-.controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.device-selection {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.control-group {
-    display: flex;
-    flex-direction: column;
-}
-
-label {
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 5px;
-    font-size: 14px;
-}
-
-input, select {
-    padding: 10px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: #e74c3c;
-}
-
-.buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-button {
-    flex: 1;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.btn-start {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-}
-
-.btn-start:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
-}
-
-.btn-start:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-stop {
-    background: #34495e;
-    color: white;
-}
-
-.btn-stop:hover:not(:disabled) {
-    background: #2c3e50;
-    transform: translateY(-2px);
-}
-
-.btn-stop:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-refresh {
-    background: #3498db;
-    color: white;
-    flex: 0.5;
-}
-
-.btn-refresh:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-}
-
-.video-container {
-    position: relative;
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 20px;
-}
-
-video {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.live-indicator {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: rgba(231, 76, 60, 0.9);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-weight: bold;
-    font-size: 14px;
-    display: none;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-.active-paths {
-    margin-top: 15px;
-    padding: 15px;
-    background: #f8d7da;
-    border-radius: 8px;
-}
-
-.active-paths-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.active-paths-header label {
-    margin-bottom: 0;
-}
-
-.btn-small {
-    padding: 5px 10px;
-    font-size: 12px;
-    flex: 0;
-}
-
-.paths-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.paths-list .path-tag {
-    background: #721c24;
-    color: white;
-    padding: 5px 12px;
-    border-radius: 15px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.paths-list .path-tag.available {
-    background: #155724;
-}
-
-.paths-list .loading,
-.paths-list .empty,
-.paths-list .error {
-    color: #666;
-    font-style: italic;
-    font-size: 13px;
-}
-
-.quick-endpoints {
-    margin-top: 15px;
-    padding: 15px;
-    background: #fff3cd;
-    border-radius: 8px;
-}
-
-.quick-endpoints label {
-    display: block;
-    margin-bottom: 10px;
-}
-
-.endpoint-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.endpoint-buttons button {
-    flex: 0;
-    padding: 8px 20px;
-    background: #f0ad4e;
-    color: #333;
-    font-size: 14px;
-}
-
-.endpoint-buttons button:hover {
-    background: #ec971f;
-    transform: translateY(-1px);
-}
-
-.stream-stats {
-    margin-top: 15px;
-    padding: 15px;
-    background: #eef2ff;
-    border-radius: 8px;
-}
-
-.stream-stats-header {
-    margin-bottom: 10px;
-}
-
-.stream-stats-header label {
-    margin-bottom: 0;
-}
-
-.codec-stats .empty,
-.codec-stats .error {
-    color: #666;
-    font-style: italic;
-    font-size: 13px;
-}
-
-.codec-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.codec-table th,
-.codec-table td {
-    padding: 8px;
-    border-bottom: 1px solid #d9e1ff;
-    text-align: left;
-}
-
-.codec-table th {
-    color: #34495e;
-    font-weight: 700;
-}
-
-.codec-table td {
-    color: #2c3e50;
-}
-
-.status {
-    display: inline-block;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.status.connected {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status.disconnected {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.status.connecting {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.status.live {
-    background: #e74c3c;
-    color: white;
-    animation: pulse 1.5s infinite;
-}
-
-#strict {
-    width: 20px;
-    height: 20px;
-    margin-top: 5px;
-    display: inline;
-}
-
-@media (max-width: 768px) {
-    .controls, .device-selection {
-        grid-template-columns: 1fr;
+@layer paginas {
+    .emisor {
+        --ancho-ajustes: 380px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--ancho-ajustes);
+        gap: var(--e-5);
+        align-items: start;
     }
-    
-    .buttons {
+    .emisor__monitor {
+        display: flex;
         flex-direction: column;
+        gap: var(--e-4);
+        position: sticky;
+        inset-block-start: calc(var(--alto-cabecera) + var(--alto-tally) + var(--e-4));
     }
-    
-    .btn-refresh {
-        flex: 1;
+    .emisor__ajustes {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-4);
     }
-    
-    .endpoint-buttons {
-        justify-content: center;
+    .emisor__subtitulo {
+        margin-block: var(--e-4) var(--e-2);
+        color: var(--texto-2);
+        font-size: var(--t-s);
+        font-weight: 600;
     }
 
-    .codec-table {
-        font-size: 12px;
+    .emisor .monitor { cursor: pointer; }
+
+    /* Botón de pantalla completa sobre el vídeo */
+    .boton-monitor {
+        position: absolute;
+        inset-block-end: var(--e-3);
+        inset-inline-end: var(--e-3);
+        display: grid;
+        place-items: center;
+        inline-size: var(--alto-control-grande);
+        block-size: var(--alto-control-grande);
+        border: 0;
+        border-radius: var(--radio-panel);
+        background: var(--fondo-sobre-video);
+        color: var(--sobre-video);
+        cursor: pointer;
+    }
+    .boton-monitor .icono { inline-size: var(--tam-icono-grande); block-size: var(--tam-icono-grande); }
+
+    /* El contenedor entero va a pantalla completa: el rótulo "En directo" sigue visible */
+    .monitor:fullscreen {
+        aspect-ratio: auto;
+        inline-size: 100%;
+        block-size: 100%;
+        border: 0;
+        border-radius: 0;
+    }
+    .monitor:fullscreen .en-directo { inset-block-start: var(--e-5); inset-inline-start: var(--e-5); font-size: var(--t-l); }
+    .monitor:fullscreen .boton-monitor { inset-block-end: var(--e-5); inset-inline-end: var(--e-5); }
+
+    /* Rótulo sobre el monitor mientras se emite */
+    .en-directo {
+        position: absolute;
+        inset-block-start: var(--e-3);
+        inset-inline-start: var(--e-3);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--e-2);
+        padding: var(--e-1) var(--e-3);
+        border-radius: var(--radio-control);
+        background: var(--programa);
+        color: var(--sobre-programa);
+        font-weight: 700;
+        font-stretch: 80%;
+    }
+    .en-directo span {
+        inline-size: var(--tam-punto);
+        block-size: var(--tam-punto);
+        border-radius: 50%;
+        background: var(--sobre-programa);
     }
 
-    .codec-table th,
-    .codec-table td {
-        padding: 6px;
+    /* Barra de acciones bajo el monitor */
+    .acciones {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--e-3);
     }
-    
+    .acciones__principales {
+        display: flex;
+        gap: var(--e-2);
+        margin-inline-start: auto;
+    }
+    .acciones__principales .boton { min-inline-size: 120px; min-block-size: var(--alto-control-grande); }
+
+    /* Chips de cámaras en emisión: informativos, no pulsables */
+    .chip-camara--info { cursor: default; }
+    .chip-camara--info:hover { border-color: var(--linea); }
+    .en-uso { min-block-size: var(--alto-chip); }
+
+    @media (max-width: 1280px) {
+        .emisor { --ancho-ajustes: 340px; }
+    }
+    /* Una columna: en el móvil, tras el vídeo van los botones de emitir y
+       luego las fuentes (lo primero que se toca); después, el resto de ajustes.
+       display: contents saca los paneles de sus columnas para poder ordenarlos. */
+    @media (max-width: 900px) {
+        .emisor { display: flex; flex-direction: column; gap: var(--e-4); }
+        .emisor__monitor,
+        .emisor__ajustes { display: contents; }
+        .emisor__pantalla { order: 1; }
+        .emisor__acciones { order: 2; }
+        .emisor__fuentes { order: 3; }
+        .emisor__destino { order: 4; }
+        .emisor__video { order: 5; }
+        .emisor__audio { order: 6; }
+        .emisor__enviando { order: 7; }
+    }
+    @media (max-width: 600px) {
+        .acciones__principales { inline-size: 100%; margin-inline-start: 0; }
+        .acciones__principales .boton { flex: 1; min-inline-size: 0; }
+    }
 }

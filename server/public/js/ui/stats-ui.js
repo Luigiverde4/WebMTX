@@ -17,10 +17,6 @@ let allStreamInputSeries = new Map();
 let allStreamOutputSeries = new Map();
 const MAX_HISTORY_POINTS = 120;
 const MAX_STREAM_DATASETS = 8;
-const STREAM_COLORS = [
-    '#60a5fa', '#4ade80', '#fbbf24', '#f472b6',
-    '#22d3ee', '#c084fc', '#fb7185', '#a3e635'
-];
 
 /**
  * ELEMENTOS DOM
@@ -61,7 +57,7 @@ function renderizarResumen(items) {
     totalBytesReceivedEl.textContent = formatBytes(totalBytesReceived);
     totalBytesSentEl.textContent = formatBytes(totalBytesSent);
 
-    pathsCountEl.textContent = `${totalPaths} streams`;
+    pathsCountEl.textContent = totalPaths === 1 ? '1 stream' : `${totalPaths} streams`;
 }
 
 /**
@@ -70,15 +66,19 @@ function renderizarResumen(items) {
  */
 function renderizarErrorStats(error) {
     if (streamSectionsContainerEl) {
-        streamSectionsContainerEl.innerHTML = `<div class="error">No se pudieron cargar las estadisticas: ${escapeHtml(error.message)}</div>`;
+        streamSectionsContainerEl.innerHTML = `<div class="vacio vacio--error"><strong>No se pudieron cargar las estadísticas.</strong> Comprueba que MediaMTX está en marcha. Detalle: ${escapeHtml(error.message)}</div>`;
     }
     lastUpdateEl.textContent = 'Error al actualizar';
 }
 
+/**
+ * Texto del intervalo de refresco ("1,5 s").
+ * @param {number} ms
+ */
+function textoIntervalo(ms) {
+    return `(${(ms / 1000).toLocaleString('es-ES', { maximumFractionDigits: 2 })} s)`;
+}
 
-
-
-// UI CHARTS
 
 // UI
 /**
@@ -117,4 +117,3 @@ function ponerTextoPorId(id, value) {
         el.textContent = value;
     }
 }
-

@@ -1,10 +1,13 @@
 /**
  * GESTIÓN DE INTERFAZ DE USUARIO - MEDIAMTX API
- * Maneja la carga bajo demanda de secciones colapsables (acordeones).
+ * Maneja la carga bajo demanda de secciones colapsables (acordeones) y el
+ * indicador de estado de la API.
  */
 
 // Captura todos los elementos <details> que tienen el atributo 'data-load'
 let accordionItems = document.querySelectorAll('details[data-load]');
+let estadoApiEl = document.getElementById('estadoApi');
+const SONDEO_API_MS = 10000;
 
 /**
  * Abre programáticamente un acordeón por su ID.
@@ -22,50 +25,42 @@ function abrirAcordeon(id) {
  * @param {HTMLElement} details - El elemento <details> que se desea cargar.
  */
 async function cargarSeccionAcordeon(details) {
-    // 1. Verificación de estado: Si ya se cargó o está cargando, abortamos para ahorrar recursos.
     if (details.dataset.loaded === 'true' || details.dataset.loading === 'true') {
         return;
     }
 
-    // 2. Obtención del cargador: Extraemos el nombre de la función del atributo data-load.
     let loaderName = details.dataset.load;
-    let loader = window[loaderName]; // Buscamos la función en el objeto global 'window'
+    let loader = window[loaderName];
 
-    // Si la función no existe, salimos discretamente.
     if (typeof loader !== 'function') {
         console.warn(`Cargador no encontrado: ${loaderName}`);
         return;
     }
 
-    // 3. Proceso de carga: Marcamos como 'loading' para evitar clics dobles.
     details.dataset.loading = 'true';
     try {
-        await loader(); // Ejecutamos la función de carga (ej: loadPaths())
-        details.dataset.loaded = 'true'; // Marcamos éxito
+        await loader();
+        details.dataset.loaded = 'true';
     } catch (error) {
-        // Si falla, reseteamos 'loaded' para permitir que el usuario reintente al reabrir.
+        // Si falla, se permite reintentar al reabrir.
         details.dataset.loaded = '';
         console.error(`Error al cargar la sección ${loaderName}:`, error);
     } finally {
-        // Quitamos el flag de 'loading' siempre (haya error o éxito).
         delete details.dataset.loading;
     }
 }
 
 /**
  * Inicializa los eventos de la UI.
- * Configura los escuchadores para cada acordeón detectado.
  */
 function iniciarUiApi() {
     accordionItems.forEach(details => {
-        // Escuchamos el evento 'toggle' (se dispara al abrir o cerrar)
         details.addEventListener('toggle', () => {
             if (details.open) {
                 cargarSeccionAcordeon(details);
             }
         });
 
-        // Si el acordeón ya viene abierto por defecto en el HTML, cargamos sus datos de inmediato.
         if (details.open) {
             cargarSeccionAcordeon(details);
         }
@@ -84,21 +79,38 @@ function marcarAcordeonCargado(id) {
 
 /**
  * Fuerza la actualización de todas las secciones principales de la API.
- * Útil para un botón de "Refrescar" global.
  */
-function refrescarTodo() {
-    return Promise.all([
+async function refrescarTodo() {
+    await Promise.all([
+        comprobarEstadoApi(),
         cargarPaths(),
         cargarConfig(),
         cargarSesiones(),
         cargarGrabaciones()
     ]);
+    mostrarAviso('Todo actualizado', 'ok', 1800);
 }
 
 /**
- * Punto de entrada: Arranca la lógica cuando el DOM está completamente listo.
+ * Comprueba de verdad que la API responde (antes era un texto fijo).
  */
+async function comprobarEstadoApi() {
+    let inicio = performance.now();
+    try {
+        await GET('/paths/list');
+        let ms = Math.round(performance.now() - inicio);
+        estadoApiEl.className = 'estado estado--ok';
+        estadoApiEl.textContent = `API conectada (${ms} ms)`;
+    } catch (error) {
+        estadoApiEl.className = 'estado estado--error';
+        estadoApiEl.textContent = `API sin respuesta: ${error.message}`;
+    }
+}
+
 window.addEventListener('load', () => {
-    console.log('MediaMTX API UI inicializada');
     iniciarUiApi();
+    comprobarEstadoApi();
+    setInterval(() => {
+        if (!document.hidden) comprobarEstadoApi();
+    }, SONDEO_API_MS);
 });

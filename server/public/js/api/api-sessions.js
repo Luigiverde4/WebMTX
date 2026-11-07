@@ -15,90 +15,99 @@ let closeWebrtcIdEl = document.getElementById('closeWebrtcId');
  * Carga principal: coordina la carga de todos los protocolos en paralelo.
  */
 async function cargarSesiones() {
-    // Lanzamos todas las peticiones simultáneamente para ganar velocidad
     await Promise.all([
         cargarSesionesRtsp(),
         cargarSesionesWebrtc(),
         cargarMuxersHls()
     ]);
 
-    actualizarConteoSesiones(); // Actualiza el contador global tras cargar todo
+    actualizarConteoSesiones();
     marcarAcordeonCargado('sessionsAccordion');
 }
 
-
-
+/**
+ * Tarjeta de sesión (la clase tarjeta-sesion la usa el contador).
+ */
+function crearTarjetaSesion({ titulo, path, filas, accion }) {
+    let card = document.createElement('article');
+    card.className = 'tarjeta tarjeta-sesion';
+    if (path) aplicarColorCamara(card, path);
+    card.innerHTML = `
+        <header class="tarjeta__cabecera">
+            <h3 class="tarjeta__id">${escapeHtml(titulo)}</h3>
+        </header>
+        <dl class="datos">
+            ${filas.map(([dt, dd]) => `<dt>${escapeHtml(dt)}</dt><dd>${escapeHtml(dd)}</dd>`).join('')}
+        </dl>
+        ${accion ? `<div class="tarjeta__acciones">${accion}</div>` : ''}
+    `;
+    return card;
+}
 
 /**
- * Renderiza las sesiones RTSP (Cámaras IP, VLC, OBS, etc.)
+ * Renderiza las sesiones RTSP (cámaras IP, VLC, OBS, ffmpeg…)
  */
 async function cargarSesionesRtsp() {
     let container = rtspSessionsEl;
     try {
         let data = await GET('/rtspsessions/list');
 
-        // No hay sesiones
         if (!data.items || data.items.length === 0) {
-            container.innerHTML = '<div class="empty-state">No hay sesiones RTSP</div>';
+            container.innerHTML = '<p class="vacio">Sin sesiones RTSP</p>';
             return;
         }
 
-        // Hay sesiones -> Crear cards
         container.innerHTML = '';
         data.items.forEach(session => {
-            let card = document.createElement('div');
-            card.className = 'session-card';
-            card.innerHTML = `
-                <div class="session-id">ID: ${escapeHtml(session.id)}</div>
-                <div class="session-info"><strong>Estado:</strong> ${escapeHtml(session.state ?? '')}</div>
-                ${session.path ? `<div class="session-info"><strong>Path:</strong> ${escapeHtml(session.path)}</div>` : ''}
-                <div class="session-info"><strong>↓ Recibido:</strong> ${formatBytes(session.bytesReceived)}</div>
-                <div class="session-info"><strong>↑ Enviado:</strong> ${formatBytes(session.bytesSent)}</div>
-                <div class="session-actions">
-                    <button class="btn-danger btn-small" onclick='expulsarSesionRtspPorId(${JSON.stringify(session.id)})'>❌ Cerrar</button>
-                </div>
-            `;
-            container.appendChild(card);
+            container.appendChild(crearTarjetaSesion({
+                titulo: session.id,
+                path: session.path,
+                filas: [
+                    ['Estado', session.state ?? '—'],
+                    ['Path', session.path || '—'],
+                    ['Recibido', formatBytes(session.bytesReceived)],
+                    ['Enviado', formatBytes(session.bytesSent)]
+                ],
+                accion: `<button type="button" class="boton boton--peq boton--peligro" onclick='expulsarSesionRtspPorId(${escapeHtml(JSON.stringify(session.id))})'>Expulsar</button>`
+            }));
         });
     } catch (error) {
         console.error('Error RTSP:', error);
-        container.innerHTML = `<div class="empty-state">Error: ${escapeHtml(error.message)}</div>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las sesiones RTSP: ${escapeHtml(error.message)}</p>`;
     }
 }
 
 /**
- * Renderiza sesiones WebRTC (Visualización en navegadores)
+ * Renderiza sesiones WebRTC (emisores WHIP y espectadores WHEP)
  */
 async function cargarSesionesWebrtc() {
     let container = webrtcSessionsEl;
     try {
         let data = await GET('/webrtcsessions/list');
 
-        // No hay sesiones
         if (!data.items || data.items.length === 0) {
-            container.innerHTML = '<div class="empty-state">No hay sesiones WebRTC</div>';
+            container.innerHTML = '<p class="vacio">Sin sesiones WebRTC</p>';
             return;
         }
 
-        // Hay sesiones -> Crear cards
         container.innerHTML = '';
         data.items.forEach(session => {
-            let card = document.createElement('div');
-            card.className = 'session-card';
-            card.innerHTML = `
-                <div class="session-id">ID: ${escapeHtml(session.id)}</div>
-                <div class="session-info"><strong>Conectado:</strong> ${session.peerConnectionEstablished ? '✅ Sí' : '❌ No'}</div>
-                <div class="session-info"><strong>Remoto:</strong> ${escapeHtml(session.remoteCandidate || 'N/A')}</div>
-                <div class="session-info"><strong>Tráfico:</strong> ↑${formatBytes(session.bytesSent)} / ↓${formatBytes(session.bytesReceived)}</div>
-                <div class="session-actions">
-                    <button class="btn-danger btn-small" onclick='expulsarSesionWebrtcPorId(${JSON.stringify(session.id)})'>❌ Cerrar</button>
-                </div>
-            `;
-            container.appendChild(card);
+            container.appendChild(crearTarjetaSesion({
+                titulo: session.id,
+                path: session.path,
+                filas: [
+                    ['Path', session.path ? `${session.path} (${session.state || ''})`.trim() : '—'],
+                    ['Conectada', session.peerConnectionEstablished ? 'Sí' : 'No'],
+                    ['Remoto', session.remoteCandidate || '—'],
+                    ['Recibido', formatBytes(session.bytesReceived)],
+                    ['Enviado', formatBytes(session.bytesSent)]
+                ],
+                accion: `<button type="button" class="boton boton--peq boton--peligro" onclick='expulsarSesionWebrtcPorId(${escapeHtml(JSON.stringify(session.id))})'>Expulsar</button>`
+            }));
         });
     } catch (error) {
         console.error('Error WebRTC:', error);
-        container.innerHTML = `<div class="empty-state">Error: ${escapeHtml(error.message)}</div>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las sesiones WebRTC: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -106,43 +115,47 @@ async function cargarSesionesWebrtc() {
  * Calcula el total de conexiones activas detectadas en el DOM.
  */
 function actualizarConteoSesiones() {
-    let rtsp = rtspSessionsEl.querySelectorAll('.session-card').length;
-    let webrtc = webrtcSessionsEl.querySelectorAll('.session-card').length;
-    let hls = hlsMuxersEl.querySelectorAll('.session-card').length;
+    let rtsp = rtspSessionsEl.querySelectorAll('.tarjeta-sesion').length;
+    let webrtc = webrtcSessionsEl.querySelectorAll('.tarjeta-sesion').length;
+    let hls = hlsMuxersEl.querySelectorAll('.tarjeta-sesion').length;
     let total = rtsp + webrtc + hls;
 
-    sessionsCountEl.textContent = `${total} sesión${total !== 1 ? 'es' : ''}`;
+    sessionsCountEl.textContent = `${total} ${total === 1 ? 'sesión' : 'sesiones'}`;
 }
 
 
-
-
 /**
- * ACCIONES: Expulsar (Kick) usuarios
+ * ACCIONES: expulsar clientes
  */
-
 async function expulsarSesionRtspPorId(id) {
-    if (!confirm(`¿Cerrar sesión RTSP ${id}?`)) return;
+    let ok = await confirmar(`¿Expulsar la sesión RTSP ${id}? Si es una cámara, dejará de emitir.`, { aceptar: 'Expulsar', peligro: true });
+    if (!ok) return false;
 
     try {
-        // El endpoint /kick/ requiere el ID en la URL. Usamos encodeURIComponent por seguridad.
         await POST(`/rtspsessions/kick/${encodeURIComponent(id)}`);
-        alert('Sesión RTSP cerrada');
-        await cargarSesionesRtsp(); // Refrescamos solo la lista RTSP
+        mostrarAviso('Sesión RTSP expulsada', 'ok');
+        await cargarSesionesRtsp();
+        actualizarConteoSesiones();
+        return true;
     } catch (error) {
-        alert('Error al cerrar sesión: ' + error.message);
+        mostrarAviso(`No se pudo expulsar la sesión: ${error.message}`, 'error');
+        return false;
     }
 }
 
 async function expulsarSesionWebrtcPorId(id) {
-    if (!confirm(`¿Cerrar sesión WebRTC ${id}?`)) return;
+    let ok = await confirmar(`¿Expulsar la sesión WebRTC ${id}?`, { aceptar: 'Expulsar', peligro: true });
+    if (!ok) return false;
 
     try {
         await POST(`/webrtcsessions/kick/${encodeURIComponent(id)}`);
-        alert('Sesión WebRTC cerrada');
-        await cargarSesionesWebrtc(); // Refrescamos solo la lista WebRTC
+        mostrarAviso('Sesión WebRTC expulsada', 'ok');
+        await cargarSesionesWebrtc();
+        actualizarConteoSesiones();
+        return true;
     } catch (error) {
-        alert('Error al cerrar sesión: ' + error.message);
+        mostrarAviso(`No se pudo expulsar la sesión: ${error.message}`, 'error');
+        return false;
     }
 }
 
@@ -155,52 +168,49 @@ async function cargarMuxersHls() {
         let data = await GET('/hlsmuxers/list');
 
         if (!data.items || data.items.length === 0) {
-            container.innerHTML = '<div class="empty-state">No hay muxers HLS</div>';
+            container.innerHTML = '<p class="vacio">Sin muxers HLS</p>';
             return;
         }
 
         container.innerHTML = '';
         data.items.forEach(muxer => {
-            let card = document.createElement('div');
-            card.className = 'session-card';
-            card.innerHTML = `
-                <div class="session-id">ID: ${escapeHtml(muxer.id || '-')}</div>
-                ${muxer.path ? `<div class="session-info"><strong>Path:</strong> ${escapeHtml(muxer.path)}</div>` : ''}
-                <div class="session-info"><strong>↓ Recibido:</strong> ${formatBytes(muxer.bytesReceived || 0)}</div>
-                <div class="session-info"><strong>↑ Enviado:</strong> ${formatBytes(muxer.bytesSent || 0)}</div>
-            `;
-            container.appendChild(card);
+            container.appendChild(crearTarjetaSesion({
+                titulo: muxer.path || muxer.id || 'Muxer',
+                path: muxer.path,
+                filas: [
+                    ['Recibido', formatBytes(muxer.bytesReceived || 0)],
+                    ['Enviado', formatBytes(muxer.bytesSent || 0)]
+                ]
+            }));
         });
     } catch (error) {
         console.error('Error HLS:', error);
-        container.innerHTML = `<div class="empty-state">Error: ${escapeHtml(error.message)}</div>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar los muxers HLS: ${escapeHtml(error.message)}</p>`;
     }
 }
 
 /**
- * Acción rápida: cierra una sesión RTSP desde el input de cabecera.
+ * Acción rápida: cierra una sesión RTSP desde el campo de acciones rápidas.
  */
 async function expulsarSesionRtsp() {
     let id = closeRtspIdEl ? closeRtspIdEl.value.trim() : '';
     if (!id) {
-        alert('Introduce un Session ID RTSP');
+        mostrarAviso('Escribe el ID de la sesión RTSP (está en Sesiones).', 'aviso');
         return;
     }
 
-    await expulsarSesionRtspPorId(id);
-    if (closeRtspIdEl) closeRtspIdEl.value = '';
+    if (await expulsarSesionRtspPorId(id) && closeRtspIdEl) closeRtspIdEl.value = '';
 }
 
 /**
- * Acción rápida: cierra una sesión WebRTC desde el input de cabecera.
+ * Acción rápida: cierra una sesión WebRTC desde el campo de acciones rápidas.
  */
 async function expulsarSesionWebrtc() {
     let id = closeWebrtcIdEl ? closeWebrtcIdEl.value.trim() : '';
     if (!id) {
-        alert('Introduce un Session ID WebRTC');
+        mostrarAviso('Escribe el ID de la sesión WebRTC (está en Sesiones).', 'aviso');
         return;
     }
 
-    await expulsarSesionWebrtcPorId(id);
-    if (closeWebrtcIdEl) closeWebrtcIdEl.value = '';
+    if (await expulsarSesionWebrtcPorId(id) && closeWebrtcIdEl) closeWebrtcIdEl.value = '';
 }

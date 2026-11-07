@@ -3,11 +3,14 @@
  * Gestiona exclusivamente la publicación WebRTC hacia el servidor.
  */
 
-// Estado global de emisión
+// Recursos de la emisión. En qué punto está la emisión NO se deduce de ellos:
+// lo dice estadoEmision (js/utils/estado-emision.js).
 let pc = null;
 let localStream = null;
 let whipSession = null;
-let isStoppingBroadcast = false;
+// Cada intento de emisión tiene un número; si se cancela o empieza otro, los
+// awaits del intento anterior lo detectan y se desentienden.
+let intentoEmision = 0;
 
 /**
  * Aplica la preferencia de códec de vídeo elegida en la UI si el navegador la soporta.
@@ -46,141 +49,246 @@ function aplicarCodecVideoPreferido(pcConnection, preferredCodec) {
 }
 
 /**
- * Inicia la publicación WHIP del stream local.
+ * Aplica los parámetros de codificación de la UI a los senders de una conexión:
+ * bitrate de vídeo, escala de resolución enviada, preferencia de degradación,
+ * prioridad del encoder (contentHint) y bitrate de audio. Se puede llamar en
+ * cualquier momento: con la emisión en marcha se aplica sin renegociar.
+ * @param {RTCPeerConnection} pcConnection
  */
-async function startBroadcast() {
-    let endpoint = endpointInput.value.trim();
+async function configurarCalidadVideo(pcConnection) {
+    let senders = pcConnection && typeof pcConnection.getSenders === 'function' ? pcConnection.getSenders() : [];
+
+    for (let sender of senders) {
+        if (!sender.track) continue;
+        let params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) {
+            params.encodings = [{}];
+        }
+
+        if (sender.track.kind === 'video') {
+            sender.track.contentHint = contentHintSelect.value || 'detail';
+            params.encodings[0].maxBitrate = cogerBitrateVideo();
+            params.encodings[0].scaleResolutionDownBy = Number(escalaEnvioSelect.value) || 1;
+            params.encodings[0].maxFramerate = Number(frameRateSelect.value) || 30;
+            params.degradationPreference = degradacionSelect.value || 'maintain-resolution';
+        } else if (sender.track.kind === 'audio') {
+            params.encodings[0].maxBitrate = Number(audioBitrateSelect.value) || 128000;
+        }
+
+        try {
+            await sender.setParameters(params);
+        } catch (error) {
+            // Algún navegador no admite degradationPreference: se reintenta sin ella
+            if (sender.track.kind === 'video' && 'degradationPreference' in params) {
+                delete params.degradationPreference;
+                try {
+                    await sender.setParameters(params);
+                } catch (errorReintento) {
+                    console.warn('No se pudo aplicar la calidad de vídeo:', errorReintento);
+                }
+            } else {
+                console.warn(`No se pudo aplicar la configuración de ${sender.track.kind}:`, error);
+            }
+        }
+    }
+    console.log('Calidad aplicada', {
+        videoBps: cogerBitrateVideo(),
+        escala: escalaEnvioSelect.value,
+        degradacion: degradacionSelect.value,
+        contentHint: contentHintSelect.value,
+        audioBps: audioBitrateSelect.value
+    });
+}
+
+/**
+ * Reaplica los ajustes "en directo" sobre la emisión en curso (si la hay).
+ */
+async function aplicarAjustesEnDirecto() {
+    if (!pc) return;
+    await configurarCalidadVideo(pc);
+    mostrarAviso('Ajustes aplicados en directo', 'ok', 1800);
+}
+
+/**
+ * Botón principal: emite o, si hay ajustes nuevos durante la emisión, vuelve a emitir.
+ */
+function pulsarEmitir() {
+    if (hayCambiosPendientes()) return volverAEmitir();
+    return startBroadcast();
+}
+
+/**
+ * Aplica los ajustes que solo valen al reconectar: corta y vuelve a emitir
+ * enseguida. Los espectadores se reenganchan solos (player y neoplayer reconectan).
+ */
+async function volverAEmitir() {
+    let endpointAnterior = ajustesEmitidos ? ajustesEmitidos.endpoint : null;
+    await stopBroadcast();
+    // Sin confirmar "ya hay alguien emitiendo": ese alguien éramos nosotros hace un instante
+    await startBroadcast({ reemisionDe: endpointAnterior });
+}
+
+/**
+ * Inicia la publicación WHIP del stream local.
+ * @param {{reemisionDe?: string}} [opciones] - En una reemisión, endpoint que se acaba de dejar.
+ */
+async function startBroadcast(opciones = {}) {
+    let endpoint = sanitizarEndpoint(endpointInput.value);
+    endpointInput.value = endpoint; // Reflejar en el campo lo que realmente se usará
+    marcarEndpointElegido();
     let server = serverInput.value.trim();
 
     console.log('[broadcaster] startBroadcast()', { endpoint, server });
 
     if (!endpoint) {
-        alert('Por favor, introduce un nombre para tu endpoint (ej: ricardo, cam1)');
+        mostrarAviso('Escribe un nombre para la cámara (por ejemplo cam1 o movil).', 'aviso');
         endpointInput.focus();
         return;
     }
 
     if (!server) {
-        alert('Por favor, introduce la dirección del servidor');
+        mostrarAviso('Falta la dirección del servidor (Destino > Servidor).', 'aviso');
         serverInput.focus();
         return;
     }
 
-    await actualizarPathsActivos();
-    if (esPathActivo(endpoint)) {
-        let continuar = confirm(`⚠️ El endpoint "${endpoint}" ya está en uso.\n\n¿Quieres continuar de todos modos? (Podría reemplazar el stream existente)`);
+    await actualizarPathsActivos(true);
+    if (esPathActivo(endpoint) && opciones.reemisionDe !== endpoint) {
+        let continuar = await confirmar(
+            `Ya hay alguien emitiendo como "${endpoint}". Si continúas, tu emisión lo reemplazará.`,
+            { aceptar: 'Reemplazar y emitir', peligro: true }
+        );
         if (!continuar) return;
     }
 
     localStorage.setItem('broadcaster_server', server);
     localStorage.setItem('broadcaster_endpoint', endpoint);
+    guardarAjustesDesdeUi();
 
-    actualizarEstado('connecting', 'Conectando...');
-    startBtn.disabled = true;
+    // Mientras se esperaba la confirmación pudo empezar otra emisión
+    if (!cambiarEstadoEmision(ESTADOS_EMISION.ABRIENDO)) return;
+    fijarAjustesEmitidos(); // foto de lo que se emite: base de "Volver a emitir"
+
+    let intento = ++intentoEmision;
+    let cancelado = () => intento !== intentoEmision;
+
+    let conexion = null;
 
     try {
         console.log('[broadcaster] solicitando stream local');
-        localStream = await cogerStreamVideoAudioLocal();
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+        let stream = await cogerStreamVideoAudioLocal();
+        if (cancelado()) { // Se canceló mientras se abría la cámara
+            stream.getTracks().forEach(track => track.stop());
+            return;
+        }
+        localStream = stream;
         preview.srcObject = localStream;
+        actualizarVacioPreview();
 
+        cambiarEstadoEmision(ESTADOS_EMISION.NEGOCIANDO);
         console.log('[broadcaster] creando RTCPeerConnection');
-        pc = new RTCPeerConnection();
+        conexion = new RTCPeerConnection();
+        pc = conexion;
 
         localStream.getTracks().forEach(track => {
             console.log('Añadiendo track:', track.kind);
-            pc.addTrack(track, localStream);
+            conexion.addTrack(track, localStream);
         });
 
-        aplicarCodecVideoPreferido(pc, cogerVideoCodecPreferencia ? cogerVideoCodecPreferencia() : 'auto');
+        aplicarCodecVideoPreferido(conexion, cogerVideoCodecPreferencia());
+        await configurarCalidadVideo(conexion);
 
-        pc.onicecandidate = event => {
-            if (event.candidate) {
-                console.log('ICE candidate:', event.candidate.candidate);
+        conexion.oniceconnectionstatechange = () => {
+            if (pc !== conexion) return; // Conexión ya reemplazada o cerrada
+            let estadoIce = conexion.iceConnectionState;
+            console.log('ICE state:', estadoIce);
+
+            // El margen de gracia lo gestiona el estado 'inestable' (estado-emision.js)
+            if (estadoIce === 'connected' || estadoIce === 'completed') {
+                recuperarDeInestable();
+            } else if (estadoIce === 'disconnected') {
+                cambiarEstadoEmision(ESTADOS_EMISION.INESTABLE);
+            } else if (estadoIce === 'failed' || estadoIce === 'closed') {
+                mostrarAviso('Emisión detenida: la conexión WebRTC falló.', 'error');
+                stopBroadcast({ error: 'La conexión WebRTC falló' });
             }
         };
 
-        pc.oniceconnectionstatechange = () => {
-            console.log('ICE state:', pc.iceConnectionState);
-            if (pc.iceConnectionState === 'connected') {
-                actualizarEstado('connecting', 'Conectado, verificando emisión...');
-            } else if (
-                pc.iceConnectionState === 'disconnected' ||
-                pc.iceConnectionState === 'failed' ||
-                pc.iceConnectionState === 'closed'
-            ) {
-                stopBroadcast();
-            }
-        };
-
-        let offer = await pc.createOffer();
-        console.log('[broadcaster] offer creado');
-        await pc.setLocalDescription(offer);
-        await esperarICEcompleto(pc);
-        console.log('[broadcaster] ICE completo', pc.iceGatheringState);
+        let offer = await conexion.createOffer();
+        await conexion.setLocalDescription(offer);
+        await esperarICEcompleto(conexion);
+        if (cancelado()) return; // Se canceló mientras recopilábamos ICE
 
         let whipUrl = `${construirBaseUrlWebRTC(server)}/${encodeURIComponent(endpoint)}/whip`;
         console.log('WHIP URL:', whipUrl);
-        if (streamUrlEl) {
-            streamUrlEl.textContent = whipUrl;
-        }
 
-        console.log('[broadcaster] enviando SDP a WHIP');
         let response = await fetch(whipUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/sdp'
             },
-            body: pc.localDescription.sdp
+            body: conexion.localDescription.sdp
         });
 
-        console.log('[broadcaster] respuesta WHIP', {
-            ok: response.ok,
-            status: response.status,
-            statusText: response.statusText,
-            location: response.headers.get('Location')
-        });
+        // MediaMTX devuelve Location relativo (/cam1/whip/<id>): se resuelve contra la URL de WHIP
+        let location = response.headers.get('Location');
+        let sesion = location ? new URL(location, whipUrl).toString() : null;
 
-        if (!response.ok) {
-            throw new Error(`HTTPS ${response.status}: ${response.statusText}`);
+        if (cancelado()) { // Se canceló durante el intercambio SDP: cerrar la sesión recién creada
+            if (sesion) fetch(sesion, { method: 'DELETE' }).catch(() => {});
+            return;
         }
 
-        whipSession = response.headers.get('Location');
+        if (!response.ok) {
+            let detalle = await response.text().catch(() => '');
+            throw new Error(`HTTP ${response.status} ${response.statusText} ${detalle}`.trim());
+        }
+
+        whipSession = sesion;
         console.log('WHIP Session:', whipSession);
 
         let answerSDP = await response.text();
-        console.log('[broadcaster] SDP de respuesta recibido', {
-            length: answerSDP.length,
-            preview: answerSDP.slice(0, 300)
-        });
-        await pc.setRemoteDescription(new RTCSessionDescription({
+        await conexion.setRemoteDescription(new RTCSessionDescription({
             type: 'answer',
             sdp: answerSDP
         }));
 
-        // await esperarStreamSaliente(pc);
+        // Si ICE ya se cortó, 'inestable' recordará volver aquí al recuperarse
+        if (estadoEmision === ESTADOS_EMISION.NEGOCIANDO) cambiarEstadoEmision(ESTADOS_EMISION.ESPERANDO_TRAFICO);
+        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.ESPERANDO_TRAFICO;
 
-        actualizarEstado('live', '🔴 EN VIVO');
-        liveIndicator.style.display = 'block';
-        console.log('[broadcaster] arrancando estadísticas de códec y tráfico');
+        await esperarStreamSaliente(conexion);
+        if (cancelado()) return; // Se canceló esperando tráfico saliente
+
+        if (estadoEmision === ESTADOS_EMISION.ESPERANDO_TRAFICO) cambiarEstadoEmision(ESTADOS_EMISION.EN_DIRECTO);
+        else if (estadoEmision === ESTADOS_EMISION.INESTABLE) estadoPrevioInestable = ESTADOS_EMISION.EN_DIRECTO;
         startCodecStatsPolling();
-        console.log('[broadcaster] transmisión marcada como EN VIVO');
-
-        stopBtn.disabled = false;
         console.log('Transmisión WHIP iniciada correctamente');
     } catch (error) {
-        mostrarError('Error al iniciar transmisión', error);
-        stopBroadcast();
+        // Solo reportar si el fallo es del intento vigente (no de uno cancelado)
+        if (!cancelado()) {
+            mostrarError('No se pudo empezar a emitir', error);
+            await stopBroadcast({ error: 'No se pudo empezar a emitir' });
+        }
     }
 
-    setTimeout(actualizarPathsActivos, 1000);
+    setTimeout(() => actualizarPathsActivos(true), 1000);
 }
 
 /**
- * Detiene la transmisión y libera recursos locales.
+ * Detiene la transmisión (o cancela la conexión en curso) y libera recursos locales.
+ * @param {{error?: string}} [opciones] - Con error, termina en 'error' en vez de 'inactivo'.
  */
-async function stopBroadcast() {
-    if (isStoppingBroadcast) return;
-    isStoppingBroadcast = true;
+async function stopBroadcast(opciones = {}) {
+    // Solo hay algo que detener mientras se emite o se conecta; esto también
+    // evita paradas dobles (el estado 'deteniendo' no admite volver a entrar).
+    if (!cambiarEstadoEmision(ESTADOS_EMISION.DETENIENDO)) return;
+    intentoEmision += 1; // Invalida cualquier intento en curso
+    olvidarAjustesEmitidos();
 
     console.log('[broadcaster] stopBroadcast()', {
         hasSession: Boolean(whipSession),
@@ -190,18 +298,19 @@ async function stopBroadcast() {
 
     stopCodecStatsPolling();
 
-    if (whipSession) {
-        try {
-            await fetch(whipSession, { method: 'DELETE' });
-        } catch (error) {
-            mostrarError('No se pudo cerrar la sesión WHIP', error);
-        }
-        whipSession = null;
-    }
-
+    let sesion = whipSession;
+    whipSession = null;
     if (pc) {
         pc.close();
         pc = null;
+    }
+
+    if (sesion) {
+        try {
+            await fetch(sesion, { method: 'DELETE' });
+        } catch (error) {
+            console.warn('No se pudo cerrar la sesión WHIP (MediaMTX la cerrará por timeout):', error);
+        }
     }
 
     if (localStream) {
@@ -210,17 +319,17 @@ async function stopBroadcast() {
     }
 
     preview.srcObject = null;
-    liveIndicator.style.display = 'none';
-    actualizarEstado('disconnected', 'Sin transmitir');
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-    if (streamUrlEl) {
-        streamUrlEl.textContent = '-';
+    actualizarVacioPreview();
+    mostrarAplicado(null);
+
+    if (opciones.error) {
+        cambiarEstadoEmision(ESTADOS_EMISION.ERROR, { mensaje: opciones.error });
+    } else {
+        cambiarEstadoEmision(ESTADOS_EMISION.INACTIVO);
     }
 
     console.log('Transmisión detenida');
-    setTimeout(actualizarPathsActivos, 1000);
-    isStoppingBroadcast = false;
+    setTimeout(() => actualizarPathsActivos(true), 1000);
 }
 
 /**
@@ -248,12 +357,12 @@ function esperarICEcompleto(pcConnection) {
 
 /**
  * Espera a que el peer connection empiece a enviar tráfico real.
+ * Tolerante: si en 10 s no se confirma, continúa igualmente (el watchdog vigila después).
  * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
  */
 function esperarStreamSaliente(pcConnection) {
     return new Promise((resolve, reject) => {
         let finished = false;
-        let lastBytesSent = new Map();
         let timeoutId = null;
 
         let finish = (callback, value) => {
@@ -267,7 +376,6 @@ function esperarStreamSaliente(pcConnection) {
             if (finished) return;
 
             if (!pcConnection || pcConnection.connectionState === 'closed' || pcConnection.iceConnectionState === 'closed') {
-                console.warn('[broadcaster] esperarStreamSaliente: conexión cerrada antes de confirmar tráfico');
                 finish(reject, new Error('La conexión se cerró antes de confirmar el envío del stream'));
                 return;
             }
@@ -275,28 +383,12 @@ function esperarStreamSaliente(pcConnection) {
             try {
                 let stats = await pcConnection.getStats();
                 let hasOutgoingTraffic = false;
-                let reportsSeen = 0;
 
                 stats.forEach(report => {
                     if (report.type !== 'outbound-rtp' || report.isRemote) return;
-                    reportsSeen += 1;
-
-                    let bytesSent = typeof report.bytesSent === 'number' ? report.bytesSent : 0;
-                    let previousBytesSent = lastBytesSent.get(report.id) || 0;
-
-                    if (bytesSent > 0 || bytesSent > previousBytesSent) {
+                    if (typeof report.bytesSent === 'number' && report.bytesSent > 0) {
                         hasOutgoingTraffic = true;
                     }
-
-                    lastBytesSent.set(report.id, bytesSent);
-                });
-
-                console.log('[broadcaster] esperarStreamSaliente: muestra de stats', {
-                    reportsSeen,
-                    hasOutgoingTraffic,
-                    connectionState: pcConnection.connectionState,
-                    iceConnectionState: pcConnection.iceConnectionState,
-                    iceGatheringState: pcConnection.iceGatheringState
                 });
 
                 if (hasOutgoingTraffic) {
@@ -307,7 +399,6 @@ function esperarStreamSaliente(pcConnection) {
 
                 setTimeout(checkStats, 300);
             } catch (error) {
-                console.warn('[broadcaster] esperarStreamSaliente: error leyendo stats', error);
                 finish(reject, error);
             }
         };
@@ -319,7 +410,13 @@ function esperarStreamSaliente(pcConnection) {
             }
         }, 10000);
 
-        console.log('[broadcaster] esperarStreamSaliente: iniciando monitorización');
         checkStats();
     });
 }
+
+// Al cerrar la pestaña, liberar la sesión en el servidor
+window.addEventListener('pagehide', () => {
+    if (whipSession) {
+        fetch(whipSession, { method: 'DELETE', keepalive: true }).catch(() => {});
+    }
+});

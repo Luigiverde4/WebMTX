@@ -15,53 +15,47 @@ async function cargarGrabaciones() {
     let container = recordingsManagementEl;
 
     try {
-        container.innerHTML = '<div class="empty-state">Loading recordings...</div>';
+        container.innerHTML = '<p class="vacio">Cargando grabaciones…</p>';
 
         let data = await GET('/recordings/list');
 
-        // No hay grabaciones
         if (!data.items || data.items.length === 0) {
-            container.innerHTML = '<div class="empty-state">No recordings</div>';
+            container.innerHTML = '<p class="vacio">No hay grabaciones.</p>';
             marcarAcordeonCargado('recordingsAccordion');
             return;
         }
 
-        // Hay grabaciones -> Crear elementos
         container.innerHTML = '';
         data.items.forEach(recording => {
-            let pathDiv = document.createElement('div');
-            pathDiv.className = 'recording-path';
+            let grupo = document.createElement('section');
+            grupo.className = 'grabacion';
+            aplicarColorCamara(grupo, recording.name);
 
-            let segmentsHTML = '';
-            if (recording.segments && recording.segments.length > 0) {
-                segmentsHTML = '<div class="recording-segments">';
-                recording.segments.forEach(segment => {
-                    let startDate = new Date(segment.start);
-                    segmentsHTML += `
-                        <div class="recording-segment">
-                            <div class="segment-info">
-                                <strong>${escapeHtml(startDate.toLocaleDateString())}</strong> ${escapeHtml(startDate.toLocaleTimeString())}
-                            </div>
-                            <button class="btn-danger btn-small" onclick='confirmarBorradoSegmentoGrabacion(${JSON.stringify(recording.name)}, ${JSON.stringify(segment.start)})'>🗑️</button>
-                        </div>
-                    `;
-                });
-                segmentsHTML += '</div>';
-            }
+            let segmentos = recording.segments || [];
+            let filas = segmentos.map(segment => {
+                let inicio = new Date(segment.start);
+                return `<li class="grabacion__segmento">
+                    <span class="cifra">${escapeHtml(inicio.toLocaleDateString('es-ES'))} ${escapeHtml(inicio.toLocaleTimeString('es-ES'))}</span>
+                    <button type="button" class="boton boton--peq boton--icono boton--fantasma" aria-label="Borrar el segmento de las ${escapeHtml(inicio.toLocaleTimeString('es-ES'))}"
+                        onclick='confirmarBorradoSegmentoGrabacion(${escapeHtml(JSON.stringify(recording.name))}, ${escapeHtml(JSON.stringify(segment.start))})'>
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#borrar"/></svg>
+                    </button>
+                </li>`;
+            }).join('');
 
-            // Poner si hay segmentos o no hay en la grabacion
-            pathDiv.innerHTML = `
-                <div class="recording-path-name">📁 ${escapeHtml(recording.name)}</div>
-                ${segmentsHTML || '<div class="empty-state">No segments</div>'}
+            grupo.innerHTML = `
+                <h3 class="grabacion__nombre"><span class="punto-camara" aria-hidden="true"></span>${escapeHtml(recording.name)}
+                    <span class="texto-2 texto-peq cifra">${segmentos.length} ${segmentos.length === 1 ? 'segmento' : 'segmentos'}</span></h3>
+                ${filas ? `<ul class="grabacion__segmentos">${filas}</ul>` : '<p class="vacio">Sin segmentos</p>'}
             `;
 
-            container.appendChild(pathDiv);
+            container.appendChild(grupo);
         });
 
         marcarAcordeonCargado('recordingsAccordion');
     } catch (error) {
         console.error('Error loading recordings:', error);
-        container.innerHTML = `<div class="empty-state">❌ Error: ${escapeHtml(error.message)}</div>`;
+        container.innerHTML = `<p class="vacio vacio--error">No se pudieron cargar las grabaciones: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -73,7 +67,7 @@ async function borrarSegmentoGrabacion() {
     let start = deleteRecStartEl.value.trim();
 
     if (!path || !start) {
-        alert('Please complete all fields');
+        mostrarAviso('Rellena el path y el inicio del segmento (formato ISO).', 'aviso');
         return;
     }
 
@@ -86,20 +80,24 @@ async function borrarSegmentoGrabacion() {
  * @param {string} start - Marca de inicio del segmento.
  */
 async function confirmarBorradoSegmentoGrabacion(path, start) {
-    if (!confirm(`Delete recording segment?\nPath: ${path}\nStart: ${start}`)) return;
+    let ok = await confirmar(`¿Borrar el segmento de ${path} que empieza en ${start}? No se puede deshacer.`, {
+        aceptar: 'Borrar segmento',
+        peligro: true
+    });
+    if (!ok) return;
 
     try {
         await DELETE('/recordings/deletesegment', {
             query: { path, start }
         });
 
-        alert('Segment deleted');
+        mostrarAviso('Segmento borrado', 'ok');
         await cargarGrabaciones();
 
         deleteRecPathEl.value = '';
         deleteRecStartEl.value = '';
     } catch (error) {
         console.error('Error deleting recording segment:', error);
-        alert('Error: ' + error.message);
+        mostrarAviso(`No se pudo borrar el segmento: ${error.message}`, 'error');
     }
 }

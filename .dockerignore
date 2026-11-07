@@ -1,0 +1,8 @@
+# No meter certificados, dependencias del host ni datos en la imagen
+server/*.pem
+**/node_modules
+mediamtx/recordings
+mediamtx/logs
+docs
+.git
+.remote

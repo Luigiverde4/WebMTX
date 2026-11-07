@@ -1,0 +1,131 @@
+/*
+ * Salidas para OBS (neoplayer.html y display.html): solo vídeo sobre negro.
+ * - Siempre en tema oscuro: el <html> lleva class="salida-obs" (ver tokens.css).
+ * - Nada se superpone al vídeo dentro de OBS; los avisos de depuración solo
+ *   aparecen fuera de OBS o con ?debug=1 (clase .depuracion en <html>).
+ * - ?fondo=transparente deja el fondo transparente (clase .transparente).
+ */
+
+@import url("tokens.css");
+
+@font-face {
+    font-family: "Archivo";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    src: url("../fonts/archivo-latin-wdth-normal.woff2") format("woff2-variations");
+}
+
+@layer reset {
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+        inline-size: 100%;
+        block-size: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--monitor);
+        color: var(--texto);
+        font-family: var(--fuente);
+    }
+    html.transparente, html.transparente body { background: transparent; }
+}
+
+@layer componentes {
+    .salida-video {
+        display: block;
+        inline-size: 100vw;
+        block-size: 100vh;
+        object-fit: contain;
+        background: var(--monitor);
+    }
+    html.transparente .salida-video:not(.reproduciendo) { visibility: hidden; }
+    .salida-video.cubrir { object-fit: cover; }
+
+    .aviso-salida {
+        position: fixed;
+        inset-inline-start: 50%;
+        inset-block-end: var(--e-5);
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: var(--e-2);
+        max-inline-size: calc(100vw - 2 * var(--e-4));
+        padding: var(--e-2) var(--e-4);
+        border: var(--borde);
+        border-radius: var(--radio-panel);
+        background: var(--superficie);
+        color: var(--texto);
+        font: inherit;
+        font-size: var(--t-m);
+        cursor: pointer;
+    }
+
+    .espera {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--texto-3);
+        font-size: var(--t-xl);
+        font-stretch: var(--ancho-cifras);
+        pointer-events: none;
+    }
+
+    /* Selector de cámara (neoplayer sin ?stream=): solo se ve abriendo la página a mano */
+    .selector {
+        position: fixed;
+        inset: 0;
+        overflow: auto;
+        padding: var(--e-6) var(--e-5);
+        background: var(--fondo);
+    }
+    .selector__caja { max-inline-size: 640px; margin-inline: auto; }
+    .selector h1 {
+        margin: 0 0 var(--e-2);
+        font-size: var(--t-titulo);
+        font-stretch: var(--ancho-condensado);
+        font-weight: 650;
+    }
+    .selector p { margin: 0 0 var(--e-5); color: var(--texto-2); line-height: 1.5; }
+    .selector code {
+        font-size: 0.9em;
+        background: var(--hundido);
+        border: var(--borde-suave);
+        border-radius: var(--radio-control);
+        padding: 0 var(--e-1);
+    }
+    .selector ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-2); }
+    .selector a {
+        display: flex;
+        align-items: center;
+        gap: var(--e-3);
+        padding: var(--e-3) var(--e-4);
+        border: var(--borde);
+        border-inline-start: var(--ancho-barra-camara) solid var(--cam, var(--cam-neutro));
+        border-radius: var(--radio-control);
+        background: var(--superficie);
+        color: var(--texto);
+        font-size: var(--t-l);
+        font-weight: 600;
+        font-stretch: var(--ancho-cifras);
+        text-decoration: none;
+    }
+    .selector a:hover { border-color: var(--cam, var(--cam-neutro)); }
+    .selector a:focus-visible { outline: var(--grosor-foco) solid var(--foco); outline-offset: var(--grosor-foco); }
+    .selector a span {
+        margin-inline-start: auto;
+        font-size: var(--t-s);
+        font-weight: 400;
+        color: var(--texto-2);
+        font-stretch: 100%;
+        overflow-wrap: anywhere;
+    }
+}
+
+@layer utilidades {
+    [hidden] { display: none; }
+    /* Avisos de depuración: ocultos en OBS (el [hidden] de arriba sigue mandando) */
+    html:not(.depuracion) .depuracion-solo { display: none; }
+}

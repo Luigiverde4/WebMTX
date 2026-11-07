@@ -3,104 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WHIP Broadcaster</title>
+    <title>Emitir | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/broadcaster.css">
-    <link rel="icon" href="../favicon.ico">
 </head>
 <body>
-    <div class="container">
-        <h1>📹 WHIP Broadcaster</h1>
-        <p class="subtitle">Convierte tu dispositivo en una cámara de streaming</p>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label for="server">Servidor MediaMTX:</label>
-                <input type="text" id="server" value="localhost" placeholder="localhost o IP">
-            </div>
+    <header class="cabecera">
+        <a class="marca" href="index.html">WebMTX</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html">Inicio</a>
+            <a href="broadcaster.html" aria-current="page">Emitir</a>
+            <a href="player.html">Ver</a>
+            <a href="playback.html">Repeticiones</a>
+            <a href="stats.html">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
 
-            <div class="control-group">
-                <label for="endpoint">Tu nombre/endpoint:</label>
-                <input type="text" id="endpoint" value="" placeholder="ej: ricardo, cam1, movil">
-            </div>
-
-            <div class="control-group">
-                <label for="status">Estado:</label>
-                <span class="status disconnected" id="status">Sin transmitir</span>
-            </div>
-        </div>
-        <div class="active-paths">
-            <div class="active-paths-header">
-                <label>🔴 Paths activos (ocupados):</label>
-                <button class="btn-small" onclick="actualizarPathsActivos()">🔄</button>
-            </div>
-            <div id="activePathsList" class="paths-list">
-                <span class="loading">Cargando...</span>
-            </div>
-        </div>
-
-        <div class="quick-endpoints">
-            <label>Endpoints rápidos:</label>
-            <div class="endpoint-buttons">
-                <button onclick="ponerEndpoint('cam1')">cam1</button>
-                <button onclick="ponerEndpoint('cam2')">cam2</button>
-                <button onclick="ponerEndpoint('movil')">movil</button>
-                <button onclick="ponerEndpoint('extra')">extra</button>
-            </div>
-        </div>
-        <div class="device-selection">
-            <div class="control-group">
-                <label for="videoSource">Cámara:</label>
-                <select id="videoSource"></select>
-            </div>
-            <div class="control-group">
-                <label for="audioSource">Micrófono:</label>
-                <select id="audioSource"></select>
-            </div>
-            <div class="control-group">
-                <label for="resolution">Resolución:</label>
-                <select id="resolution">
-                    <option value="1920x1080">1080p (1920x1080)</option>
-                    <option value="1280x720" selected>720p (1280x720)</option>
-                    <option value="854x480">480p (854x480)</option>
-                    <option value="640x360">360p (640x360)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="videoCodecPreference">Códec de vídeo:</label>
-                <select id="videoCodecPreference">
-                    <option value="auto" selected>Automático</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="strict">Strict SDP </label>
-                <input type="checkbox" id="strict">
-            </div>
-        </div>
-
-        <div class="buttons">
-            <button class="btn-start" id="startBtn" onclick="startBroadcast()">🔴 Iniciar Transmisión</button>
-            <button class="btn-stop" id="stopBtn" onclick="stopBroadcast()" disabled>⬛ Detener</button>
-            <button class="btn-preview" id="previewBtn" onclick="visualizarPreview()">👁 Previsualización</button>
-            <button class="btn-refresh" onclick="actualizarDispositivos()">🔄 Actualizar dispositivos</button>
-        </div>
-
-        <div class="video-container">
-            <video id="preview" muted autoplay playsinline></video>
-            <div class="live-indicator" id="liveIndicator">🔴 EN VIVO</div>
-        </div>
-
-
-        <div class="stream-stats">
-            <div class="stream-stats-header">
-                <label>Estadísticas WebRTC (códec en uso):</label>
-            </div>
-            <div id="codecStats" class="codec-stats">
-                <span class="empty">Sin datos (inicia transmisión)</span>
-            </div>
-        </div>
+    <div class="tally" id="tally" data-estado="inactivo" role="status" aria-live="polite">
+        <span class="tally__lampara" aria-hidden="true"></span>
+        <span class="tally__estado" id="tallyEstado">Sin emitir</span>
+        <span class="tally__detalle" id="tallyDetalle"></span>
+        <span class="tally__tiempo" id="tallyTiempo"></span>
     </div>
+
+    <main class="pagina emisor">
+        <h1 class="visualmente-oculto">Emitir una cámara</h1>
+
+        <!-- Columna principal: monitor, acciones y lo que realmente se envía -->
+        <section class="emisor__monitor" aria-label="Previsualización y emisión">
+            <div class="monitor emisor__pantalla" id="monitorEmisor">
+                <video id="preview" muted autoplay playsinline aria-label="Previsualización de la cámara local"></video>
+                <div class="monitor__vacio" id="previewVacio">Pulsa Previsualizar o toca aquí para ver la cámara</div>
+                <div class="en-directo" id="liveIndicator" hidden>
+                    <span aria-hidden="true"></span>En directo
+                </div>
+                <button type="button" class="boton-monitor" id="pantallaCompletaBtn" onclick="alternarPantallaCompleta(event)" aria-label="Ver a pantalla completa">
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#expandir"/></svg>
+                </button>
+            </div>
+
+            <div class="acciones emisor__acciones">
+                <button type="button" class="boton" id="previewBtn" onclick="visualizarPreview()">
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#ojo"/></svg>
+                    Previsualizar
+                </button>
+                <span class="estado" id="status">Sin emitir</span>
+                <div class="acciones__principales">
+                    <button type="button" class="boton" id="stopBtn" onclick="stopBroadcast()" disabled>
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#parar"/></svg>
+                        Detener
+                    </button>
+                    <button type="button" class="boton boton--fantasma" id="revertirBtn" onclick="revertirAjustes()" hidden>
+                        Deshacer cambios
+                    </button>
+                    <button type="button" class="boton boton--directo" id="startBtn" onclick="pulsarEmitir()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
+                        <span id="startBtnTexto">Emitir</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel emisor__enviando">
+                <div class="panel__cabecera">
+                    <h2>Lo que se está enviando</h2>
+                </div>
+                <dl class="datos" id="aplicado">
+                    <dt>Cámara</dt><dd id="aplicadoCamara">—</dd>
+                    <dt>Captura</dt><dd id="aplicadoCaptura">—</dd>
+                    <dt>Codificación</dt><dd id="aplicadoCodificacion">—</dd>
+                    <dt>Limitación</dt><dd id="aplicadoLimitacion">—</dd>
+                </dl>
+                <p class="mensaje-linea" id="aplicadoAviso"></p>
+                <h3 class="emisor__subtitulo">Tráfico por pista</h3>
+                <div id="codecStats" class="tabla-scroll">
+                    <p class="vacio">Sin datos: empieza a emitir para ver el tráfico.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Columna de ajustes -->
+        <div class="emisor__ajustes">
+            <section class="panel emisor__destino" aria-labelledby="tituloDestino">
+                <div class="panel__cabecera">
+                    <h2 id="tituloDestino">Destino</h2>
+                </div>
+                <div class="pila">
+                    <div class="campo">
+                        <label for="endpoint">Nombre de la cámara</label>
+                        <input type="text" id="endpoint" placeholder="cam1, movil, grada…" autocomplete="off" spellcheck="false" inputmode="latin">
+                        <span class="campo__ayuda">Minúsculas, números, - y _. Se ajusta al escribir.</span>
+                    </div>
+
+                    <div class="chips" role="group" aria-label="Nombres habituales">
+                        <button type="button" class="chip-camara" data-endpoint="cam1">cam1</button>
+                        <button type="button" class="chip-camara" data-endpoint="cam2">cam2</button>
+                        <button type="button" class="chip-camara" data-endpoint="movil">movil</button>
+                        <button type="button" class="chip-camara" data-endpoint="extra">extra</button>
+                    </div>
+
+                    <div class="campo">
+                        <div class="fila fila--separada">
+                            <span class="campo__etiqueta">Emitiendo ahora</span>
+                            <button type="button" class="boton boton--fantasma boton--icono boton--peq" onclick="actualizarPathsActivos()" aria-label="Actualizar cámaras en emisión">
+                                <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#refrescar"/></svg>
+                            </button>
+                        </div>
+                        <div id="activePathsList" class="chips en-uso">
+                            <span class="texto-2 texto-peq">Cargando…</span>
+                        </div>
+                    </div>
+
+                    <details class="desplegable">
+                        <summary>Servidor</summary>
+                        <div class="campo">
+                            <label for="server">Servidor MediaMTX</label>
+                            <input type="text" id="server" value="localhost" placeholder="IP o nombre" spellcheck="false">
+                            <span class="campo__ayuda">Se rellena con la dirección de esta página. WHIP usa el puerto 8889.</span>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <section class="panel emisor__fuentes" aria-labelledby="tituloFuentes">
+                <div class="panel__cabecera">
+                    <h2 id="tituloFuentes">Fuentes</h2>
+                    <button type="button" class="boton boton--fantasma boton--peq" onclick="actualizarDispositivos()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#refrescar"/></svg>
+                        Buscar dispositivos
+                    </button>
+                </div>
+                <div class="pila">
+                    <div class="campo">
+                        <label for="videoSource">Cámara</label>
+                        <select id="videoSource"></select>
+                    </div>
+                    <div class="campo">
+                        <label for="audioSource">Micrófono</label>
+                        <select id="audioSource"></select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel emisor__video" aria-labelledby="tituloVideo">
+                <div class="panel__cabecera">
+                    <h2 id="tituloVideo">Vídeo</h2>
+                </div>
+                <div class="pila">
+                    <div class="campos">
+                        <div class="campo">
+                            <label for="videoCodecPreference">Códec</label>
+                            <select id="videoCodecPreference">
+                                <option value="auto">Automático</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="resolution">Resolución</label>
+                            <select id="resolution">
+                                <option value="3840x2160">2160p (3840×2160)</option>
+                                <option value="2560x1440">1440p (2560×1440)</option>
+                                <option value="1920x1080" selected>1080p (1920×1080)</option>
+                                <option value="1280x720">720p (1280×720)</option>
+                                <option value="960x540">540p (960×540)</option>
+                                <option value="854x480">480p (854×480)</option>
+                                <option value="640x360">360p (640×360)</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="frameRate">Fotogramas por segundo</label>
+                            <select id="frameRate">
+                                <option value="15">15</option>
+                                <option value="24">24</option>
+                                <option value="25">25</option>
+                                <option value="30" selected>30</option>
+                                <option value="50">50</option>
+                                <option value="60">60</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="mensaje-linea" id="codecAviso"></p>
+
+                    <div class="campo">
+                        <label for="bitrate">Bitrate de vídeo <span class="texto-3">(en directo)</span></label>
+                        <div class="rango">
+                            <input type="range" id="bitrate" min="1" max="20" step="0.5" value="8">
+                            <output id="bitrateValue" class="rango__valor" for="bitrate">8 Mbps</output>
+                        </div>
+                    </div>
+
+                    <div class="campos">
+                        <div class="campo">
+                            <label for="contentHint">Prioridad del encoder</label>
+                            <select id="contentHint">
+                                <option value="detail">Nitidez (detalle)</option>
+                                <option value="motion">Fluidez (movimiento)</option>
+                                <option value="text">Texto o pantalla</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="degradacion">Si falta red o CPU</label>
+                            <select id="degradacion">
+                                <option value="maintain-resolution">Mantener resolución</option>
+                                <option value="maintain-framerate">Mantener fotogramas</option>
+                                <option value="balanced">Equilibrar</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="escalaEnvio">Resolución enviada</label>
+                            <select id="escalaEnvio">
+                                <option value="1">Completa</option>
+                                <option value="1.5">2/3</option>
+                                <option value="2">Mitad</option>
+                                <option value="4">Un cuarto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="campo__ayuda">Bitrate, prioridad, degradación y resolución enviada se aplican en directo sin cortar. Códec, resolución y fotogramas, al empezar a emitir.</p>
+                </div>
+            </section>
+
+            <section class="panel emisor__audio" aria-labelledby="tituloAudio">
+                <div class="panel__cabecera">
+                    <h2 id="tituloAudio">Audio</h2>
+                </div>
+                <div class="pila">
+                    <div class="campo">
+                        <label for="audioBitrate">Bitrate de audio <span class="texto-3">(en directo)</span></label>
+                        <select id="audioBitrate">
+                            <option value="32000">32 kbps</option>
+                            <option value="64000">64 kbps</option>
+                            <option value="96000">96 kbps</option>
+                            <option value="128000" selected>128 kbps</option>
+                            <option value="192000">192 kbps</option>
+                            <option value="256000">256 kbps</option>
+                        </select>
+                    </div>
+                    <fieldset class="campo">
+                        <legend>Procesado del micrófono</legend>
+                        <label class="opcion"><input type="checkbox" id="echoCancellation" checked> Cancelación de eco</label>
+                        <label class="opcion"><input type="checkbox" id="noiseSuppression" checked> Supresión de ruido</label>
+                        <label class="opcion"><input type="checkbox" id="autoGainControl"> Ganancia automática</label>
+                        <span class="campo__ayuda">Desactívalo todo si entra sonido de mesa o de ambiente.</span>
+                    </fieldset>
+                </div>
+            </section>
+        </div>
+    </main>
+
     <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
     <script src="js/utils/watchdog.js"></script>
+    <script src="js/ui/avisos.js"></script>
+    <script src="js/ui/tally.js"></script>
+    <script src="js/utils/estado-emision.js"></script>
     <script src="js/utils/broadcast-utils.js"></script>
     <script src="js/ui/broadcaster-ui.js"></script>
     <script src="js/broadcaster.js"></script>

@@ -3,134 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediaMTX Playback - Repeticiones</title>
-    <link rel="stylesheet" href="../css/playback.css">
-    <link rel="icon" href="./favicon.ico">
+    <title>Repeticiones | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/playback.css">
 </head>
 <body>
-    <div class="container">
-        <h1>📹 MediaMTX - Reproductor de Grabaciones</h1>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label for="server">Servidor:</label>
-                <input type="text" id="server" value="localhost" placeholder="localhost o IP">
-            </div>
+    <header class="cabecera">
+        <a class="marca" href="index.html">WebMTX</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html">Inicio</a>
+            <a href="broadcaster.html">Emitir</a>
+            <a href="player.html">Ver</a>
+            <a href="playback.html" aria-current="page">Repeticiones</a>
+            <a href="stats.html">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
 
-            <div class="control-group">
-                <label for="refreshBtn">Grabaciones:</label>
-                <button class="btn-refresh" id="refreshBtn" onclick="loadRecordings()">🔄 Actualizar Lista</button>
-            </div>
-        </div>
-
-        <div class="recordings-section">
-            <div class="section-header">
-                <h2>Grabaciones Disponibles</h2>
-                <span class="recording-count" id="recordingCount">0 grabaciones</span>
-            </div>
-
-            <div class="stream-filter">
-                <label for="streamFilter">Filtrar por stream:</label>
-                <select id="streamFilter" onchange="filtrarGrabaciones()">
-                    <option value="all">Todos los streams</option>
-                </select>
-            </div>
-
-            <div class="recordings-list" id="recordingsList">
-                <div class="empty-state">
-                    <p>🎬 No hay grabaciones disponibles</p>
-                    <p class="hint">Haz clic en "Actualizar Lista" para cargar las grabaciones</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="player-section">
-            <div class="section-header">
-                <h2>Reproductor</h2>
-                <span class="current-recording" id="currentRecording">Ninguna grabación seleccionada</span>
-            </div>
-
-            <div class="playback-options">
-                <div class="time-controls">
-                    <div class="mode-selector">
-                        <label>Modo de inicio:</label>
-                        <div class="radio-group">
-                            <label class="radio-label">
-                                <input type="radio" name="playbackMode" value="offset" checked onchange="actualizarModoPlayback()">
-                                Desde el inicio de la grabación
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="playbackMode" value="lookback" onchange="actualizarModoPlayback()">
-                                Hacia atrás desde ahora
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="playbackMode" value="specific" onchange="actualizarModoPlayback()">
-                                Hora específica (HH:MM:SS)
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="time-control-group" id="offsetControls">
-                        <label for="startOffset">Segundos desde el inicio:</label>
-                        <input type="number" id="startOffset" min="0" value="0" step="1" placeholder="0">
-                        <span class="time-unit">segundos</span>
-                    </div>
-                    
-                    <div class="time-control-group" id="lookbackControls" style="display: none;">
-                        <label for="lookbackTime">Mirar hacia atrás:</label>
-                        <input type="number" id="lookbackTime" min="1" value="60" step="1" placeholder="60">
-                        <span class="time-unit">segundos (ej: 300 = últimos 5 min)</span>
-                    </div>
-                
-                    <div class="time-control-group" id="specificControls" style="display: none;">
-                        <label for="specificTime">Hora específica:</label>
-                        <input type="text" id="specificTime" value="00:00:00" placeholder="HH:MM:SS">
-                    </div>
-                    
-                    <button class="btn-play-from" onclick="playFromOffset()">▶ Reproducir desde tiempo seleccionado</button>
-                </div>
-                <div class="recording-timeline" id="recordingTimeline">
-                    <div class="timeline-info">
-                        <span id="timelineStart">--:--:--</span>
-                        <input type="range" id="timelineSlider" min="0" max="100" value="0" disabled>
-                        <span id="timelineEnd">--:--:--</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="video-container">
-                <video id="video" controls></video>
-            </div>
-
-            <div class="playback-controls">
-                <button class="btn-control" onclick="cambiarVelocidad(-0.25)">-0.25x</button>
-                <button class="btn-control" onclick="fijarVelocidad(0.5)">0.5x</button>
-                <button class="btn-control" onclick="fijarVelocidad(1)" id="normalSpeed">1x</button>
-                <button class="btn-control" onclick="fijarVelocidad(1.5)">1.5x</button>
-                <button class="btn-control" onclick="fijarVelocidad(2)">2x</button>
-                <button class="btn-control" onclick="cambiarVelocidad(0.25)">+0.25x</button>
-            </div>
-
-            <div class="video-info" id="videoInfo">
-                <p><strong>Velocidad:</strong> <span id="speedDisplay">1.0x</span></p>
-                <p><strong>Tiempo:</strong> <span id="timeDisplay">00:00 / 00:00</span></p>
-            </div>
-        </div>
-
-        <div class="info">
-            <p><strong>API v3 Recordings:</strong> Puerto 9997 - GET /v3/recordings/list</p>
-            <p><strong>Playback Server:</strong> Puerto 9996 - GET /list?path={'{name}'}</p>
-            <p><strong>MediaMTX:</strong> v1.15.6</p>
-            <p><strong>Formato:</strong> fMP4 (Fragmented MP4)</p>
-            <p><strong>💡 Modo "Desde el inicio":</strong> Reproduce desde un punto específico (ej: segundo 120)</p>
-            <p><strong>💡 Modo "Hacia atrás desde ahora":</strong> Reproduce los últimos N segundos hasta ahora (ej: últimos 300s = últimos 5 min)</p>
-            <p><strong>💡 Modo "Hora específica":</strong> Reproduce desde una hora concreta del día (ej: 19:17:30)</p>
-        </div>
+    <!-- El tally de esta página refleja lo que hay en la salida de OBS (display.html) -->
+    <div class="tally" id="tally" data-estado="inactivo" role="status" aria-live="polite">
+        <span class="tally__lampara" aria-hidden="true"></span>
+        <span class="tally__estado" id="tallyEstado">OBS vacío</span>
+        <span class="tally__detalle" id="tallyDetalle">Nada en la salida de repeticiones</span>
+        <span class="tally__tiempo" id="tallyTiempo"></span>
     </div>
 
-    <script src="../js/utils/utils.js"></script>
-    <script src="../js/utils/playback-utils.js"></script>
-    <script src="../js/ui/playback-ui.js"></script>
-    <script src="../js/playback.js"></script>
+    <main class="pagina repeticiones">
+        <h1 class="visualmente-oculto">Repeticiones</h1>
+
+        <!-- Vídeo, línea temporal y salida a OBS -->
+        <section class="rep__escenario" aria-label="Previsualización">
+            <div class="monitor">
+                <video id="video" controls playsinline aria-label="Previsualización de la repetición"></video>
+            </div>
+
+            <div class="rep__info">
+                <p class="rep__actual" id="currentRecording">Sin selección</p>
+                <div class="rep__velocidad" role="group" aria-label="Velocidad de reproducción">
+                    <button type="button" class="boton boton--peq boton--icono" onclick="cambiarVelocidad(-0.25)" aria-label="Más lento">−</button>
+                    <button type="button" class="boton boton--peq" onclick="fijarVelocidad(0.5)">0,5×</button>
+                    <button type="button" class="boton boton--peq" onclick="fijarVelocidad(1)">1×</button>
+                    <button type="button" class="boton boton--peq" onclick="fijarVelocidad(1.5)">1,5×</button>
+                    <button type="button" class="boton boton--peq" onclick="fijarVelocidad(2)">2×</button>
+                    <button type="button" class="boton boton--peq boton--icono" onclick="cambiarVelocidad(0.25)" aria-label="Más rápido">+</button>
+                    <span class="rep__velocidad-valor cifra" id="speedDisplay">1×</span>
+                </div>
+                <span class="cifra texto-2 texto-peq" id="timeDisplay">00:00 / 00:00</span>
+            </div>
+
+            <!-- Escala logarítmica: lo reciente (derecha) ocupa mucho más que lo
+                 antiguo. El valor es una posición 0..1000, no segundos. -->
+            <div class="linea-tiempo">
+                <span class="cifra" id="timelineStart">--:--:--</span>
+                <div class="linea-tiempo__pista">
+                    <input type="range" id="timelineSlider" min="0" max="1000" value="1000" disabled aria-label="Buscar un momento de la grabación">
+                    <div class="linea-tiempo__burbuja cifra" id="timelineBubble" aria-hidden="true">--:--:--</div>
+                </div>
+                <span class="cifra" id="timelineEnd">--:--:--</span>
+            </div>
+
+            <div class="salida-obs panel">
+                <div class="salida-obs__texto">
+                    <h2>Salida a OBS</h2>
+                    <p class="salida-obs__pendiente texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
+                    <p class="salida-obs__estado texto-peq" id="obsStatus">OBS: vacío</p>
+                </div>
+                <div class="salida-obs__botones">
+                    <button type="button" class="boton" onclick="quitarDelDisplay()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
+                        Quitar
+                    </button>
+                    <button type="button" class="boton boton--directo" onclick="enviarAlDisplay()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
+                        Enviar a OBS
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Qué reproducir -->
+        <section class="rep__fuente panel" aria-labelledby="tituloFuente">
+            <div class="panel__cabecera">
+                <h2 id="tituloFuente">Qué repetir</h2>
+                <span class="texto-2 texto-peq cifra" id="recordingCount">0 grabaciones</span>
+            </div>
+            <div class="pila">
+                <div class="campo">
+                    <label for="streamSelect">Cámara</label>
+                    <select id="streamSelect" class="selector-camara" onchange="cambiarStream()"></select>
+                </div>
+                <div class="campo">
+                    <label for="recordingSelect">Grabación</label>
+                    <select id="recordingSelect" onchange="cambiarGrabacion()"></select>
+                </div>
+                <div class="campo">
+                    <label for="playbackMode">Empezar</label>
+                    <select id="playbackMode" onchange="actualizarModoPlayback()">
+                        <option value="lookback">Hace unos segundos (sigue al directo)</option>
+                        <option value="offset">Desde el inicio de la grabación</option>
+                        <option value="specific">A una hora concreta</option>
+                    </select>
+                </div>
+
+                <div class="campo" id="lookbackField">
+                    <label for="lookbackTime">Desde hace <strong class="cifra" id="lookbackValue">30 seg</strong></label>
+                    <div class="rango">
+                        <input type="range" id="lookbackSlider" min="10" max="300" value="30" step="1" oninput="sincronizarDesdeSlider()" aria-label="Segundos hacia atrás">
+                        <input type="number" id="lookbackTime" class="rep__numero" min="10" max="300" value="30" step="1" oninput="sincronizarDesdeNumero()" aria-label="Segundos hacia atrás (número)">
+                    </div>
+                    <div class="atajos" role="group" aria-label="Repetir al momento">
+                        <button type="button" class="boton boton--peq" onclick="repetirAtajo(15)">Últimos 15 s</button>
+                        <button type="button" class="boton boton--peq" onclick="repetirAtajo(30)">30 s</button>
+                        <button type="button" class="boton boton--peq" onclick="repetirAtajo(60)">60 s</button>
+                    </div>
+                </div>
+
+                <div class="campo" id="offsetField" hidden>
+                    <label for="startOffset">Segundos desde el inicio</label>
+                    <input type="number" id="startOffset" min="0" value="0" step="1">
+                </div>
+
+                <div class="campo" id="specificField" hidden>
+                    <label for="specificTime">Hora (HH:MM o HH:MM:SS)</label>
+                    <input type="text" id="specificTime" value="00:00:00" placeholder="HH:MM:SS" inputmode="numeric" spellcheck="false">
+                </div>
+
+                <button type="button" class="boton boton--primario boton--ancho" onclick="playFromOffset()">
+                    <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#play"/></svg>
+                    Reproducir
+                </button>
+                <p class="mensaje-linea" id="statusMsg" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <!-- Momentos marcados: se guardan en este navegador (localStorage) -->
+        <aside class="rep__marcados panel" aria-labelledby="tituloMarcados">
+            <div class="panel__cabecera">
+                <h2 id="tituloMarcados">Momentos marcados</h2>
+                <button type="button" class="boton boton--fantasma boton--peq" id="limpiarMarcados" onclick="borrarTodosLosMomentos()">Borrar todos</button>
+            </div>
+
+            <!-- Botón de pánico: marca lo que acaba de pasar sin tocar nada más.
+                 El rótulo dice qué cámara y qué instante se marcaría ahora mismo. -->
+            <button type="button" class="boton-marcar" onclick="marcarMomento()">
+                <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#marcar"/></svg>
+                <span class="boton-marcar__titulo">Marcar</span>
+                <span class="boton-marcar__destino cifra" id="marcarDestino">—</span>
+            </button>
+
+            <ul class="marcados" id="marcadosLista"></ul>
+        </aside>
+    </main>
+
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/utils/playback-utils.js"></script>
+    <script src="js/ui/avisos.js"></script>
+    <script src="js/ui/tally.js"></script>
+    <script src="js/ui/playback-ui.js"></script>
+    <script src="js/playback.js"></script>
+    <script src="js/playback-marcados.js"></script>
+    <script src="js/playback-control.js"></script>
 </body>
 </html>

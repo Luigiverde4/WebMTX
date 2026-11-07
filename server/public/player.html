@@ -3,54 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediaMTX WebRTC Player</title>
-    <link rel="stylesheet" href="../css/player.css" >
-    <link rel="icon" href="./favicon.ico">
+    <title>Ver | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/player.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🎥 MediaMTX WebRTC Player</h1>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label for="server">Servidor:</label>
-                <input type="text" id="server" value="localhost" placeholder="localhost o IP">
-            </div>
+    <header class="cabecera">
+        <a class="marca" href="index.html">WebMTX</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html">Inicio</a>
+            <a href="broadcaster.html">Emitir</a>
+            <a href="player.html" aria-current="page">Ver</a>
+            <a href="playback.html">Repeticiones</a>
+            <a href="stats.html">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
 
-            <div class="control-group">
-                <label for="streamName">Nombre del Stream:</label>
-                <input type="text" id="streamName" value="stream" placeholder="ej: stream, cam1">
-            </div>
-
-            <div class="control-group">
-                <label for="status">Estado:</label>
-                <span class="status disconnected" id="status">Desconectado</span>
-            </div>
-        </div>
-
-        <div class="quick-endpoints">
-            <div class="quick-endpoints-header">
-                <label>Endpoints rápidos (activos):</label>
-                <button class="btn-small" onclick="actualizarPathsActivosPlayer()">Actualizar</button>
-            </div>
-            <div id="endpointButtons" class="endpoint-buttons"></div>
-        </div> 
-        <div class="buttons">
-            <button class="btn-play" onclick="startPlay()">▶ Reproducir</button>
-            <button class="btn-stop" id="stopBtn" onclick="stopPlay()" disabled>⬛ Detener</button>
-        </div>
-
-        <div class="video-container">
-            <video id="video" controls muted autoplay playsinline></video>
-        </div>
-
-        <div class="info">
-            <p><strong>WebRTC (WHEP):</strong> Puerto 8889 - Ultra baja latencia (~100-300ms)</p>
-        </div>
+    <div class="tally" id="tally" data-estado="inactivo" role="status" aria-live="polite">
+        <span class="tally__lampara" aria-hidden="true"></span>
+        <span class="tally__estado" id="tallyEstado">Sin señal</span>
+        <span class="tally__detalle" id="tallyDetalle">Elige una cámara</span>
+        <span class="tally__tiempo" id="tallyTiempo"></span>
     </div>
-    <script src="../js/utils/utils.js"></script>
-    <script src="../js/utils/watchdog.js"></script>
-    <script src="../js/api/api.js"></script>
-    <script src="../js/player.js"></script>
+
+    <main class="pagina visor">
+        <h1 class="visualmente-oculto">Ver una cámara en directo</h1>
+
+        <section class="visor__monitor" aria-label="Monitor">
+            <div class="monitor">
+                <video id="video" controls muted autoplay playsinline aria-label="Cámara en directo"></video>
+                <div class="monitor__vacio" id="videoVacio">Elige una cámara de la lista para verla aquí</div>
+            </div>
+            <div class="acciones">
+                <span class="estado" id="status">Desconectado</span>
+                <span class="texto-2 texto-peq">WebRTC (WHEP), latencia típica de 100 a 300 ms. El audio empieza silenciado.</span>
+            </div>
+        </section>
+
+        <aside class="visor__lateral">
+            <section class="panel" aria-labelledby="tituloCamaras">
+                <div class="panel__cabecera">
+                    <h2 id="tituloCamaras">Cámaras en directo</h2>
+                    <span class="sondeo" title="La lista se actualiza sola cada 4 segundos" aria-hidden="true"></span>
+                </div>
+                <div id="endpointButtons" class="lista-camaras">
+                    <span class="texto-2 texto-peq">Cargando…</span>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="tituloManual">
+                <div class="panel__cabecera">
+                    <h2 id="tituloManual">Otra cámara</h2>
+                </div>
+                <div class="pila">
+                    <div class="campo">
+                        <label for="streamName">Nombre</label>
+                        <input type="text" id="streamName" placeholder="cam1" spellcheck="false" autocomplete="off">
+                    </div>
+                    <details class="desplegable">
+                        <summary>Servidor</summary>
+                        <div class="campo">
+                            <label for="server">Servidor MediaMTX</label>
+                            <input type="text" id="server" value="localhost" spellcheck="false">
+                        </div>
+                    </details>
+                    <div class="fila">
+                        <button type="button" class="boton boton--primario" id="playBtn" onclick="startPlay()">
+                            <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#play"/></svg>
+                            Ver
+                        </button>
+                        <button type="button" class="boton" id="stopBtn" onclick="stopPlay()" disabled>
+                            <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#parar"/></svg>
+                            Detener
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="tituloRecepcion">
+                <div class="panel__cabecera">
+                    <h2 id="tituloRecepcion">Recepción</h2>
+                </div>
+                <dl class="datos">
+                    <dt>Imagen</dt><dd id="recImagen">—</dd>
+                    <dt>Bitrate</dt><dd id="recBitrate">—</dd>
+                    <dt>Paquetes perdidos</dt><dd id="recPerdidos">—</dd>
+                    <dt>Búfer</dt><dd id="recBufer">—</dd>
+                </dl>
+            </section>
+        </aside>
+    </main>
+
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/utils/watchdog.js"></script>
+    <script src="js/api/api.js"></script>
+    <script src="js/ui/avisos.js"></script>
+    <script src="js/ui/tally.js"></script>
+    <script src="js/player.js"></script>
 </body>
 </html>

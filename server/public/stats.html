@@ -3,96 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediaMTX Statistics Dashboard</title>
-    <link rel="stylesheet" href="../css/stats.css">
-    <link rel="icon" href="./favicon.ico">
+    <title>Estadísticas | WebMTX</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/stats.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>MediaMTX Statistics Dashboard</h1>
-            <p class="subtitle">Visualiza estadisticas en tiempo real del servidor y las transmisiones</p>
-        </header>
+    <header class="cabecera">
+        <a class="marca" href="index.html">WebMTX</a>
+        <nav class="nav" aria-label="Secciones">
+            <a href="index.html">Inicio</a>
+            <a href="broadcaster.html">Emitir</a>
+            <a href="player.html">Ver</a>
+            <a href="playback.html">Repeticiones</a>
+            <a href="stats.html" aria-current="page">Estadísticas</a>
+            <a href="api.html">API</a>
+        </nav>
+    </header>
 
-        <section class="toolbar">
-            <div class="left-tools">
-                <button id="refreshBtn" class="btn btn-primary">Actualizar ahora</button>
-                <label class="auto-refresh">
-                    <input type="checkbox" id="autoRefresh" checked>
-                    <span>Auto refresh</span>
-                    <span id="refreshIntervalLabel">(1.5s)</span>
-                </label>
-                <label class="refresh-interval">
-                    <span>Intervalo</span>
-                    <input id="refreshIntervalInput" type="number" min="250" step="250" value="1500">
-                    <span>ms</span>
-                </label>
-            </div>
-            <div class="right-tools">
-                <span id="lastUpdate" class="last-update">Sin actualizar</span>
-            </div>
-        </section>
-
-        <section class="summary-grid">
-            <article class="summary-card">
-                <h3>Paths totales</h3>
-                <p id="totalPaths">0</p>
-            </article>
-            <article class="summary-card">
-                <h3>Paths listos</h3>
-                <p id="readyPaths">0</p>
-            </article>
-            <article class="summary-card">
-                <h3>Paths online</h3>
-                <p id="onlinePaths">0</p>
-            </article>
-            <article class="summary-card">
-                <h3>Readers activos</h3>
-                <p id="totalReaders">0</p>
-            </article>
-            <article class="summary-card">
-                <h3>Bytes recibidos</h3>
-                <p id="totalBytesReceived">0 B</p>
-            </article>
-            <article class="summary-card">
-                <h3>Bytes enviados</h3>
-                <p id="totalBytesSent">0 B</p>
-            </article>
-        </section>
-
-        <section class="charts-section">
-            <article class="chart-card">
-                <h3>Throughput total (Mbps)</h3>
-                <canvas id="totalThroughputChart"></canvas>
-            </article>
-            <article class="chart-card">
-                <h3>Throughput por stream (Mbps)</h3>
-                <canvas id="streamThroughputChart"></canvas>
-            </article>
-            <article class="chart-card">
-                <h3>Readers por path</h3>
-                <canvas id="readersByPathChart"></canvas>
-            </article>
-        </section>
-
-        <div class="paths-header stream-sections-header">
-            <h2>Streams</h2>
-            <span id="pathsCount" class="paths-count">0 streams</span>
+    <main class="pagina estadisticas">
+        <div class="titulo-pagina">
+            <h1>Estadísticas</h1>
+            <p>Tráfico y espectadores de cada cámara en tiempo real, según MediaMTX.</p>
         </div>
 
-        <div id="streamSectionsContainer" class="stream-sections-stack">
-            <div class="empty-state">Cargando estadisticas...</div>
+        <section class="barra-herramientas" aria-label="Actualización">
+            <button type="button" id="refreshBtn" class="boton">
+                <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#refrescar"/></svg>
+                Actualizar ahora
+            </button>
+            <label class="opcion">
+                <input type="checkbox" id="autoRefresh" checked>
+                Automático <span class="texto-2 cifra" id="refreshIntervalLabel">(1,5 s)</span>
+            </label>
+            <label class="barra-herramientas__intervalo">
+                Cada
+                <input id="refreshIntervalInput" type="number" min="250" step="250" value="1500" aria-label="Intervalo de actualización en milisegundos">
+                ms
+            </label>
+            <span id="lastUpdate" class="texto-2 texto-peq cifra empuja">Sin actualizar</span>
+        </section>
+
+        <section class="resumen" aria-label="Resumen">
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Paths</span>
+                <span class="resumen__valor cifra" id="totalPaths">0</span>
+            </div>
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Listos</span>
+                <span class="resumen__valor cifra" id="readyPaths">0</span>
+            </div>
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Online</span>
+                <span class="resumen__valor cifra" id="onlinePaths">0</span>
+            </div>
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Espectadores</span>
+                <span class="resumen__valor cifra" id="totalReaders">0</span>
+            </div>
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Recibido</span>
+                <span class="resumen__valor cifra" id="totalBytesReceived">0 B</span>
+            </div>
+            <div class="resumen__dato">
+                <span class="resumen__etiqueta">Enviado</span>
+                <span class="resumen__valor cifra" id="totalBytesSent">0 B</span>
+            </div>
+        </section>
+
+        <p class="mensaje-linea mensaje-linea--error" id="avisoGraficas" hidden>
+            No se pudo cargar Chart.js (/vendor/chart.js). Los datos por stream siguen actualizándose; las gráficas no.
+        </p>
+
+        <section class="graficas" aria-label="Gráficas globales">
+            <figure class="panel grafica">
+                <figcaption><h2>Tráfico total</h2><span class="texto-2 texto-peq">Mbps; entrada continua, salida discontinua</span></figcaption>
+                <div class="grafica__lienzo"><canvas id="totalThroughputChart" aria-label="Tráfico total de entrada y salida en Mbps" role="img"></canvas></div>
+            </figure>
+            <figure class="panel grafica">
+                <figcaption><h2>Tráfico por cámara</h2><span class="texto-2 texto-peq">Mbps, entrada más salida</span></figcaption>
+                <div class="grafica__lienzo"><canvas id="streamThroughputChart" aria-label="Tráfico por cámara en Mbps" role="img"></canvas></div>
+            </figure>
+            <figure class="panel grafica">
+                <figcaption><h2>Espectadores por cámara</h2><span class="texto-2 texto-peq">Lectores conectados ahora</span></figcaption>
+                <div class="grafica__lienzo"><canvas id="readersByPathChart" aria-label="Espectadores por cámara" role="img"></canvas></div>
+            </figure>
+        </section>
+
+        <div class="fila fila--separada cabecera-streams">
+            <h2>Por cámara</h2>
+            <span id="pathsCount" class="texto-2 texto-peq cifra">0 streams</span>
         </div>
 
-        <footer class="footer">
-            <a href="index.html">Volver al inicio</a>
-        </footer>
-    </div>
+        <div id="streamSectionsContainer" class="streams">
+            <div class="vacio">Cargando estadísticas…</div>
+        </div>
+    </main>
 
     <script src="/vendor/chart.js/dist/chart.umd.min.js"></script>
-    <script src="../js/utils/utils.js"></script>
-    <script src="../js/utils/stats-charts.js"></script>
-    <script src="../js/ui/stats-ui.js"></script>
-    <script src="../js/stats.js"></script>
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/camaras.js"></script>
+    <script src="js/utils/stats-charts.js"></script>
+    <script src="js/ui/stats-ui.js"></script>
+    <script src="js/stats.js"></script>
 </body>
 </html>
