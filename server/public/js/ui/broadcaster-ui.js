@@ -499,10 +499,85 @@ function pintarEstadoEmision(estado, contexto = {}) {
     }
 
     let libre = sinEmisionEnCurso();
-    startBtn.disabled = !libre;
+    // Con la emisión en marcha y ajustes cambiados, Emitir pasa a "Volver a emitir"
+    let reemitible = ESTADOS_EN_DIRECTO.has(estado) && hayCambiosPendientes();
+    startBtn.disabled = !libre && !reemitible;
+    document.getElementById('startBtnTexto').textContent = reemitible ? 'Volver a emitir' : 'Emitir';
+    document.getElementById('revertirBtn').hidden = !reemitible;
     stopBtn.disabled = libre || estado === 'deteniendo';
     document.getElementById('previewBtn').disabled = !libre;
     liveIndicator.hidden = !ESTADOS_EN_DIRECTO.has(estado);
+}
+
+// AJUSTES QUE SOLO SE APLICAN AL RECONECTAR
+// Al empezar a emitir se guarda una foto de estos ajustes; si durante la
+// emisión cambian, Emitir pasa a "Volver a emitir" y aparece "Deshacer cambios".
+let ajustesEmitidos = null;
+let avisoCambiosPendientesMostrado = false;
+
+/** Los ajustes que solo se aplican al volver a abrir la cámara y la conexión. */
+function leerAjustesDeReconexion() {
+    return {
+        endpoint: endpointInput.value,
+        camara: videoSource.value,
+        micro: audioSource.value,
+        codec: videoCodecPreference.value,
+        resolucion: resolution.value,
+        fps: frameRateSelect.value,
+        eco: echoCancellationCheck.checked,
+        ruido: noiseSuppressionCheck.checked,
+        ganancia: autoGainControlCheck.checked
+    };
+}
+
+/** Guarda la foto de lo que se va a emitir (la llama startBroadcast). */
+function fijarAjustesEmitidos() {
+    ajustesEmitidos = leerAjustesDeReconexion();
+    avisoCambiosPendientesMostrado = false;
+}
+
+/** Olvida la foto (al detener). */
+function olvidarAjustesEmitidos() {
+    ajustesEmitidos = null;
+    avisoCambiosPendientesMostrado = false;
+}
+
+/** ¿Hay ajustes distintos de los que se están emitiendo? */
+function hayCambiosPendientes() {
+    if (!ajustesEmitidos || !ESTADOS_EN_DIRECTO.has(estadoEmision)) return false;
+    let actuales = leerAjustesDeReconexion();
+    return Object.keys(ajustesEmitidos).some(clave => ajustesEmitidos[clave] !== actuales[clave]);
+}
+
+/** Repinta los botones tras un cambio de ajustes y avisa la primera vez. */
+function revisarCambiosPendientes() {
+    pintarEstadoEmision(estadoEmision, { mensaje: mensajeErrorEmision });
+    if (hayCambiosPendientes() && !avisoCambiosPendientesMostrado) {
+        avisoCambiosPendientesMostrado = true;
+        mostrarAviso('Este cambio se aplica al volver a emitir. Pulsa "Volver a emitir" o "Deshacer cambios".', 'info');
+    }
+}
+
+/** Devuelve los controles a lo que se está emitiendo ahora. */
+function revertirAjustes() {
+    if (!ajustesEmitidos) return;
+    let a = ajustesEmitidos;
+    endpointInput.value = a.endpoint;
+    seleccionarSiExiste(videoSource, a.camara);
+    seleccionarSiExiste(audioSource, a.micro);
+    seleccionarSiExiste(videoCodecPreference, a.codec);
+    seleccionarSiExiste(resolution, a.resolucion);
+    seleccionarSiExiste(frameRateSelect, a.fps);
+    echoCancellationCheck.checked = a.eco;
+    noiseSuppressionCheck.checked = a.ruido;
+    autoGainControlCheck.checked = a.ganancia;
+
+    marcarEndpointElegido();
+    avisarSiCodecNoRecomendado();
+    guardarAjustesDesdeUi();
+    avisoCambiosPendientesMostrado = false;
+    pintarEstadoEmision(estadoEmision, { mensaje: mensajeErrorEmision });
+    mostrarAviso('Ajustes devueltos a los de la emisión actual', 'ok', 2000);
 }
 
 /**
@@ -626,11 +701,19 @@ document.querySelectorAll('.chip-camara[data-endpoint]').forEach(boton => {
     boton.addEventListener('click', () => ponerEndpoint(boton.dataset.endpoint));
 });
 
-// Cambios que requieren volver a abrir la cámara (solo en previsualización)
+// Cambios que requieren volver a abrir la cámara: en previsualización se
+// aplican al momento; emitiendo, se quedan pendientes hasta "Volver a emitir".
 [videoSource, audioSource, resolution, frameRateSelect, echoCancellationCheck, noiseSuppressionCheck, autoGainControlCheck]
-    .forEach(control => control.addEventListener('change', cambioDispositivo));
+    .forEach(control => control.addEventListener('change', () => {
+        cambioDispositivo();
+        revisarCambiosPendientes();
+    }));
 
-videoCodecPreference.addEventListener('change', guardarPreferenciaCodecVideo);
+videoCodecPreference.addEventListener('change', () => {
+    guardarPreferenciaCodecVideo();
+    revisarCambiosPendientes();
+});
+endpointInput.addEventListener('input', revisarCambiosPendientes);
 
 // Ajustes aplicables en directo
 bitrateInput.addEventListener('input', actualizarEtiquetaBitrate);

@@ -55,9 +55,12 @@
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#parar"/></svg>
                         Detener
                     </button>
-                    <button type="button" class="boton boton--directo" id="startBtn" onclick="startBroadcast()">
+                    <button type="button" class="boton boton--fantasma" id="revertirBtn" onclick="revertirAjustes()" hidden>
+                        Deshacer cambios
+                    </button>
+                    <button type="button" class="boton boton--directo" id="startBtn" onclick="pulsarEmitir()">
                         <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
-                        Emitir
+                        <span id="startBtnTexto">Emitir</span>
                     </button>
                 </div>
             </div>

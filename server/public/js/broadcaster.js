@@ -110,9 +110,29 @@ async function aplicarAjustesEnDirecto() {
 }
 
 /**
- * Inicia la publicación WHIP del stream local.
+ * Botón principal: emite o, si hay ajustes nuevos durante la emisión, vuelve a emitir.
  */
-async function startBroadcast() {
+function pulsarEmitir() {
+    if (hayCambiosPendientes()) return volverAEmitir();
+    return startBroadcast();
+}
+
+/**
+ * Aplica los ajustes que solo valen al reconectar: corta y vuelve a emitir
+ * enseguida. Los espectadores se reenganchan solos (player y neoplayer reconectan).
+ */
+async function volverAEmitir() {
+    let endpointAnterior = ajustesEmitidos ? ajustesEmitidos.endpoint : null;
+    await stopBroadcast();
+    // Sin confirmar "ya hay alguien emitiendo": ese alguien éramos nosotros hace un instante
+    await startBroadcast({ reemisionDe: endpointAnterior });
+}
+
+/**
+ * Inicia la publicación WHIP del stream local.
+ * @param {{reemisionDe?: string}} [opciones] - En una reemisión, endpoint que se acaba de dejar.
+ */
+async function startBroadcast(opciones = {}) {
     let endpoint = sanitizarEndpoint(endpointInput.value);
     endpointInput.value = endpoint; // Reflejar en el campo lo que realmente se usará
     marcarEndpointElegido();
@@ -133,7 +153,7 @@ async function startBroadcast() {
     }
 
     await actualizarPathsActivos(true);
-    if (esPathActivo(endpoint)) {
+    if (esPathActivo(endpoint) && opciones.reemisionDe !== endpoint) {
         let continuar = await confirmar(
             `Ya hay alguien emitiendo como "${endpoint}". Si continúas, tu emisión lo reemplazará.`,
             { aceptar: 'Reemplazar y emitir', peligro: true }
@@ -147,6 +167,7 @@ async function startBroadcast() {
 
     // Mientras se esperaba la confirmación pudo empezar otra emisión
     if (!cambiarEstadoEmision(ESTADOS_EMISION.ABRIENDO)) return;
+    fijarAjustesEmitidos(); // foto de lo que se emite: base de "Volver a emitir"
 
     let intento = ++intentoEmision;
     let cancelado = () => intento !== intentoEmision;
@@ -267,6 +288,7 @@ async function stopBroadcast(opciones = {}) {
     // evita paradas dobles (el estado 'deteniendo' no admite volver a entrar).
     if (!cambiarEstadoEmision(ESTADOS_EMISION.DETENIENDO)) return;
     intentoEmision += 1; // Invalida cualquier intento en curso
+    olvidarAjustesEmitidos();
 
     console.log('[broadcaster] stopBroadcast()', {
         hasSession: Boolean(whipSession),
