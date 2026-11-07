@@ -89,23 +89,22 @@
     }
     .linea-tiempo__burbuja.visible { visibility: visible; }
 
-    /* --- Salida a OBS ---------------------------------------------------- */
-    .salida-obs {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--e-3) var(--e-4);
-        padding-block: var(--e-2);       /* compacta: el alto es para el vídeo */
-    }
     /* Todo lo que va bajo el vídeo mantiene su alto; el vídeo se queda el resto */
     .rep__escenario > :not(.monitor) { flex: none; }
-    .salida-obs__texto { flex: 1 1 260px; min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
-    .salida-obs__texto h2 { font-size: var(--t-m); }
+
+    /* --- Salida a OBS (en "Qué repetir", bajo Reproducir) ----------------- */
+    .salida-obs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--e-3);
+    }
+    .salida-obs__texto { min-inline-size: 0; display: flex; flex-direction: column; gap: 2px; }
+    .salida-obs__texto h2 { font-size: var(--t-l); }
     .salida-obs__pendiente.listo { color: var(--texto); }
     .salida-obs__estado { color: var(--texto-2); }
     .salida-obs__estado.activo { color: var(--texto-peligro); font-weight: 600; }
     .salida-obs__botones { display: flex; gap: var(--e-2); }
-    .salida-obs__botones .boton { min-block-size: var(--alto-control-grande); }
+    .salida-obs__botones .boton { flex: 1; min-block-size: var(--alto-control-grande); }
 
     /* --- Qué repetir ----------------------------------------------------- */
     .selector-camara.con-camara {
@@ -225,8 +224,6 @@
     /* --- Responsive: el escenario según su propio ancho (dock de OBS) ------ */
     @container escenario (max-width: 480px) {
         .rep__velocidad .boton:not(.boton--icono) { display: none; }
-        .salida-obs__botones { inline-size: 100%; }
-        .salida-obs__botones .boton { flex: 1; }
         .linea-tiempo { grid-template-columns: minmax(0, 1fr); padding-block-start: var(--e-6); }
         .linea-tiempo > span { display: none; }
     }

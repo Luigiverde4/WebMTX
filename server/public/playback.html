@@ -62,24 +62,6 @@
                 </div>
                 <span class="cifra" id="timelineEnd">--:--:--</span>
             </div>
-
-            <div class="salida-obs panel">
-                <div class="salida-obs__texto">
-                    <h2>Salida a OBS</h2>
-                    <p class="salida-obs__pendiente texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
-                    <p class="salida-obs__estado texto-peq" id="obsStatus">OBS: vacío</p>
-                </div>
-                <div class="salida-obs__botones">
-                    <button type="button" class="boton" onclick="quitarDelDisplay()">
-                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
-                        Quitar
-                    </button>
-                    <button type="button" class="boton boton--directo" onclick="enviarAlDisplay()">
-                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
-                        Enviar a OBS
-                    </button>
-                </div>
-            </div>
         </section>
 
         <!-- Qué reproducir -->
@@ -134,6 +116,26 @@
                     Reproducir
                 </button>
                 <p class="mensaje-linea" id="statusMsg" role="status" aria-live="polite"></p>
+            </div>
+
+            <!-- Siguiente paso tras previsualizar: mandarlo a OBS (display.html) -->
+            <hr class="separador">
+            <div class="salida-obs" aria-labelledby="tituloSalidaObs">
+                <div class="salida-obs__texto">
+                    <h2 id="tituloSalidaObs">Salida a OBS</h2>
+                    <p class="salida-obs__pendiente texto-2 texto-peq" id="obsPending">Nada previsualizado aún</p>
+                    <p class="salida-obs__estado texto-peq" id="obsStatus">OBS: vacío</p>
+                </div>
+                <div class="salida-obs__botones">
+                    <button type="button" class="boton" onclick="quitarDelDisplay()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#quitar"/></svg>
+                        Quitar
+                    </button>
+                    <button type="button" class="boton boton--directo" onclick="enviarAlDisplay()">
+                        <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#emitir"/></svg>
+                        Enviar a OBS
+                    </button>
+                </div>
             </div>
         </section>
 
