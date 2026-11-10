@@ -338,6 +338,9 @@ async function playWebRTC(server, streamName) {
 
         const offer = await conexion.createOffer();
         await conexion.setLocalDescription(offer);
+        // La oferta lleva los candidatos del navegador (ver esperarICEcompleto).
+        await esperarICEcompleto(conexion);
+        if (pc !== conexion) return; // Parada o reemplazada mientras se recopilaban
 
         const url = `${construirBaseUrlWebRTC(server)}/${encodeURIComponent(streamName)}/whep`;
         console.log('WHEP URL:', url);
@@ -347,7 +350,7 @@ async function playWebRTC(server, streamName) {
             headers: {
                 'Content-Type': 'application/sdp'
             },
-            body: offer.sdp
+            body: conexion.localDescription.sdp
         });
 
         if (!response.ok) {

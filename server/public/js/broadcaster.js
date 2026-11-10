@@ -340,29 +340,6 @@ async function stopBroadcast(opciones = {}) {
 }
 
 /**
- * Espera hasta que termine la recopilación de ICE candidates.
- * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
- */
-function esperarICEcompleto(pcConnection) {
-    return new Promise(resolve => {
-        if (pcConnection.iceGatheringState === 'complete') {
-            resolve();
-            return;
-        }
-
-        let checkState = () => {
-            if (pcConnection.iceGatheringState === 'complete') {
-                pcConnection.removeEventListener('icegatheringstatechange', checkState);
-                resolve();
-            }
-        };
-
-        pcConnection.addEventListener('icegatheringstatechange', checkState);
-        setTimeout(resolve, 5000);
-    });
-}
-
-/**
  * Espera a que el peer connection empiece a enviar tráfico real.
  * Tolerante: si en 10 s no se confirma, continúa igualmente (el watchdog vigila después).
  * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
