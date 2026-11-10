@@ -48,3 +48,31 @@ function construirBaseUrlWebRTC(serverHost) {
 
     return `${parsedUrl.protocol}//${parsedUrl.host}`;
 }
+
+/**
+ * Espera hasta que termine la recopilación de ICE candidates (como mucho 5 s).
+ * Tanto WHIP como WHEP mandan la oferta con los candidatos dentro
+ * (localDescription.sdp, no offer.sdp): así MediaMTX puede comprobar también
+ * la conexión hacia el navegador y no depende solo de que el navegador llegue
+ * a la IP anunciada (IP_EQUIPO). Sin ellos, con IP_EQUIPO=127.0.0.1 la página
+ * que tiene permiso de cámara no conecta. Cuesta unos 150 ms.
+ * @param {RTCPeerConnection} pcConnection - Conexión en negociación.
+ */
+function esperarICEcompleto(pcConnection) {
+    return new Promise(resolve => {
+        if (pcConnection.iceGatheringState === 'complete') {
+            resolve();
+            return;
+        }
+
+        let checkState = () => {
+            if (pcConnection.iceGatheringState === 'complete') {
+                pcConnection.removeEventListener('icegatheringstatechange', checkState);
+                resolve();
+            }
+        };
+
+        pcConnection.addEventListener('icegatheringstatechange', checkState);
+        setTimeout(resolve, 5000);
+    });
+}
