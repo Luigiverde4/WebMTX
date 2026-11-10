@@ -60,9 +60,11 @@ function aplicarCodecVideoPreferido(pcConnection, preferredCodec) {
  * hint, la preferencia funciona: a 0,8 Mbps, mantener fotogramas da 480×270 a
  * 27 fps; mantener resolución, 1080p a 10 fps; equilibrar, 640×360 a 13 fps.
  * @param {RTCPeerConnection} pcConnection
+ * @returns {Promise<boolean>} false si alguna pista no aceptó los ajustes
  */
 async function configurarCalidadVideo(pcConnection) {
     let senders = pcConnection && typeof pcConnection.getSenders === 'function' ? pcConnection.getSenders() : [];
+    let todoAplicado = true;
 
     for (let sender of senders) {
         if (!sender.track) continue;
@@ -89,9 +91,11 @@ async function configurarCalidadVideo(pcConnection) {
                 try {
                     await sender.setParameters(params);
                 } catch (errorReintento) {
+                    todoAplicado = false;
                     console.warn('No se pudo aplicar la calidad de vídeo:', errorReintento);
                 }
             } else {
+                todoAplicado = false;
                 console.warn(`No se pudo aplicar la configuración de ${sender.track.kind}:`, error);
             }
         }
@@ -102,15 +106,19 @@ async function configurarCalidadVideo(pcConnection) {
         degradacion: degradacionSelect.value,
         audioBps: audioBitrateSelect.value
     });
+    return todoAplicado;
 }
 
 /**
  * Reaplica los ajustes "en directo" sobre la emisión en curso (si la hay).
+ * Si va bien no avisa (el panel ya dice que se aplican al momento y debajo
+ * se ve el valor real): un aviso por cada toque tapaba los ajustes en el móvil.
  */
 async function aplicarAjustesEnDirecto() {
     if (!pc) return;
-    await configurarCalidadVideo(pc);
-    mostrarAviso('Ajustes aplicados en directo', 'ok', 1800);
+    if (!(await configurarCalidadVideo(pc))) {
+        mostrarAviso('No se pudo aplicar el cambio en directo: sigue la calidad anterior.', 'aviso');
+    }
 }
 
 /**

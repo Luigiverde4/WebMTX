@@ -63,7 +63,8 @@ const AVISOS_CODEC = {
 
 // AJUSTES PERSISTENTES
 /**
- * Guarda en localStorage todo lo configurable del emisor.
+ * Guarda en localStorage todo lo configurable del emisor, menos el bitrate de
+ * vídeo: ese siempre arranca al máximo (es un techo; la red decide cuánto sale).
  */
 function guardarAjustesDesdeUi() {
     guardarAjustesEmisor({
@@ -72,7 +73,6 @@ function guardarAjustesDesdeUi() {
         codec: videoCodecPreference.value,
         resolucion: resolution.value,
         fps: frameRateSelect.value,
-        bitrateMbps: Number(bitrateInput.value),
         degradacion: degradacionSelect.value,
         escala: escalaEnvioSelect.value,
         audioBitrate: audioBitrateSelect.value,
@@ -100,7 +100,6 @@ function restaurarAjustesEnUi() {
     seleccionarSiExiste(degradacionSelect, ajustes.degradacion);
     seleccionarSiExiste(escalaEnvioSelect, ajustes.escala);
     seleccionarSiExiste(audioBitrateSelect, ajustes.audioBitrate);
-    if (Number(ajustes.bitrateMbps) > 0) bitrateInput.value = ajustes.bitrateMbps;
     if (typeof ajustes.eco === 'boolean') echoCancellationCheck.checked = ajustes.eco;
     if (typeof ajustes.ruido === 'boolean') noiseSuppressionCheck.checked = ajustes.ruido;
     if (typeof ajustes.ganancia === 'boolean') autoGainControlCheck.checked = ajustes.ganancia;
@@ -424,8 +423,15 @@ async function actualizarCodecStats() {
             let codificacion = report.frameWidth
                 ? `${report.frameWidth}×${report.frameHeight} a ${envioReal.fps ?? 0} fps`
                 : 'Esperando fotogramas…';
-            // Resumen bajo el vídeo
-            document.getElementById('resumenEnvio').textContent = `${codificacion}${kbpsSuavizado !== null ? `, ${(kbpsSuavizado / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps` : ''}`;
+            // Resumen junto a los botones: una pieza por dato (con el móvil
+            // tumbado van en dos líneas en vez de cortarse)
+            let partes = [codificacion];
+            if (kbpsSuavizado !== null) partes.push(`${(kbpsSuavizado / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} Mbps`);
+            document.getElementById('resumenEnvio').replaceChildren(...partes.map(texto => {
+                let pieza = document.createElement('span');
+                pieza.textContent = texto;
+                return pieza;
+            }));
             pintarObjetivos();
         }
 
@@ -801,6 +807,8 @@ function mostrarError(userMessage, error) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     restaurarAjustesEnUi();
+    // Siempre al máximo al abrir la página (el navegador podría restaurar otro valor)
+    bitrateInput.value = bitrateInput.max;
     actualizarEtiquetaBitrate();
 
     // Servidor = host de esta página (sin protocolo)

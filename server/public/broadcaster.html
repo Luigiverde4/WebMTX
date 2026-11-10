@@ -61,7 +61,7 @@
             </div>
 
             <div class="acciones emisor__acciones">
-                <button type="button" class="boton" id="previewBtn" onclick="visualizarPreview()">
+                <button type="button" class="boton acciones__previsualizar" id="previewBtn" onclick="visualizarPreview()">
                     <svg class="icono" aria-hidden="true"><use href="img/iconos.svg#ojo"/></svg>
                     Previsualizar
                 </button>
@@ -211,8 +211,8 @@
                     <div class="campo">
                         <label for="bitrate">Bitrate máximo de vídeo <span class="objetivo" title="Objetivo: es un techo; la imagen y la red deciden cuánto se gasta">objetivo</span></label>
                         <div class="rango">
-                            <input type="range" id="bitrate" min="1" max="20" step="0.5" value="8" aria-describedby="realBitrate">
-                            <output id="bitrateValue" class="rango__valor" for="bitrate">8 Mbps</output>
+                            <input type="range" id="bitrate" min="1" max="20" step="0.5" value="20" aria-describedby="realBitrate">
+                            <output id="bitrateValue" class="rango__valor" for="bitrate">20 Mbps</output>
                         </div>
                         <span class="campo__real cifra" id="realBitrate">Se verá al emitir</span>
                         <span class="campo__ayuda">Es un techo: con imagen sencilla se gasta menos, y al subirlo el envío crece poco a poco mientras comprueba que la red aguanta.</span>

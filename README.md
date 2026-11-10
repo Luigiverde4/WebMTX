@@ -288,7 +288,7 @@ Las grabaciones viven en el volumen Docker `recordings_volume` y los momentos ma
 4. **Calidad del envío**: bitrate máximo de vídeo, qué sacrificar si no da para todo (fluidez, nitidez o un poco de cada), reducir la imagen al enviar y calidad del audio (sale en mono: MediaMTX no negocia Opus estéreo).
 5. **Emitir**: la barra superior (tally) se pone en rojo con el cronómetro. Es el único sitio donde se lee el estado de la emisión, también los errores.
 
-**Ajustes objetivo.** Resolución, fps y bitrate llevan la etiqueta *objetivo*: los pide la página, pero el resultado lo deciden la cámara, la CPU y la red. Debajo se ve el valor real; si no coincide, sale en ámbar con el motivo ("la cámara no da más", "falta CPU", "falta red"…). El panel "Tráfico por pista" muestra lo que se envía de verdad. Los ajustes se recuerdan en el navegador.
+**Ajustes objetivo.** Resolución, fps y bitrate llevan la etiqueta *objetivo*: los pide la página, pero el resultado lo deciden la cámara, la CPU y la red. Debajo se ve el valor real; si no coincide, sale en ámbar con el motivo ("la cámara no da más", "falta CPU", "falta red"…). El panel "Tráfico por pista" muestra lo que se envía de verdad. Los ajustes se recuerdan en el navegador, menos el bitrate de vídeo: siempre arranca al máximo (20 Mbps), porque es un techo y la red decide cuánto se envía.
 
 **Cambios en directo, sin cortar.** Emitiendo, se puede cambiar casi todo sobre la misma conexión:
 
