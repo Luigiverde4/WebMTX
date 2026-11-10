@@ -30,6 +30,8 @@
     }
     .resumen-envio:empty,
     .emisor .mensaje-linea:empty { display: none; }
+    /* Una pieza por dato (resolución y fps · Mbps): en línea, con coma */
+    .resumen-envio > span + span::before { content: ", "; }
 
     /* Ajustes "objetivo": lo pides tú, otro decide. Etiqueta discreta en el
        rótulo y, debajo del control, lo que se consigue de verdad. */
@@ -273,12 +275,38 @@
             min-block-size: 0;
         }
         .emisor .monitor--llenar { aspect-ratio: auto; flex: 1 1 auto; min-block-size: 0; }
-        /* Botones en una fila compacta; el resumen de envío cabe al lado */
-        .emisor__acciones { flex-wrap: nowrap; gap: var(--e-2); }
+        /* Botones en una fila compacta; el resumen de envío cabe al lado. Si
+           no cabe todo (p. ej. con "Deshacer cambios" y "Volver a emitir" en
+           un móvil estrecho), los botones bajan de línea en vez de meterse
+           en la columna de ajustes */
+        .emisor__acciones { gap: var(--e-1) var(--e-2); }
         .emisor__acciones .boton { min-block-size: var(--alto-control); padding-block: var(--e-1); }
-        .acciones__principales { inline-size: auto; margin-inline-start: auto; }
+        .acciones__principales { inline-size: auto; margin-inline-start: auto; flex-wrap: wrap; justify-content: flex-end; }
         .acciones__principales .boton { flex: none; min-inline-size: 0; min-block-size: var(--alto-control); }
-        .resumen-envio { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-inline-size: 0; }
+        /* Emitiendo, Previsualizar está deshabilitado: fuera, para dejar sitio
+           al resumen (que solo aparece emitiendo) */
+        .acciones__previsualizar:disabled { display: none; }
+        /* Resumen en dos líneas (resolución y fps / Mbps) en vez de cortarlo
+           con "…": dos líneas de --t-s caben en el alto de un botón */
+        .resumen-envio {
+            display: flex;
+            flex-direction: column;
+            min-inline-size: 0;
+            line-height: 1.25;
+        }
+        .resumen-envio > span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .resumen-envio > span + span::before { content: none; }
         .emisor__ajustes.columna-scroll { overflow-y: auto; padding-inline-end: var(--e-1); }
+        /* Avisos arriba, sobre el monitor: abajo a la derecha tapaban los
+           ajustes que se estaban tocando */
+        .avisos {
+            inset-block: calc(var(--alto-tally-compacto) + var(--e-2)) auto;
+            inset-inline: calc(max(var(--e-2), env(safe-area-inset-left)) + var(--e-2)) auto;
+            inline-size: min(380px, 50vw);
+        }
     }
 }
